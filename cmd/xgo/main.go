@@ -233,16 +233,10 @@ func handleBuild(cmd string, args []string) error {
 		logDebug("current working dir: %s", wd)
 	}
 
-	goroot, err := checkGoroot(projectDir, withGoroot)
+	goroot, err := setupGoroot(projectDir, withGoroot)
 	if err != nil {
 		return err
 	}
-	// make the goroot abs
-	goroot, err = filepath.Abs(goroot)
-	if err != nil {
-		return err
-	}
-	logDebug("effective GOROOT: %s", goroot)
 
 	// create a tmp dir for communication with exec_tool
 	tmpRoot, err := getStableTmpDir()
@@ -1356,4 +1350,22 @@ func (c __DEBUG_CMD_ARGS) String() string {
 		list = append(list, arg[:idxEq+1]+strconv.Quote(arg[idxEq+1:]))
 	}
 	return strings.Join(list, " ")
+}
+
+// setupGoroot checks and resolves the GOROOT path, ensuring it's absolute.
+// It returns the absolute path to GOROOT or an error if validation fails.
+func setupGoroot(projectDir string, withGoroot string) (string, error) {
+	goroot, err := checkGoroot(projectDir, withGoroot)
+	if err != nil {
+		return "", err
+	}
+
+	// make the goroot abs
+	goroot, err = filepath.Abs(goroot)
+	if err != nil {
+		return "", err
+	}
+
+	logDebug("effective GOROOT: %s", goroot)
+	return goroot, nil
 }
