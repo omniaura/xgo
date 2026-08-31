@@ -1,0 +1,5 @@
+# Regression: replace-target has sources but go.mod exists only via caller -overlay.
+# Instrumentation go list must receive that overlay or the dep is Incomplete (0 GoFiles)
+# and mock.Patch fails with ERR_NOT_INSTRUMENTED (doctest vendor-gomod case).
+# replacement/go.mod.txt (not go.mod) so run-test scanGoMods does not treat it as a suite.
+flags: -overlay=caller-overlay.json --mock-rule-include-as-main-module=example.com/dep --mock-rule {"main_module":true,"kind":"func","action":"include"} --mock-rule {"any":true,"action":"exclude"} -timeout=120s

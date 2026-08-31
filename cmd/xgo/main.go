@@ -700,7 +700,7 @@ func handleBuild(cmd string, args []string) error {
 			callerOverlay.ApplyFileRedirects(overlayFS)
 		}
 		// TODO: remove this check once most clients are updated
-		needUpgrade, coreVersion, err := instrument_xgo_runtime.CheckRuntimeLegacyVersion(projectDir, overlayFS, mod, modfile)
+		needUpgrade, coreVersion, err := instrument_xgo_runtime.CheckRuntimeLegacyVersion(projectDir, overlayFS, mod, modfile, overlayFile)
 		if err != nil {
 			return fmt.Errorf("checking version %s: %w", constants.RUNTIME_CORE_PKG, err)
 		}
@@ -800,7 +800,7 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		if len(instrumentIncludeAsMain) == 0 {
 			instrumentIncludeAsMain = opts.MockRuleIncludeAsMainModule
 		}
-		instrumentUserCodeResult, err = instrumentUserCode(instrumentGoroot, projectDir, projectRoot, goVersion, realXgoSrc, modForLoad, modfileForLoad, mainModule, instrumentIncludeAsMain, xgoRuntimeModuleDir, mayHaveCover, overlayFS, cmdTest, opts.FilterRules, trapPkgs, trapAll, collectTestTrace, collectTestTraceDir, xgoRaceSafe, goFlag, needUpgrade)
+		instrumentUserCodeResult, err = instrumentUserCode(instrumentGoroot, projectDir, projectRoot, goVersion, realXgoSrc, modForLoad, modfileForLoad, mainModule, instrumentIncludeAsMain, xgoRuntimeModuleDir, mayHaveCover, overlayFS, overlayFile, cmdTest, opts.FilterRules, trapPkgs, trapAll, collectTestTrace, collectTestTraceDir, xgoRaceSafe, goFlag, needUpgrade)
 		if err != nil {
 			return err
 		}

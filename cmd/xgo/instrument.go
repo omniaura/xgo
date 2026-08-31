@@ -50,8 +50,8 @@ type instrumentResult struct {
 // goroot is critical for stdlib
 // includeAsMainModules: extra module paths treated as main for mock/trap (option B:
 // reclassify packages already on the load graph; do not bulk-load module/...).
-func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool) (*instrumentResult, error) {
-	logDebug("instrumentUserSpace: mod=%s, modfile=%s, xgoRuntimeModuleDir=%s, includeTest=%v, collectTestTrace=%v, includeAsMainModules=%v", mod, modfile, xgoRuntimeModuleDir, includeTest, collectTestTrace, includeAsMainModules)
+func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool) (*instrumentResult, error) {
+	logDebug("instrumentUserSpace: mod=%s, modfile=%s, xgoRuntimeModuleDir=%s, includeTest=%v, collectTestTrace=%v, includeAsMainModules=%v, overlayFile=%s", mod, modfile, xgoRuntimeModuleDir, includeTest, collectTestTrace, includeAsMainModules, overlayFile)
 	if mod == "" {
 		// check vendor dir
 		vendorDir, err := getVendorDir(projectRoot)
@@ -86,6 +86,7 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 		CollectTestTrace:    collectTestTrace,
 		CollectTestTraceDir: collectTestTraceDir,
 		XgoRaceSafe:         xgoRaceSafe,
+		OverlayFile:         overlayFile,
 		ReadRuntimeGenFile: func(path []string) ([]byte, error) {
 			return readRuntimeGenFile(xgoSrc, path)
 		},
@@ -139,6 +140,7 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 			Dir:             projectDir,
 			Mod:             mod,
 			Overlay:         overlayFS,
+			OverlayFile:     overlayFile,
 			IncludeTest:     includeTest,
 			ModFile:         modfile,
 			MaxFileSize:     MAX_FILE_SIZE,

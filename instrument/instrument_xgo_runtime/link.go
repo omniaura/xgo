@@ -32,6 +32,9 @@ type LinkOptions struct {
 	CollectTestTrace    bool
 	CollectTestTraceDir string
 	XgoRaceSafe         bool
+	// OverlayFile is the caller go -overlay JSON (e.g. doctest vendor-gomod
+	// bridges). Forwarded to go list so nested vendor go.mod replaces resolve.
+	OverlayFile string
 
 	ReadRuntimeGenFile func(path []string) ([]byte, error)
 }
@@ -54,16 +57,18 @@ func LinkXgoRuntime(goroot string, projectDir string, xgoRuntimeModuleDir string
 		// xgo runtime is replaced in a separate module
 		// so we need to load packages from the separate module
 		opts = load.LoadOptions{
-			Dir:  xgoRuntimeModuleDir,
-			Fset: fset,
+			Dir:         xgoRuntimeModuleDir,
+			Fset:        fset,
+			OverlayFile: linkOpts.OverlayFile,
 		}
 	} else {
 		opts = load.LoadOptions{
-			Dir:     projectDir,
-			Overlay: overlayFS,
-			Mod:     mod,
-			ModFile: modfile,
-			Fset:    fset,
+			Dir:         projectDir,
+			Overlay:     overlayFS,
+			Mod:         mod,
+			ModFile:     modfile,
+			Fset:        fset,
+			OverlayFile: linkOpts.OverlayFile,
 		}
 	}
 	packages, err := load.LoadPackages([]string{

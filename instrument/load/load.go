@@ -25,6 +25,13 @@ type LoadOptions struct {
 	ModFile     string // -modfile flag
 	Deps        bool   // -deps flag
 
+	// OverlayFile is passed to `go list -overlay=` during package discovery.
+	// Overlay (in-memory) is used only when reading/parsing file contents.
+	// Callers that rely on go.mod replacements visible only through an overlay
+	// (e.g. doctest vendor-gomod bridges) must set OverlayFile or discovery
+	// returns Incomplete packages with empty GoFiles.
+	OverlayFile string
+
 	// max file size to parse
 	// if file size is larger than this
 	// see https://github.com/xhd2015/xgo/issues/303
@@ -68,12 +75,13 @@ func LoadPackages(args []string, opts LoadOptions) (*Packages, error) {
 	fset := opts.Fset
 
 	pkgs, err := goinfo.ListPackages(args, goinfo.LoadPackageOptions{
-		Dir:     dir,
-		Mod:     mod,
-		ModFile: modFile,
-		Goroot:  goroot,
-		Deps:    deps,
-		Test:    false, // NOTE: don't set it
+		Dir:         dir,
+		Mod:         mod,
+		ModFile:     modFile,
+		Goroot:      goroot,
+		Deps:        deps,
+		Test:        false, // NOTE: don't set it
+		OverlayFile: opts.OverlayFile,
 	})
 	if err != nil {
 		return nil, err

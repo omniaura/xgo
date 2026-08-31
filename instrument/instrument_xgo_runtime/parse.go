@@ -14,12 +14,13 @@ import (
 	"github.com/xhd2015/xgo/support/strutil"
 )
 
-func CheckRuntimeLegacyVersion(projectDir string, overlayFS overlay.Overlay, mod string, modfile string) (bool, string, error) {
+func CheckRuntimeLegacyVersion(projectDir string, overlayFS overlay.Overlay, mod string, modfile string, overlayFile string) (bool, string, error) {
 	opts := load.LoadOptions{
-		Dir:     projectDir,
-		Overlay: overlayFS,
-		Mod:     mod,
-		ModFile: modfile,
+		Dir:         projectDir,
+		Overlay:     overlayFS,
+		Mod:         mod,
+		ModFile:     modfile,
+		OverlayFile: overlayFile,
 	}
 	pkgs, err := load.LoadPackages([]string{
 		constants.RUNTIME_CORE_PKG,

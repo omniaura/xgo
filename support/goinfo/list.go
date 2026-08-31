@@ -44,6 +44,11 @@ type LoadPackageOptions struct {
 	Goroot  string // GOROOT env
 	Deps    bool   // -deps flag
 	Test    bool   // -test flag, if true, will have packages like "github.com/xhd2015/xgo/runtime/test/trap/inspect [github.com/xhd2015/xgo/runtime/test/trap/inspect.test]", so don't set it
+	// OverlayFile is a go -overlay JSON path. Must be passed to `go list` as
+	// well as to later file reads: callers such as doctest synthesize missing
+	// nested vendor go.mod files only via overlay; without -overlay here,
+	// packages resolve Incomplete and instrumentation inserts no traps.
+	OverlayFile string
 }
 
 // go list -e -json ./pkg
@@ -60,6 +65,9 @@ func ListPackages(args []string, opts LoadPackageOptions) ([]*Package, error) {
 	}
 	if opts.Test {
 		flags = append(flags, "-test")
+	}
+	if opts.OverlayFile != "" {
+		flags = append(flags, "-overlay="+opts.OverlayFile)
 	}
 	flags = append(flags, args...)
 	var env []string

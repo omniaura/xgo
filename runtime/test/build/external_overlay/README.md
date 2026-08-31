@@ -26,6 +26,8 @@ L1: What must compose?                    (highest impact)
 │     blank import applied to effective (replacement) body
 ├── path_identity/       → external_overlay_path_identity
 │     same file under path aliases still instruments
+├── gomod_list_discover/ → external_overlay_gomod_list
+│     replace-target go.mod only via overlay; go list must see it
 └── vet_import_boundary/ → external_overlay_composition  (go: 1.24)
       documents native Go overlay import resolution + xgo mock
 
@@ -53,9 +55,10 @@ L2 under path_identity: how paths are spelled
 | `external_overlay_strace_sibling` | Prep on main; overlay on other file | Both survive |
 | `external_overlay_strace_has_import` | Replacement already imports trace | No double-break |
 | `external_overlay_path_identity` | Abs keys + symlink project-dir | Nested `xgo`/`go run ./cmd/xgo` |
+| `external_overlay_gomod_list` | Overlay-only nested go.mod + mock | go list must get `-overlay` |
 | `external_overlay_composition` | Go 1.24+ vet + mock | Broken import on original |
 
-Unit coverage (not under `runtime/test`): `instrument/overlay` for `absFileKey`, compose, blank-import-through-overlay.
+Unit coverage (not under `runtime/test`): `instrument/overlay` for `absFileKey`, compose, blank-import-through-overlay; `support/goinfo` for `ListPackages` + `OverlayFile`.
 
 ## Non-goals (out of tree / covered elsewhere)
 

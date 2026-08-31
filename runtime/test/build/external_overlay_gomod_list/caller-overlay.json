@@ -1,0 +1,5 @@
+{
+  "Replace": {
+    "vendor_dep/go.mod": "replacement/go.mod.txt"
+  }
+}
