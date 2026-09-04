@@ -391,10 +391,11 @@ func loadDependency(goroot string, goBinary string, goVersion *goinfo.GoVersion,
 		fmt.Sprintf("-require=%s@v%s", constants.RUNTIME_MODULE, VERSION),
 		fmt.Sprintf("-replace=%s=%s", constants.RUNTIME_MODULE, tmpRuntime),
 	}
-	// In Go 1.26+, 'go mod tidy' is required when using old go directives (e.g. go 1.14)
-	// with require/replace. Bump the go directive to at least 1.18 to avoid this.
+	// In Go 1.26+, the generated modfile must match the complete running Go
+	// version. Dropping the patch component makes 1.26 older than dependencies
+	// which declare 1.26.0 and leaves the generated modfile untidy.
 	if goVersion.Minor >= 26 {
-		modEditArgs = append(modEditArgs, fmt.Sprintf("-go=%d.%d", goVersion.Major, goVersion.Minor))
+		modEditArgs = append(modEditArgs, "-go="+formatGoDirectiveVersion(goVersion))
 	}
 	modEditArgs = append(modEditArgs, tmpGoMod)
 	err = cmd.Env([]string{
@@ -413,6 +414,10 @@ func loadDependency(goroot string, goBinary string, goVersion *goinfo.GoVersion,
 		mod:        mod,
 		modfile:    modfile,
 	}, nil
+}
+
+func formatGoDirectiveVersion(goVersion *goinfo.GoVersion) string {
+	return fmt.Sprintf("%d.%d.%d", goVersion.Major, goVersion.Minor, goVersion.Patch)
 }
 
 func readRuntimeGenFile(xgoSrc string, path []string) ([]byte, error) {
