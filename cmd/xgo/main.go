@@ -169,6 +169,7 @@ func handleBuild(cmd string, args []string) error {
 	remainArgs := opts.remainArgs
 	testArgs := opts.testArgs
 	buildFlags := opts.buildFlags
+	trimpath := buildTrimpath(remainArgs, buildFlags, os.Getenv("GOFLAGS"))
 	progFlags := opts.progFlags
 	flagA := opts.flagA
 	projectDir := opts.projectDir
@@ -800,7 +801,7 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		if len(instrumentIncludeAsMain) == 0 {
 			instrumentIncludeAsMain = opts.MockRuleIncludeAsMainModule
 		}
-		instrumentUserCodeResult, err = instrumentUserCode(instrumentGoroot, projectDir, projectRoot, goVersion, realXgoSrc, modForLoad, modfileForLoad, mainModule, instrumentIncludeAsMain, xgoRuntimeModuleDir, mayHaveCover, overlayFS, overlayFile, cmdTest, opts.FilterRules, trapPkgs, trapAll, collectTestTrace, collectTestTraceDir, xgoRaceSafe, goFlag, needUpgrade)
+		instrumentUserCodeResult, err = instrumentUserCode(instrumentGoroot, projectDir, projectRoot, goVersion, realXgoSrc, modForLoad, modfileForLoad, mainModule, instrumentIncludeAsMain, xgoRuntimeModuleDir, mayHaveCover, overlayFS, overlayFile, cmdTest, opts.FilterRules, trapPkgs, trapAll, collectTestTrace, collectTestTraceDir, xgoRaceSafe, goFlag, needUpgrade, trimpath)
 		if err != nil {
 			return err
 		}
@@ -1392,4 +1393,29 @@ func (c __DEBUG_CMD_ARGS) String() string {
 		list = append(list, arg[:idxEq+1]+strconv.Quote(arg[idxEq+1:]))
 	}
 	return strings.Join(list, " ")
+}
+
+// buildTrimpath reports whether the underlying go command will build with
+// -trimpath: either passed on the xgo command line (it is forwarded verbatim)
+// or set through GOFLAGS, which the go command honours implicitly.
+func buildTrimpath(remainArgs []string, buildFlags []string, goflags string) bool {
+	isTrimpath := func(arg string) bool {
+		return arg == "-trimpath" || arg == "--trimpath" || arg == "-trimpath=true" || arg == "--trimpath=true"
+	}
+	for _, arg := range remainArgs {
+		if isTrimpath(arg) {
+			return true
+		}
+	}
+	for _, arg := range buildFlags {
+		if isTrimpath(arg) {
+			return true
+		}
+	}
+	for _, arg := range strings.Fields(goflags) {
+		if isTrimpath(arg) {
+			return true
+		}
+	}
+	return false
 }
