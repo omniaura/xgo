@@ -1201,6 +1201,29 @@ func checkGoVersion(goroot string, needCheckVersion bool) (*goinfo.GoVersion, er
 
 // getOrMakeAbsXgoHome returns absolute path to xgo homoe
 func getOrMakeAbsXgoHome(xgoHome string) (string, error) {
+	dir, err := getOrMakeAbsXgoHomeUnresolved(xgoHome)
+	if err != nil {
+		return "", err
+	}
+	return canonicalXgoHome(dir), nil
+}
+
+// canonicalXgoHome resolves symlinks in the xgo home path. Several accounts
+// (CI runner slots) commonly share one instrumented toolchain through a
+// ~/.xgo symlink; without resolving it each account would see the same
+// toolchain under a different path string, and that string leaks into the
+// compiler's -trimpath rewrite rules and the instrumented stdlib stubs, so
+// identical builds produced different objects per account and never shared
+// a build cache. A path that does not exist yet is returned unchanged.
+func canonicalXgoHome(dir string) string {
+	resolved, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return dir
+	}
+	return resolved
+}
+
+func getOrMakeAbsXgoHomeUnresolved(xgoHome string) (string, error) {
 	if xgoHome == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
