@@ -464,7 +464,7 @@ func handleBuild(cmd string, args []string) error {
 	//  - https://github.com/xhd2015/xgo/issues/311
 	// we no longer need separate build cache
 	// but we need to separate it from normal GOCACHE
-	buildCacheDir := resolveBuildCacheDir(instrumentCacheDir, os.Getenv(XGO_BUILD_CACHE_DIR), mappedInstrumentName)
+	buildCacheDir := resolveBuildCacheDir(instrumentCacheDir, os.Getenv(XGO_BUILD_CACHE_DIR), sharedBuildCacheNamespace(goVersionName, instrumentSuffix))
 	revisionFile := filepath.Join(instrumentDir, INSTRUMENT_XGO_REVISION_FILE)
 	fullSyncRecord := filepath.Join(instrumentDir, "full-sync-record.txt")
 
@@ -1431,11 +1431,28 @@ func buildTrimpath(remainArgs []string, buildFlags []string, goflags string) boo
 const XGO_BUILD_CACHE_DIR = "XGO_BUILD_CACHE_DIR"
 
 // resolveBuildCacheDir returns the GOCACHE for instrumented builds. The
-// override is namespaced by the instrumented toolchain name so different Go
-// versions or xgo revisions never share one cache directory.
-func resolveBuildCacheDir(instrumentCacheDir string, override string, instrumentName string) string {
+// override is namespaced so different Go versions or xgo revisions never
+// share one cache directory.
+func resolveBuildCacheDir(instrumentCacheDir string, override string, namespace string) string {
 	if override == "" {
 		return filepath.Join(instrumentCacheDir, "build-cache")
 	}
-	return filepath.Join(override, instrumentName)
+	return filepath.Join(override, namespace)
+}
+
+// sharedBuildCacheNamespace identifies the instrumented toolchain by content,
+// not by location: Go version, xgo version and xgo revision. The default
+// per-machine cache is keyed on the instrumented GOROOT's path instead, which
+// differs per HOME, and the whole point of XGO_BUILD_CACHE_DIR is to let
+// several homes (CI runner slots) that built identical toolchains share one
+// cache.
+func sharedBuildCacheNamespace(goVersionName string, instrumentSuffix string) string {
+	rev := REVISION
+	if i := strings.IndexByte(rev, '+'); i >= 0 {
+		rev = rev[:i]
+	}
+	if len(rev) > 12 {
+		rev = rev[:12]
+	}
+	return goVersionName + "_xgo" + VERSION + "_" + rev + instrumentSuffix
 }
