@@ -464,7 +464,7 @@ func handleBuild(cmd string, args []string) error {
 	//  - https://github.com/xhd2015/xgo/issues/311
 	// we no longer need separate build cache
 	// but we need to separate it from normal GOCACHE
-	buildCacheDir := filepath.Join(instrumentCacheDir, "build-cache")
+	buildCacheDir := resolveBuildCacheDir(instrumentCacheDir, os.Getenv(XGO_BUILD_CACHE_DIR), mappedInstrumentName)
 	revisionFile := filepath.Join(instrumentDir, INSTRUMENT_XGO_REVISION_FILE)
 	fullSyncRecord := filepath.Join(instrumentDir, "full-sync-record.txt")
 
@@ -1418,4 +1418,24 @@ func buildTrimpath(remainArgs []string, buildFlags []string, goflags string) boo
 		}
 	}
 	return false
+}
+
+// XGO_BUILD_CACHE_DIR overrides where xgo keeps the GOCACHE used for
+// instrumented builds. By default that cache lives under the temp directory
+// so it is cleaned periodically; on CI hosts whose TMPDIR is per job or per
+// runner slot this makes every slot rebuild and retest from scratch. Point it
+// at a persistent, shared location (for example "$(go env GOCACHE)/xgo") to
+// share compiled packages and cached test results across checkouts. Objects
+// from the instrumented toolchain never collide with plain go builds because
+// Go keys cache entries on the compiler binary's own build ID.
+const XGO_BUILD_CACHE_DIR = "XGO_BUILD_CACHE_DIR"
+
+// resolveBuildCacheDir returns the GOCACHE for instrumented builds. The
+// override is namespaced by the instrumented toolchain name so different Go
+// versions or xgo revisions never share one cache directory.
+func resolveBuildCacheDir(instrumentCacheDir string, override string, instrumentName string) string {
+	if override == "" {
+		return filepath.Join(instrumentCacheDir, "build-cache")
+	}
+	return filepath.Join(override, instrumentName)
 }
