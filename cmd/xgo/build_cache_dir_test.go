@@ -29,3 +29,11 @@ func TestSharedBuildCacheNamespaceIsLocationIndependent(t *testing.T) {
 		t.Fatal("instrument suffix must change the namespace")
 	}
 }
+
+func TestBuildCacheNamespaceIsolatesCoreChanges(t *testing.T) {
+	first := buildCacheNamespace("go1.27.1", "1.2.9", "same", "core+1 BUILD_642", "")
+	second := buildCacheNamespace("go1.27.1", "1.2.9", "same", "core+2 BUILD_643", "")
+	if first == second {
+		t.Fatal("core changes must invalidate a durable shared cache")
+	}
+}
