@@ -6,7 +6,7 @@ scratch_dir="$(mktemp -d)"
 trap 'rm -rf "$scratch_dir"' EXIT
 export GOENV=off GOCACHEPROG="" GOTOOLCHAIN=local GOFLAGS=-trimpath
 export XGO_BUILD_CACHE_DIR="$scratch_dir/cache"
-xgo=("${xgo[@]}" --xgo-home "$scratch_dir/home")
+xgo=("$xgo_bin" test --xgo-home "$scratch_dir/home")
 mkdir -p "$scratch_dir/project" "$scratch_dir/home"
 cd "$scratch_dir/project"
 printf 'module example.com/warmcache\n\ngo 1.18\n' > go.mod
