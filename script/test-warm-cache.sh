@@ -3,7 +3,13 @@
 set -euo pipefail
 xgo_bin="$(realpath "$1")"
 scratch_dir="$(mktemp -d)"
-trap 'rm -rf "$scratch_dir"' EXIT
+cleanup() {
+  result=$?
+  if [ "$result" -ne 0 ]; then tail -80 "$scratch_dir"/project/*.log; fi
+  rm -rf "$scratch_dir"
+  exit "$result"
+}
+trap cleanup EXIT
 export GOENV=off GOCACHEPROG="" GOTOOLCHAIN=local GOFLAGS=-trimpath
 export XGO_BUILD_CACHE_DIR="$scratch_dir/cache"
 xgo=("$xgo_bin" test --xgo-home "$scratch_dir/home")

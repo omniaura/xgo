@@ -335,12 +335,12 @@ func parseOptions(cmd string, args []string) (*options, error) {
 		},
 	}
 
-	if isDevelopment {
-		flagValues = append(flagValues, FlagValue{
-			Flags: []string{"--xgo-home"},
-			Value: &xgoHome,
-		})
-	}
+	// Allow isolated toolchain installs for release-binary cache regression tests
+	// and callers that share a persistent cache across worker homes.
+	flagValues = append(flagValues, FlagValue{
+		Flags: []string{"--xgo-home"},
+		Value: &xgoHome,
+	})
 	if cmd == "setup" {
 		flagValues = append(flagValues, FlagValue{
 			Flags:  []string{"--delete"},
@@ -648,16 +648,16 @@ func parseOptions(cmd string, args []string) (*options, error) {
 
 		unified: unified,
 
-		remainArgs:      remainArgs,
-		testArgs:        testArgs,
-		buildFlags:      buildFlags,
-		progFlags:       progFlags,
-		noLineDirective: noLineDirective,
-		deleteFlag:      deleteFlag,
-		goFlag:          goFlag,
-		xgoRaceSafe:     xgoRaceSafe,
-		useFilePatches:      useFilePatches,
-		patchGorootInPlace:  patchGorootInPlace,
+		remainArgs:               remainArgs,
+		testArgs:                 testArgs,
+		buildFlags:               buildFlags,
+		progFlags:                progFlags,
+		noLineDirective:          noLineDirective,
+		deleteFlag:               deleteFlag,
+		goFlag:                   goFlag,
+		xgoRaceSafe:              xgoRaceSafe,
+		useFilePatches:           useFilePatches,
+		patchGorootInPlace:       patchGorootInPlace,
 		skipRebuildCompilerAndGo: skipRebuildCompilerAndGo,
 	}, nil
 }
