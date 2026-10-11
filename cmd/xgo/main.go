@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -868,7 +869,11 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		if toolExecFlag != "" {
 			buildCmdArgs = append(buildCmdArgs, toolExecFlag)
 		}
-		if flagA || compilerChanged || coreRevisionChanged {
+		// A fresh core revision already has an isolated build-cache namespace.
+		// Forcing -a on its first test run prevents Go from saving the pre-link
+		// test-cache key. Later runs then relink every cached test indefinitely.
+		// Keep explicit -a and the legacy compiler-change rebuild behavior.
+		if flagA || compilerChanged || (coreRevisionChanged && !cmdTest) {
 			buildCmdArgs = append(buildCmdArgs, "-a")
 		}
 		if flagV {
@@ -1477,5 +1482,12 @@ func sharedBuildCacheNamespace(goVersionName string, instrumentSuffix string) st
 	if len(rev) > 12 {
 		rev = rev[:12]
 	}
-	return goVersionName + "_xgo" + VERSION + "_" + rev + instrumentSuffix
+	return buildCacheNamespace(goVersionName, VERSION, rev, getCoreRevision(), instrumentSuffix)
+}
+
+func buildCacheNamespace(goVersion, version, revision, coreRevision, suffix string) string {
+	// Include the full core identity, including its +N development suffix.
+	// A durable override must not reuse pre-instrumentation-change artifacts.
+	epoch := sha256.Sum256([]byte(coreRevision))
+	return fmt.Sprintf("%s_xgo%s_%s_core%x%s", goVersion, version, revision, epoch[:8], suffix)
 }
