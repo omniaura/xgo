@@ -714,7 +714,7 @@ func handleBuild(cmd string, args []string) error {
 			callerOverlay.ApplyFileRedirects(overlayFS)
 		}
 		// TODO: remove this check once most clients are updated
-		needUpgrade, coreVersion, err := instrument_xgo_runtime.CheckRuntimeLegacyVersion(projectDir, overlayFS, mod, modfile, overlayFile)
+		needUpgrade, coreVersion, err := instrument_xgo_runtime.CheckRuntimeLegacyVersion(instrumentGoroot, projectDir, overlayFS, mod, modfile, overlayFile, goVersion)
 		if err != nil {
 			return fmt.Errorf("checking version %s: %w", constants.RUNTIME_CORE_PKG, err)
 		}

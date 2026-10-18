@@ -252,9 +252,14 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	}
 
 	// test-only imports are not in the -deps list; list them in one go
-	// instead of one `go list` each when traverse reaches them
+	// instead of one `go list` each when traverse reaches them. Only the
+	// test files of the target packages are loaded, and go list -test
+	// already listed their imports.
 	var testImports []string
 	for _, pkg := range mainPkgs {
+		if targetPkgs != nil && !targetPkgs[pkg.LoadPackage.GoPackage.ImportPath] {
+			continue
+		}
 		for _, imports := range [][]string{pkg.LoadPackage.GoPackage.TestImports, pkg.LoadPackage.GoPackage.XTestImports} {
 			for _, imp := range imports {
 				if imp != "C" {
