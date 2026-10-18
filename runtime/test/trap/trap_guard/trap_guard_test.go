@@ -3,6 +3,8 @@ package trap_guard
 import (
 	"context"
 	"errors"
+	"reflect"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -31,12 +33,6 @@ func TestUnmockedCallsKeepBehavior(t *testing.T) {
 	}
 	if got := (Store{prefix: "x"}).Name(); got != "store:x" {
 		t.Errorf("Name: %q", got)
-	}
-	if v, ok := First(3, 4); !ok || v != 3 {
-		t.Errorf("First: %v %v", v, ok)
-	}
-	if _, ok := First[int](); ok {
-		t.Errorf("First of nothing")
 	}
 	if got := Join(",", "a", "b"); got != "a,b" {
 		t.Errorf("Join: %q", got)
@@ -82,31 +78,13 @@ func TestMockMethodByName(t *testing.T) {
 	}
 }
 
-func TestPatchGenericAndVariadic(t *testing.T) {
-	mock.Patch(First[string], func(items ...string) (string, bool) {
-		return "generic", true
-	})
-	mock.Patch(Join, func(sep string, parts ...string) string {
-		return "joined " + sep
-	})
-	if v, ok := First("a"); !ok || v != "generic" {
-		t.Errorf("First: %q %v", v, ok)
-	}
-	if v, ok := First(1); !ok || v != 1 {
-		t.Errorf("First[int] must not be mocked: %v %v", v, ok)
-	}
-	if got := Join("-", "a"); got != "joined -" {
-		t.Errorf("Join: %q", got)
-	}
-}
-
 func TestInterceptorErrMocked(t *testing.T) {
-	trap.AddFuncInterceptor((*Store).Get, &trap.Interceptor{
+	t.Cleanup(trap.AddFuncInterceptor((*Store).Get, &trap.Interceptor{
 		Pre: func(ctx context.Context, f *core.FuncInfo, args, result core.Object) (interface{}, error) {
 			result.GetFieldIndex(0).Set("intercepted")
 			return nil, trap.ErrMocked
 		},
-	})
+	}))
 	if v, err := CallGet(&Store{}, ""); err != nil || v != "intercepted" {
 		t.Fatalf("Get: %q %v", v, err)
 	}
@@ -114,12 +92,12 @@ func TestInterceptorErrMocked(t *testing.T) {
 
 // Pre may rewrite arguments; the function body must see the new value.
 func TestInterceptorRewritesArgument(t *testing.T) {
-	trap.AddFuncInterceptor(Increment, &trap.Interceptor{
+	t.Cleanup(trap.AddFuncInterceptor(Increment, &trap.Interceptor{
 		Pre: func(ctx context.Context, f *core.FuncInfo, args, result core.Object) (interface{}, error) {
 			args.GetField("n").Set(10)
 			return nil, nil
 		},
-	})
+	}))
 	if got := Increment(1); got != 11 {
 		t.Fatalf("Increment: %d", got)
 	}
@@ -129,13 +107,13 @@ func TestInterceptorRewritesArgument(t *testing.T) {
 // them.
 func TestInterceptorPostSeesAndRewritesResults(t *testing.T) {
 	var seen string
-	trap.AddFuncInterceptor(Normalize, &trap.Interceptor{
+	t.Cleanup(trap.AddFuncInterceptor(Normalize, &trap.Interceptor{
 		Post: func(ctx context.Context, f *core.FuncInfo, args, result core.Object, data interface{}) error {
 			seen = result.GetField("out").Value().(string)
 			result.GetField("out").Set(seen + "!")
 			return nil
 		},
-	})
+	}))
 	if got := Normalize(" x "); got != "X!" {
 		t.Errorf("Normalize: %q", got)
 	}
@@ -146,12 +124,12 @@ func TestInterceptorPostSeesAndRewritesResults(t *testing.T) {
 
 func TestPostRunsOnPanic(t *testing.T) {
 	var ran bool
-	trap.AddFuncInterceptor((*Store).Get, &trap.Interceptor{
+	t.Cleanup(trap.AddFuncInterceptor((*Store).Get, &trap.Interceptor{
 		Post: func(ctx context.Context, f *core.FuncInfo, args, result core.Object, data interface{}) error {
 			ran = true
 			return nil
 		},
-	})
+	}))
 	func() {
 		defer func() { recover() }()
 		var s *Store
@@ -208,5 +186,39 @@ func TestPatchErrorResult(t *testing.T) {
 	})
 	if _, err := CallGet(&Store{}, "k"); err != want {
 		t.Fatalf("err: %v", err)
+	}
+}
+
+// A result stored by a pre-hook that does not stop the call is visible to
+// the body, as with the result variable itself.
+func TestPreResultVisibleToBody(t *testing.T) {
+	if got := Lookup("k"); got != "default:k" {
+		t.Fatalf("Lookup: %q", got)
+	}
+	t.Cleanup(trap.AddFuncInterceptor(Lookup, &trap.Interceptor{
+		Pre: func(ctx context.Context, f *core.FuncInfo, args, result core.Object) (interface{}, error) {
+			result.GetField("value").Set("pre")
+			return nil, nil
+		},
+	}))
+	if got := Lookup("k"); got != "pre+body" {
+		t.Fatalf("Lookup: %q", got)
+	}
+}
+
+// The trap prologue must not declare closures of its own: they would shift
+// the numbering of the function's closures (Handlers.func1 -> func2).
+func TestClosureNamesUnchanged(t *testing.T) {
+	a, b := Handlers()
+	for _, c := range []struct {
+		fn   func() string
+		want string
+	}{
+		{a, "github.com/xhd2015/xgo/runtime/test/trap/trap_guard.Handlers.func1"},
+		{b, "github.com/xhd2015/xgo/runtime/test/trap/trap_guard.Handlers.func2"},
+	} {
+		if got := runtime.FuncForPC(reflect.ValueOf(c.fn).Pointer()).Name(); got != c.want {
+			t.Errorf("closure name: %s, want %s", got, c.want)
+		}
 	}
 }

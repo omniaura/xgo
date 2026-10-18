@@ -1,6 +1,7 @@
 package trap
 
 import (
+	"sync"
 	"sync/atomic"
 
 	"github.com/xhd2015/xgo/runtime/core"
@@ -31,8 +32,10 @@ func isGlobalInterceptorHolderUsed() bool {
 }
 
 // trapEnabled is 1 once enableTrap was called. Registrations can race, so
-// it is accessed atomically.
+// it is accessed atomically; trapSkipMu orders the first enableTrap with
+// init, which sets the skip only if no registration happened before it.
 var trapEnabled int32
+var trapSkipMu sync.Mutex
 
 // enableTrap makes instrumented functions call trap again. Until then they
 // skip it, which is only valid while nothing has been registered and no
@@ -42,10 +45,22 @@ func enableTrap() {
 	if atomic.LoadInt32(&trapEnabled) != 0 {
 		return
 	}
+	trapSkipMu.Lock()
+	defer trapSkipMu.Unlock()
 	// clear the skip before publishing the flag: a caller that sees the
 	// flag and returns early must find the skip already cleared
 	runtime.XgoSetTrapSkip(false)
 	atomic.StoreInt32(&trapEnabled, 1)
+}
+
+// initTrapSkip lets instrumented functions skip the trap until the first
+// registration, unless one already happened.
+func initTrapSkip() {
+	trapSkipMu.Lock()
+	defer trapSkipMu.Unlock()
+	if atomic.LoadInt32(&trapEnabled) == 0 {
+		runtime.XgoSetTrapSkip(true)
+	}
 }
 
 type StackData struct {

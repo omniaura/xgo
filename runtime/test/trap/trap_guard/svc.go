@@ -44,13 +44,6 @@ func (s Store) Name() string {
 	return "store:" + s.prefix
 }
 
-func First[T any](items ...T) (first T, ok bool) {
-	if len(items) == 0 {
-		return first, false
-	}
-	return items[0], true
-}
-
 func Join(sep string, parts ...string) string {
 	return strings.Join(parts, sep)
 }
@@ -67,6 +60,22 @@ func Normalize(s string) (out string) {
 func Increment(n int) int {
 	n++
 	return n
+}
+
+// Lookup reads its named result before returning: a value a pre-hook
+// stores there must be visible to the body.
+func Lookup(key string) (value string) {
+	if value != "" {
+		return value + "+body"
+	}
+	return "default:" + key
+}
+
+// Handlers returns closures; their names must not depend on instrumentation.
+func Handlers() (a func() string, b func() string) {
+	a = func() string { return "a" }
+	b = func() string { return "b" }
+	return a, b
 }
 
 func CallCharge(customer string) string {

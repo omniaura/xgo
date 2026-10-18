@@ -4,6 +4,8 @@
 
 package runtime
 
+import __xgo_atomic "internal/runtime/atomic"
+
 import (
 	"unsafe"
 )
@@ -35,18 +37,24 @@ func XgoTrap(info interface{}, recvPtr interface{}, args []interface{}, results 
 	return __xgo_trap((*__xgo_intf_header)(unsafe.Pointer(&info)).data, recvPtr, args, results)
 }
 
-// __xgo_trap_skip lets instrumented functions skip calling XgoTrap, and
-// building its arguments, while nothing could intercept the call. Only an
-// xgo/runtime that turns it off again on first registration sets it.
-var __xgo_trap_skip bool
+// __xgo_trap_skip is 1 while instrumented functions can skip calling
+// XgoTrap, and building its arguments, because nothing could intercept the
+// call. Only an xgo/runtime that turns it off again on first registration
+// sets it. It is read on every instrumented call while registrations may
+// run concurrently, hence atomic.
+var __xgo_trap_skip uint32
 
 // XgoTrapOn reports whether instrumented functions should call XgoTrap.
 func XgoTrapOn() bool {
-	return !__xgo_trap_skip
+	return __xgo_atomic.Load(&__xgo_trap_skip) == 0
 }
 
 func XgoSetTrapSkip(skip bool) {
-	__xgo_trap_skip = skip
+	var v uint32
+	if skip {
+		v = 1
+	}
+	__xgo_atomic.Store(&__xgo_trap_skip, v)
 }
 
 func XgoTrapVar(info interface{}, varAddr interface{}, res interface{}) {
