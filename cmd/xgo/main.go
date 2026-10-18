@@ -555,7 +555,9 @@ func handleBuild(cmd string, args []string) error {
 					fmt.Fprintf(os.Stderr, "sync GOROOT %s -> %s\n", goroot, instrumentGoroot)
 				}
 				logDebug("sync goroot %s -> %s", goroot, instrumentGoroot)
-				err = syncGoroot(goroot, instrumentGoroot, fullSyncRecord)
+				// on Windows the read-only attribute is shared by hard links and
+				// blocks replacing a linked file, so keep full copies there
+				err = syncGoroot(goroot, instrumentGoroot, fullSyncRecord, *opts.useFilePatches && !isDevelopment && runtime.GOOS != "windows")
 				if err != nil {
 					return err
 				}
