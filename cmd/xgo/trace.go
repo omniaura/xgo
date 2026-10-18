@@ -111,7 +111,11 @@ func importRuntimeDepGenOverlay(test bool, goroot string, goBinary string, goVer
 	if err != nil {
 		return nil, err
 	}
-	suffix := ""
+	// the runtime is extracted per core version: xgo always uses the one
+	// it embeds, and binaries of different versions can run in the same
+	// project (e.g. `go tool xgo` pinned per branch). Sharing a directory
+	// left an older xgo with a newer runtime whose links it lacks.
+	suffix := "_" + strconv.Itoa(CORE_NUMBER)
 	if isDevelopment {
 		suffix = "_dev"
 	}
