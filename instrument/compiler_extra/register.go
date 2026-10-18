@@ -204,7 +204,9 @@ func DeclarePkgStubs(pkgPath string, names PkgNames) []string {
 		fmt.Sprintf("var %s = %s", names.TRAP_FUNC, constants.TRAP_FUNC_SIGNATURE),
 		fmt.Sprintf("var %s = %s", names.TRAP_VAR, constants.TRAP_VAR_SIGNATURE),
 		fmt.Sprintf("var %s = %s", names.TRAP_VAR_PTR, constants.TRAP_VAR_PTR_SIGNATURE),
-		fmt.Sprintf("var %s=%q", names.PKG_VAR, pkgPath),
+		// a constant: the compiler copies a string variable into the info
+		// literals at init time instead of statically, see DeclareFileStub
+		fmt.Sprintf("const %s=%q", names.PKG_VAR, pkgPath),
 	}
 	if names.TRAP_ON != "" {
 		// a named function rather than a func literal: a literal would take
@@ -217,16 +219,21 @@ func DeclarePkgStubs(pkgPath string, names PkgNames) []string {
 	return stubs
 }
 
+// The file and package stubs are constants so that every info literal is
+// initialized statically. The compiler never copies a string variable
+// statically (cmd/link -X may overwrite it), so with variables each literal
+// cost init code and write barriers at every program start: 290KB of init
+// text in a package of 2600 functions.
 func DeclareFileStub(fileIndex int, absFile string) string {
-	return fmt.Sprintf("var %s=%q", constants.FileVar(fileIndex), absFile)
+	return fmt.Sprintf("const %s=%q", constants.FileVar(fileIndex), absFile)
 }
 
 func DeclareFileStubForVar(fileIndex int, absFile string) string {
-	return fmt.Sprintf("var %s=%q", constants.FileVarForVar(fileIndex), absFile)
+	return fmt.Sprintf("const %s=%q", constants.FileVarForVar(fileIndex), absFile)
 }
 
 func DeclareFileStubGc(fileIndex int, absFile string) string {
-	return fmt.Sprintf("var %s=%q", constants.FileVarGc(fileIndex), absFile)
+	return fmt.Sprintf("const %s=%q", constants.FileVarGc(fileIndex), absFile)
 }
 
 // make IR not inline
