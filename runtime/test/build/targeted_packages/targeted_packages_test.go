@@ -83,15 +83,30 @@ func TestMocks(t *testing.T) {
 		t.Errorf("Fixture mocked: %q", got)
 	}
 }
+
+// only the test files of the package rewrite testLimit
+var testLimit = 3
+
+func getTestLimit() int { return testLimit }
+
+func TestMockVarOfTestFile(t *testing.T) {
+	mock.Patch(&testLimit, func() int { return 9 })
+	if got := getTestLimit(); got != 9 {
+		t.Errorf("testLimit mocked: %d", got)
+	}
+}
 `)
-	cmd := exec.Command("go", "run", "./cmd/xgo", "test", "--project-dir", modDir, "-count=1", "-timeout=60s", "./svc")
-	cmd.Dir = root
-	cmd.Env = append(os.Environ(), "GOWORK=off")
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("nested xgo test failed: %v\n%s", err, buf.String())
+	// go list reports "./svc/" as "./svc": it must be targeted all the same
+	for _, pattern := range []string{"./svc", "./svc/"} {
+		cmd := exec.Command("go", "run", "./cmd/xgo", "test", "--project-dir", modDir, "-count=1", "-timeout=60s", pattern)
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(), "GOWORK=off")
+		var buf bytes.Buffer
+		cmd.Stdout = &buf
+		cmd.Stderr = &buf
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("nested xgo test %s failed: %v\n%s", pattern, err, buf.String())
+		}
 	}
 }
 

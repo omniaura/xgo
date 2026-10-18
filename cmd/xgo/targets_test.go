@@ -38,9 +38,19 @@ func TestMatchedPackages(t *testing.T) {
 		{ImportPath: "m/b/c", Match: []string{"./b/..."}},
 		{ImportPath: "m/d", DepOnly: true},
 	}
-	got := matchedPackages(list, []string{"./a", "./b/..."})
 	want := map[string]bool{"m/a": true, "m/b": true, "m/b/c": true}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("matchedPackages = %v, want %v", got, want)
+	for _, patterns := range [][]string{
+		{"./a", "./b/..."},
+		// go list reports patterns cleaned
+		{"./a/", ".//b/./..."},
+	} {
+		got := matchedPackages(list, patterns)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("matchedPackages(%q) = %v, want %v", patterns, got, want)
+		}
+	}
+	// a pattern no package reports: everything is instrumented
+	if got := matchedPackages(list, []string{"./a", "a/../x"}); got != nil {
+		t.Errorf("unmatched pattern: got %v, want nil", got)
 	}
 }
