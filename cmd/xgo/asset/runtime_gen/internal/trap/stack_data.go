@@ -23,8 +23,9 @@ var globalInterceptorHolder interceptorHolders
 var globalInterceptorHolderUsed int32
 
 func markGlobalInterceptorHolderUsed() {
-	atomic.StoreInt32(&globalInterceptorHolderUsed, 1)
+	// a caller that sees the holder used must also find the trap enabled
 	enableTrap()
+	atomic.StoreInt32(&globalInterceptorHolderUsed, 1)
 }
 
 func isGlobalInterceptorHolderUsed() bool {
