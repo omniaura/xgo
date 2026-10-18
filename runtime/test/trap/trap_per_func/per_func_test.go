@@ -64,6 +64,22 @@ func TestFuncInterceptorEnablesOnlyThatFunction(t *testing.T) {
 	}
 }
 
+// variables are trapped on every access, skip or not, so mocking one needs
+// no flag and must not enable functions
+func init() {
+	mock.Patch(&InitLimit, func() int { return 30 })
+}
+
+func TestPatchVariable(t *testing.T) {
+	mock.Patch(&Limit, func() int { return 20 })
+	if limit, initLimit := ReadLimits(); limit != 20 || initLimit != 30 {
+		t.Fatalf("variables not mocked: Limit=%d InitLimit=%d", limit, initLimit)
+	}
+	if !skipsTrap(func() { Untouched(1) }) {
+		t.Errorf("Untouched calls the trap after a variable was patched")
+	}
+}
+
 // must stay last: a general interceptor turns the trap on everywhere
 func TestZGeneralInterceptorEnablesEverything(t *testing.T) {
 	var seen int

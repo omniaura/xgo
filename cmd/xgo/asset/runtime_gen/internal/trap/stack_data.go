@@ -25,7 +25,8 @@ var globalInterceptorHolderUsed int32
 
 // markGlobalInterceptorHolderUsed is called after enabling the trap for
 // what was registered: a caller that sees the holder used must also find
-// the trap enabled.
+// the trap enabled. Variables need nothing enabled: XgoTrapVar and
+// XgoTrapVarPtr are called on every access and ignore the skip.
 func markGlobalInterceptorHolderUsed() {
 	atomic.StoreInt32(&globalInterceptorHolderUsed, 1)
 }
@@ -62,7 +63,9 @@ func enableTrap() {
 //   - functions guarded by xgo carry their own flag (as FuncInfo.Var, which
 //     only variables use otherwise), and only that flag is set
 //   - functions without a flag are not guarded (dependencies instrumented by
-//     the compiler, the trace package) and always call trap
+//     the compiler, the trace package) and always call trap: only the
+//     guard reads the skip, XgoTrap itself does not
+//   - variables are trapped on every access, see markGlobalInterceptorHolderUsed
 //   - when the function is unknown (nil, e.g. a generic instantiation not
 //     registered by PC), every instrumented function is enabled
 func enableTrapFor(funcInfo *core.FuncInfo) {

@@ -41,8 +41,13 @@ var runtimePkgClause = regexp.MustCompile(`(?m)^package runtime[ \t]*\r?\n`)
 // so its calls keep going through the trap. The runtime's atomic package
 // moved in go1.23.
 func AppendTrapSkipImpl(goVersion *goinfo.GoVersion, content string) (string, error) {
-	if strings.Contains(content, "func XgoTrapOn(") {
+	if strings.Contains(content, trapOnDecl) {
 		return content, nil
+	}
+	// instrumented code passes its flag to XgoTrapOn; a definition with any
+	// other signature would leave those calls not compiling
+	if strings.Contains(content, "func XgoTrapOn(") {
+		return "", fmt.Errorf("xgo_trap.go: XgoTrapOn defined without %q", trapOnDecl)
 	}
 	atomicPkg := "internal/runtime/atomic"
 	if goVersion.Major == 1 && goVersion.Minor <= 22 {
@@ -55,6 +60,8 @@ func AppendTrapSkipImpl(goVersion *goinfo.GoVersion, content string) (string, er
 	importDecl := fmt.Sprintf("\nimport __xgo_atomic %q\n", atomicPkg)
 	return content[:loc[1]] + importDecl + content[loc[1]:] + trapSkipImpl, nil
 }
+
+const trapOnDecl = "func XgoTrapOn(flag *uint32) bool"
 
 const trapSkipImpl = `
 // __xgo_trap_skip is 1 while instrumented functions can skip calling

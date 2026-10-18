@@ -26,3 +26,11 @@ func Tax(cents int64) (int64, error) {
 func Untouched(n int) (int, error) {
 	return n + 1, nil
 }
+
+var Limit = 10
+
+var InitLimit = 10
+
+func ReadLimits() (int, int) {
+	return Limit, InitLimit
+}
