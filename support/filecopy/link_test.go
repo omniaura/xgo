@@ -8,6 +8,9 @@ import (
 )
 
 func TestLinkReplaceDirAndUnshare(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("xgo does not hard-link GOROOTs on windows")
+	}
 	src := t.TempDir()
 	dst := filepath.Join(t.TempDir(), "dst")
 	file := filepath.Join(src, "a", "tool")

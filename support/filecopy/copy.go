@@ -427,6 +427,7 @@ func LinkDirToTmp(srcDir string, tmpDir string) (dstTmpDir string, err error) {
 //
 // The resulting files share storage with srcDir: anything that writes them
 // in place writes srcDir too. Call Unshare on a path before modifying it.
+// Unshare cannot replace a read-only file on Windows.
 func LinkReplaceDir(srcDir string, targetDir string) error {
 	return copyReplaceDir(srcDir, targetDir, &Options{hardLink: true})
 }
