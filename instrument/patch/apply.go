@@ -129,12 +129,26 @@ func ApplyPatches(patchDir, goroot, xgoRepoRoot string, extraEnv map[string]stri
 		if shouldSkipKind(gen.Kind, skipKinds) {
 			continue
 		}
-		if gen.Kind == "rebuild-stdlib" && !hasPrecompiledStdlib(goroot, extraEnv) {
-			// since go1.20 the standard library is built and cached like any
-			// other package; `go install std` only fills a build cache.
-			continue
+		// the entry's own env overrides extraEnv, as for its command
+		genEnv := make(map[string]string, len(extraEnv)+len(gen.Env))
+		for k, v := range extraEnv {
+			genEnv[k] = v
 		}
-		if err := unshareOutputs(goroot, gen.Outputs, extraEnv); err != nil {
+		for k, v := range gen.Env {
+			genEnv[k] = v
+		}
+		if gen.Kind == "rebuild-stdlib" {
+			has, err := hasPrecompiledStdlib(goroot, genEnv)
+			if err != nil {
+				return fmt.Errorf("generate kind %q: %w", gen.Kind, err)
+			}
+			if !has {
+				// since go1.20 the standard library is built and cached like
+				// any other package; `go install std` only fills a build cache.
+				continue
+			}
+		}
+		if err := unshareOutputs(goroot, gen.Outputs, genEnv); err != nil {
 			return fmt.Errorf("generate kind %q: %w", gen.Kind, err)
 		}
 		if gen.Kind != "" && len(gen.Cmd) == 0 && len(gen.CmdWindows) == 0 {
@@ -202,16 +216,27 @@ func unshareOutputs(goroot string, outputs []string, extraEnv map[string]string)
 // hasPrecompiledStdlib reports whether goroot ships pre-compiled standard
 // library archives in pkg/$GOOS_$GOARCH, which must be rebuilt from the
 // patched sources.
-func hasPrecompiledStdlib(goroot string, extraEnv map[string]string) bool {
-	goos, goarch := extraEnv["GOOS"], extraEnv["GOARCH"]
+func hasPrecompiledStdlib(goroot string, env map[string]string) (bool, error) {
+	goos, goarch := env["GOOS"], env["GOARCH"]
 	if goos == "" {
 		goos = runtime.GOOS
 	}
 	if goarch == "" {
 		goarch = runtime.GOARCH
 	}
-	matches, _ := filepath.Glob(filepath.Join(goroot, "pkg", goos+"_"+goarch, "*.a"))
-	return len(matches) > 0
+	entries, err := os.ReadDir(filepath.Join(goroot, "pkg", goos+"_"+goarch))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".a") {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func applyPatchFiles(patchDir string, goroot string) error {

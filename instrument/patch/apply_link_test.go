@@ -39,6 +39,16 @@ func TestApplyPatches_HardLinkedGorootKeepsOriginal(t *testing.T) {
 		"generate": [{"cmd": ["sh", "-c", "echo rebuilt > ${INSTRUMENT_GOROOT}/pkg/tool/compile"], "outputs": ["pkg/tool/compile"]}]
 	}`)
 
+	// like golang.org/toolchain in the module cache
+	if err := filepath.Walk(origGoroot, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+		return os.Chmod(path, 0444)
+	}); err != nil {
+		t.Fatal(err)
+	}
+
 	if err := filecopy.LinkReplaceDir(origGoroot, goroot); err != nil {
 		t.Fatal(err)
 	}
@@ -84,5 +94,33 @@ func assertSameFile(t *testing.T, a string, b string, want bool) {
 	}
 	if os.SameFile(ai, bi) != want {
 		t.Fatalf("SameFile(%s, %s) = %v, want %v", a, b, !want, want)
+	}
+}
+
+func TestHasPrecompiledStdlib(t *testing.T) {
+	goroot := t.TempDir()
+	env := map[string]string{"GOOS": "plan9", "GOARCH": "386"}
+	if has, err := hasPrecompiledStdlib(goroot, env); err != nil || has {
+		t.Fatalf("missing dir: has=%v err=%v", has, err)
+	}
+	dir := filepath.Join(goroot, "pkg", "plan9_386")
+	mustMkdirAll(t, dir)
+	writeTestFile(t, filepath.Join(dir, "README"), "")
+	if has, err := hasPrecompiledStdlib(goroot, env); err != nil || has {
+		t.Fatalf("no archives: has=%v err=%v", has, err)
+	}
+	writeTestFile(t, filepath.Join(dir, "runtime.a"), "")
+	if has, err := hasPrecompiledStdlib(goroot, env); err != nil || !has {
+		t.Fatalf("with archive: has=%v err=%v", has, err)
+	}
+	if runtime.GOOS == "windows" || os.Getuid() == 0 {
+		return
+	}
+	if err := os.Chmod(dir, 0); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(dir, 0755)
+	if _, err := hasPrecompiledStdlib(goroot, env); err == nil {
+		t.Fatalf("unreadable dir must be an error")
 	}
 }

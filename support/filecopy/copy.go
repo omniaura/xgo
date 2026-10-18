@@ -160,10 +160,17 @@ func copyReplaceDir(srcDir string, targetDir string, opts *Options) error {
 			if os.Link(srcFile, dstFile) == nil {
 				return nil
 			}
+			info, err := os.Stat(srcFile)
+			if err != nil {
+				return err
+			}
 			if buf == nil {
 				buf = make([]byte, BUF_SIZE)
 			}
-			return copyFile(srcFile, dstFile, false, buf)
+			if err := copyFile(srcFile, dstFile, false, buf); err != nil {
+				return err
+			}
+			return os.Chmod(dstFile, info.Mode().Perm())
 		})
 	}
 	numGo := opts.concurrent
@@ -438,12 +445,19 @@ func Unshare(path string) error {
 	if !info.Mode().IsRegular() {
 		return nil
 	}
-	tmp := path + ".xgo-unshare"
+	tmpFile, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".xgo-unshare-*")
+	if err != nil {
+		return err
+	}
+	tmp := tmpFile.Name()
+	tmpFile.Close()
 	if err := copyFile(path, tmp, false, nil); err != nil {
 		os.Remove(tmp)
 		return err
 	}
-	if err := os.Chmod(tmp, info.Mode().Perm()); err != nil {
+	// keep the mode but make it writable: the caller is about to modify it,
+	// and GOROOTs like the module cache's golang.org/toolchain are read-only
+	if err := os.Chmod(tmp, info.Mode().Perm()|0200); err != nil {
 		os.Remove(tmp)
 		return err
 	}

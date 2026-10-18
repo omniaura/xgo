@@ -221,14 +221,21 @@ func syncGoroot(goroot string, instrumentGoroot string, fullSyncRecordFile strin
 	}
 
 	var onlyCopySrc bool
-	if !link && dstGoCopied && statNoErr(fullSyncRecordFile) {
+	if dstGoCopied && statNoErr(fullSyncRecordFile) {
 		// full sync record does not yet exist
 		onlyCopySrc = true
 	}
 	if onlyCopySrc {
 		// do partial copy
+		// keeps bin/ and pkg/tool, which may hold rebuilt tools that
+		// --skip-rebuild-compiler-and-go would not rebuild again
 		logDebug("partial copy $GOROOT/src")
-		err := copyGorootSrc(goroot, instrumentGoroot)
+		var err error
+		if link {
+			err = filecopy.LinkReplaceDir(filepath.Join(goroot, "src"), filepath.Join(instrumentGoroot, "src"))
+		} else {
+			err = copyGorootSrc(goroot, instrumentGoroot)
+		}
 		if err != nil {
 			return err
 		}
@@ -244,7 +251,6 @@ func syncGoroot(goroot string, instrumentGoroot string, fullSyncRecordFile strin
 		// need copy, delete target dst dir first
 		// TODO: use git worktree add if .git exists
 		if link {
-			// relinking everything is as cheap as a partial copy of src
 			err = filecopy.LinkReplaceDir(goroot, instrumentGoroot)
 		} else {
 			err = filecopy.NewOptions().
