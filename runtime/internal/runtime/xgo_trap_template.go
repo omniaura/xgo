@@ -36,7 +36,6 @@ func XgoTrap(info interface{}, recvPtr interface{}, args []interface{}, results 
 	return __xgo_trap((*__xgo_intf_header)(unsafe.Pointer(&info)).data, recvPtr, args, results)
 }
 
-
 func XgoTrapVar(info interface{}, varAddr interface{}, res interface{}) {
 	if __xgo_var_trap == nil {
 		return
