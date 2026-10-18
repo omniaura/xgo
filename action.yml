@@ -1,0 +1,125 @@
+name: Setup Go with xgo
+description: >-
+  Set up a Go toolchain (same inputs as actions/setup-go) plus xgo from this
+  repository, with caches that actually hit for xgo builds: the module cache,
+  GOCACHE, the instrumented GOROOT and xgo's instrumented build cache.
+author: omniaura
+branding:
+  icon: zap
+  color: blue
+
+inputs:
+  # --- same inputs as actions/setup-go ---
+  go-version:
+    description: The Go version to download (if necessary) and use. Supports semver spec and ranges.
+  go-version-file:
+    description: Path to the go.mod, go.work, .go-version or .tool-versions file.
+  check-latest:
+    description: Set this option to true if you want the action to always check for the latest available version that satisfies the version spec.
+    default: 'false'
+  token:
+    description: Used to pull Go distributions from go-versions. Since there's a default, this is typically not supplied by the user.
+    default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+  cache:
+    description: Used to specify whether caching is needed. Set to false to disable all caches restored and saved by this action.
+    default: 'true'
+  cache-dependency-path:
+    description: Used to specify the path to a dependency file (go.sum). Supports wildcards or a list of file names. Defaults to go.sum files of the workspace.
+  architecture:
+    description: Target architecture for Go to use. Examples, x86, x64. Will use system architecture by default.
+  # --- xgo ---
+  xgo-setup:
+    description: Prepare the instrumented GOROOT during this step (xgo setup) so the first xgo command does not pay for it.
+    default: 'true'
+  cache-key-suffix:
+    description: Extra string appended to cache keys, e.g. to separate jobs that build with different tags or GOOS/GOARCH.
+    default: ''
+
+outputs:
+  go-version:
+    description: The installed Go version.
+    value: ${{ steps.setup-go.outputs.go-version }}
+  cache-hit:
+    description: Whether an exact cache entry was restored (same semantics as actions/setup-go).
+    value: ${{ steps.cache.outputs.cache-hit }}
+  xgo-path:
+    description: Path of the installed xgo binary.
+    value: ${{ steps.install.outputs.xgo-path }}
+  xgo-revision:
+    description: xgo version and revision as printed by `xgo revision`.
+    value: ${{ steps.install.outputs.xgo-revision }}
+
+runs:
+  using: composite
+  steps:
+    - id: setup-go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        go-version-file: ${{ inputs.go-version-file }}
+        check-latest: ${{ inputs.check-latest }}
+        token: ${{ inputs.token }}
+        architecture: ${{ inputs.architecture }}
+        # caching is done below, with xgo's directories in the same entry
+        cache: false
+
+    - id: install
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        bin_dir="${RUNNER_TEMP}/xgo-bin"
+        mkdir -p "$bin_dir"
+        # build from this action's checkout so xgo always matches the ref
+        # the workflow pinned; GOFLAGS of the caller must not leak in
+        (cd "$ACTION_PATH" && GOFLAGS= GOWORK=off go build -trimpath -o "$bin_dir/xgo$(go env GOEXE)" ./cmd/xgo)
+        echo "$bin_dir" >> "$GITHUB_PATH"
+        xgo_path="$bin_dir/xgo$(go env GOEXE)"
+        echo "xgo-path=$xgo_path" >> "$GITHUB_OUTPUT"
+        echo "xgo-revision=$("$xgo_path" revision | tr -d '\r')" >> "$GITHUB_OUTPUT"
+        # -trimpath builds are reproducible, so the binary's hash identifies
+        # the instrumentation exactly (the printed revision is not bumped on
+        # every commit)
+        if command -v sha256sum >/dev/null; then sum=sha256sum; else sum="shasum -a 256"; fi
+        echo "xgo-id=$($sum "$xgo_path" | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+    - id: paths
+      shell: bash
+      run: |
+        set -euo pipefail
+        # A fixed XGO_BUILD_CACHE_DIR makes the instrumented build cache
+        # independent of the runner's temp dir, which is what the default
+        # location (/tmp/xgo/...) is keyed by. xgo namespaces it by Go and
+        # xgo revision itself, and removes namespaces unused for 5 days.
+        xgo_build_cache="$HOME/.cache/xgo-build"
+        echo "XGO_BUILD_CACHE_DIR=$xgo_build_cache" >> "$GITHUB_ENV"
+        {
+          echo "gomodcache=$(go env GOMODCACHE)"
+          echo "gocache=$(go env GOCACHE)"
+          echo "xgo-home=$HOME/.xgo"
+          echo "xgo-build-cache=$xgo_build_cache"
+          echo "goos=$(go env GOOS)"
+          echo "goarch=$(go env GOARCH)"
+        } >> "$GITHUB_OUTPUT"
+
+    - id: cache
+      if: inputs.cache == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ steps.paths.outputs.gomodcache }}
+          ${{ steps.paths.outputs.gocache }}
+          ${{ steps.paths.outputs.xgo-home }}
+          ${{ steps.paths.outputs.xgo-build-cache }}
+        # Exact key: toolchain + xgo revision + dependencies. A run that misses
+        # restores the newest entry of the same toolchain and xgo revision
+        # (build caches stay valid across dependency changes: entries are
+        # content-addressed), then saves a new entry.
+        key: setup-xgo-${{ runner.os }}-${{ steps.paths.outputs.goarch }}-go${{ steps.setup-go.outputs.go-version }}-xgo${{ steps.install.outputs.xgo-id }}${{ inputs.cache-key-suffix }}-${{ hashFiles(inputs.cache-dependency-path || '**/go.sum') }}
+        restore-keys: |
+          setup-xgo-${{ runner.os }}-${{ steps.paths.outputs.goarch }}-go${{ steps.setup-go.outputs.go-version }}-xgo${{ steps.install.outputs.xgo-id }}${{ inputs.cache-key-suffix }}-
+
+    - if: inputs.xgo-setup == 'true'
+      shell: bash
+      run: xgo setup >/dev/null

@@ -1,0 +1,70 @@
+name: Setup xgo action
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+# Exercises action.yml the way a consumer would: a first job populates the
+# caches, a second job must restore them exactly and must not set up the
+# instrumented GOROOT again.
+jobs:
+  populate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - id: setup
+      uses: ./
+      with:
+        go-version: '1.27'
+        cache-dependency-path: runtime/test/go.sum
+        cache-key-suffix: -${{ github.run_id }}-${{ github.run_attempt }}
+
+    - name: Test with xgo
+      working-directory: runtime/test
+      run: |
+        set -euo pipefail
+        echo "xgo: ${{ steps.setup.outputs.xgo-path }} (${{ steps.setup.outputs.xgo-revision }}), go ${{ steps.setup.outputs.go-version }}"
+        xgo test -count=1 ./mock/...
+
+  restore:
+    needs: populate
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - id: setup
+      uses: ./
+      with:
+        go-version: '1.27'
+        cache-dependency-path: runtime/test/go.sum
+        cache-key-suffix: -${{ github.run_id }}-${{ github.run_attempt }}
+        xgo-setup: 'false'
+
+    - name: Cache must hit
+      if: steps.setup.outputs.cache-hit != 'true'
+      run: |
+        echo "::error::expected an exact cache hit"
+        exit 1
+
+    - name: Test with xgo from restored caches
+      working-directory: runtime/test
+      run: |
+        set -euo pipefail
+        start=$(date +%s)
+        XGO_LOG_DEBUG="$RUNNER_TEMP/xgo-debug.log" xgo test -count=1 ./mock/...
+        echo "warm xgo test took $(( $(date +%s) - start ))s"
+        if grep -q "sync goroot" "$RUNNER_TEMP/xgo-debug.log"; then
+          echo "::error::instrumented GOROOT was set up again despite the cache"
+          exit 1
+        fi

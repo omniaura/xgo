@@ -50,6 +50,31 @@ If `xgo` is not found, you may need to check if `$GOPATH/bin` is added to your `
 
 For CI jobs like github workflow, see [doc/INSTALLATION.md](./doc/INSTALLATION.md).
 
+## GitHub Actions
+
+This repository is also a setup action. It accepts the same inputs as
+[`actions/setup-go`](https://github.com/actions/setup-go) (`go-version`,
+`go-version-file`, `check-latest`, `token`, `cache`, `cache-dependency-path`,
+`architecture`), installs `xgo` from the pinned ref, and caches everything an
+xgo build reuses: the module cache, `GOCACHE`, the instrumented GOROOT under
+`~/.xgo` and xgo's instrumented build cache (`XGO_BUILD_CACHE_DIR`).
+
+```yaml
+- uses: actions/checkout@v4
+- uses: omniaura/xgo@master # or a release tag
+  with:
+    go-version-file: go.mod
+- run: xgo test ./...
+```
+
+Extra inputs: `xgo-setup` (default `true`) prepares the instrumented GOROOT
+in the setup step; `cache-key-suffix` separates cache entries of jobs that
+build differently (tags, `GOOS`/`GOARCH`). Outputs: `go-version`,
+`cache-hit`, `xgo-path`, `xgo-revision`.
+
+Do not combine it with `actions/setup-go`'s own cache: it would save
+`GOCACHE` without xgo's directories.
+
 # Requirement
 `xgo` requires at least `go1.17` to compile.
 
