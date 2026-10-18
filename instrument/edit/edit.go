@@ -70,6 +70,11 @@ type Packages struct {
 	PackageByPath map[string]*Package
 
 	LoadOptions load.LoadOptions
+
+	// packages listed but not parsed yet, see load.LoadOptions.ParseFilter.
+	// They are not part of Packages until LoadPackage or ParseDeferred
+	// parses them.
+	deferred map[string]*load.Package
 }
 
 type Package struct {
@@ -178,6 +183,17 @@ func (c *Packages) Add(packages *load.Packages) {
 		c.PackageByPath = make(map[string]*Package, len(packages.Packages))
 	}
 	for _, pkg := range packages.Packages {
+		if pkg.Deferred {
+			if _, ok := c.PackageByPath[pkg.GoPackage.ImportPath]; ok {
+				continue
+			}
+			if c.deferred == nil {
+				c.deferred = make(map[string]*load.Package)
+			}
+			c.deferred[pkg.GoPackage.ImportPath] = pkg
+			continue
+		}
+		delete(c.deferred, pkg.GoPackage.ImportPath)
 		files := make([]*File, len(pkg.Files))
 		for j, file := range pkg.Files {
 			files[j] = &File{

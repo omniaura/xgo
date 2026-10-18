@@ -149,6 +149,15 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 			Fset:            fset,
 			// always load deps, should be fast enough
 			Deps: true,
+			// Most dependencies are not instrumented unless a mock refers
+			// to them, and traverse loads those on demand: only parse what
+			// is instrumented regardless.
+			ParseFilter: func(p *goinfo.Package) bool {
+				if !p.DepOnly || pkgWithinAnyModule(p.ImportPath, mainModule, includeAsMainModules) {
+					return true
+				}
+				return p.Standard && config.GetPkgConfig(p.ImportPath) != nil
+			},
 		},
 	}
 	logDebug("start load: %v", loadArgs)
@@ -206,6 +215,22 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 		resolve.CollectDecls(pkg)
 	}
 
+	// test-only imports are not in the -deps list; list them in one go
+	// instead of one `go list` each when traverse reaches them
+	var testImports []string
+	for _, pkg := range mainPkgs {
+		for _, imports := range [][]string{pkg.LoadPackage.GoPackage.TestImports, pkg.LoadPackage.GoPackage.XTestImports} {
+			for _, imp := range imports {
+				if imp != "C" {
+					testImports = append(testImports, imp)
+				}
+			}
+		}
+	}
+	if err := pkgs.ListPackages(testImports); err != nil {
+		return nil, err
+	}
+
 	traverseBegin := time.Now()
 	logDebug("traverse: len(mainPkgs)=%d", len(mainPkgs))
 
@@ -253,6 +278,10 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 
 	// ""->default
 	needTrapAll := trapAll == "true" || (trapAll == "" && recorder.HasTrapInterceptorRef)
+	if needTrapAll {
+		// exported functions of every dependency are instrumented
+		pkgs.ParseDeferred()
+	}
 
 	logDebug("start instrumentFuncTrap: len(packages)=%d, needTrapAll=%v", len(pkgs.Packages), needTrapAll)
 	var extraPkgs []*compiler_extra.Package

@@ -43,11 +43,20 @@ type LoadOptions struct {
 	FilterErrorFile bool
 
 	Fset *token.FileSet
+
+	// ParseFilter, if set, selects the packages whose files are read and
+	// parsed. The others are returned with Deferred set and no Files, and
+	// can be parsed later with ParseDeferred.
+	ParseFilter func(pkg *goinfo.Package) bool
 }
 
 type Package struct {
 	GoPackage *goinfo.Package
 	Files     []*File
+
+	// Deferred reports that Files were not loaded yet, see
+	// LoadOptions.ParseFilter.
+	Deferred bool
 }
 
 type File struct {
@@ -65,12 +74,9 @@ type Packages struct {
 
 func LoadPackages(args []string, opts LoadOptions) (*Packages, error) {
 	dir := opts.Dir
-	overlayFS := opts.Overlay
 	deps := opts.Deps
 	mod := opts.Mod
 	modFile := opts.ModFile
-	maxFileSize := opts.MaxFileSize
-	filterErrorFile := opts.FilterErrorFile
 	goroot := opts.Goroot
 	fset := opts.Fset
 
@@ -91,11 +97,105 @@ func LoadPackages(args []string, opts LoadOptions) (*Packages, error) {
 		fset = token.NewFileSet()
 	}
 	loadPkgs := make([]*Package, len(pkgs))
+	var parsePkgs []*Package
 	for i, pkg := range pkgs {
 		loadPkgs[i] = &Package{
 			GoPackage: pkg,
 		}
+		if opts.ParseFilter != nil && !opts.ParseFilter(pkg) {
+			loadPkgs[i].Deferred = true
+			continue
+		}
+		parsePkgs = append(parsePkgs, loadPkgs[i])
 	}
+	parsePackageFiles(parsePkgs, opts, fset)
+
+	return &Packages{
+		Fset:     fset,
+		Packages: loadPkgs,
+	}, nil
+}
+
+func readFile(overlayFS overlay.Overlay, absFilePath string, maxFileSize int64) ([]byte, error) {
+	if maxFileSize > 0 {
+		size, err := overlayFS.Size(overlay.AbsFile(absFilePath))
+		if err != nil {
+			return nil, err
+		}
+		if size > maxFileSize {
+			return nil, fmt.Errorf("file size %d large than %d", size, maxFileSize)
+		}
+	}
+	_, content, err := overlayFS.ReadBytes(overlay.AbsFile(absFilePath))
+	// Normalize CRLF to LF: git core.autocrlf on Windows injects \r
+	// into all files including raw string literals inside backticks.
+	// The Go scanner strips \r from BasicLit.Value but token.FileSet
+	// byte offsets include them, causing BasicLit.End() and thus
+	// GenDecl.End() to be short by the \r count. Normalizing before
+	// parsing eliminates this discrepancy entirely.
+	content = bytes.ReplaceAll(content, []byte("\r\n"), []byte("\n"))
+	return content, err
+}
+
+func parseFile(fset *token.FileSet, absFilePath string, content []byte) (*ast.File, error) {
+	return parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments)
+}
+
+func (c *Packages) Filter(f func(pkg *Package) bool) *Packages {
+	var filtered []*Package
+	for _, pkg := range c.Packages {
+		if f(pkg) {
+			filtered = append(filtered, pkg)
+		}
+	}
+	return &Packages{
+		Fset:     c.Fset,
+		Packages: filtered,
+	}
+}
+
+func readAndParseFile(fset *token.FileSet, absFilePath string, overlayFS overlay.Overlay) *File {
+	f := &File{
+		AbsPath: absFilePath,
+		Name:    filepath.Base(absFilePath),
+	}
+
+	_, content, err := overlayFS.ReadBytes(overlay.AbsFile(absFilePath))
+	if err != nil {
+		f.Error = err
+		return f
+	}
+	f.Content = content
+
+	file, err := parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments)
+	if err != nil {
+		f.Error = err
+		return f
+	}
+
+	f.Syntax = file
+	return f
+}
+
+// ParseDeferred reads and parses the files of deferred packages, in place.
+func ParseDeferred(pkgs []*Package, opts LoadOptions) {
+	var parsePkgs []*Package
+	for _, pkg := range pkgs {
+		if pkg.Deferred {
+			pkg.Deferred = false
+			parsePkgs = append(parsePkgs, pkg)
+		}
+	}
+	parsePackageFiles(parsePkgs, opts, opts.Fset)
+}
+
+func parsePackageFiles(loadPkgs []*Package, opts LoadOptions, fset *token.FileSet) {
+	if len(loadPkgs) == 0 {
+		return
+	}
+	overlayFS := opts.Overlay
+	maxFileSize := opts.MaxFileSize
+	filterErrorFile := opts.FilterErrorFile
 
 	begin := time.Now()
 
@@ -224,70 +324,4 @@ func LoadPackages(args []string, opts LoadOptions) (*Packages, error) {
 	if config.EnabledLogDebug() {
 		config.LogDebug("LoadPackages: loaded %d packages, parsed %d files, %d files error, cost %v", len(loadPkgs), numFiles, numErrFiles, time.Since(begin))
 	}
-
-	return &Packages{
-		Fset:     fset,
-		Packages: loadPkgs,
-	}, nil
-}
-
-func readFile(overlayFS overlay.Overlay, absFilePath string, maxFileSize int64) ([]byte, error) {
-	if maxFileSize > 0 {
-		size, err := overlayFS.Size(overlay.AbsFile(absFilePath))
-		if err != nil {
-			return nil, err
-		}
-		if size > maxFileSize {
-			return nil, fmt.Errorf("file size %d large than %d", size, maxFileSize)
-		}
-	}
-	_, content, err := overlayFS.ReadBytes(overlay.AbsFile(absFilePath))
-	// Normalize CRLF to LF: git core.autocrlf on Windows injects \r
-	// into all files including raw string literals inside backticks.
-	// The Go scanner strips \r from BasicLit.Value but token.FileSet
-	// byte offsets include them, causing BasicLit.End() and thus
-	// GenDecl.End() to be short by the \r count. Normalizing before
-	// parsing eliminates this discrepancy entirely.
-	content = bytes.ReplaceAll(content, []byte("\r\n"), []byte("\n"))
-	return content, err
-}
-
-func parseFile(fset *token.FileSet, absFilePath string, content []byte) (*ast.File, error) {
-	return parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments)
-}
-
-func (c *Packages) Filter(f func(pkg *Package) bool) *Packages {
-	var filtered []*Package
-	for _, pkg := range c.Packages {
-		if f(pkg) {
-			filtered = append(filtered, pkg)
-		}
-	}
-	return &Packages{
-		Fset:     c.Fset,
-		Packages: filtered,
-	}
-}
-
-func readAndParseFile(fset *token.FileSet, absFilePath string, overlayFS overlay.Overlay) *File {
-	f := &File{
-		AbsPath: absFilePath,
-		Name:    filepath.Base(absFilePath),
-	}
-
-	_, content, err := overlayFS.ReadBytes(overlay.AbsFile(absFilePath))
-	if err != nil {
-		f.Error = err
-		return f
-	}
-	f.Content = content
-
-	file, err := parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments)
-	if err != nil {
-		f.Error = err
-		return f
-	}
-
-	f.Syntax = file
-	return f
 }
