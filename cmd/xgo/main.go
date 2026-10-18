@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	runtimedebug "runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -1096,6 +1097,10 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 	if logCmdExec != nil {
 		logCmdExec()
 	}
+	// loading and instrumenting a large project leaves gigabytes of heap
+	// that nothing references anymore; hand it back to the OS instead of
+	// holding it next to the compilers and tests for the whole command
+	runtimedebug.FreeOSMemory()
 	err = execCmd.Run()
 	if err != nil {
 		return err
