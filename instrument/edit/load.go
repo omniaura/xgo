@@ -25,6 +25,9 @@ func (c *Packages) LoadPackage(pkgPath string) (*Package, bool, error) {
 		return nil, false, err
 	}
 	c.Add(pkgs)
+	if deferred, ok := c.deferred[pkgPath]; ok {
+		c.parseDeferred([]*load.Package{deferred})
+	}
 	return c.PackageByPath[pkgPath], false, nil
 }
 
@@ -96,7 +99,10 @@ func (c *Packages) parseDeferred(pkgs []*load.Package) {
 	if len(pkgs) == 0 {
 		return
 	}
-	load.ParseDeferred(pkgs, c.LoadOptions)
+	opts := c.LoadOptions
+	// positions must belong to the FileSet the packages are registered with
+	opts.Fset = c.Fset
+	load.ParseDeferred(pkgs, opts)
 	c.Add(&load.Packages{Fset: c.Fset, Packages: pkgs})
 }
 

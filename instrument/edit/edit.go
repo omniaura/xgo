@@ -249,6 +249,8 @@ func (c *Packages) Merge(pkgs *Packages, override bool) {
 	}
 	for _, pkg := range pkgs.Packages {
 		pkgPath := pkg.LoadPackage.GoPackage.ImportPath
+		// the merged package supersedes a deferred one
+		delete(c.deferred, pkgPath)
 		_, ok := c.PackageByPath[pkgPath]
 		if ok {
 			if !override {

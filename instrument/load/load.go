@@ -186,7 +186,11 @@ func ParseDeferred(pkgs []*Package, opts LoadOptions) {
 			parsePkgs = append(parsePkgs, pkg)
 		}
 	}
-	parsePackageFiles(parsePkgs, opts, opts.Fset)
+	fset := opts.Fset
+	if fset == nil {
+		fset = token.NewFileSet()
+	}
+	parsePackageFiles(parsePkgs, opts, fset)
 }
 
 func parsePackageFiles(loadPkgs []*Package, opts LoadOptions, fset *token.FileSet) {
