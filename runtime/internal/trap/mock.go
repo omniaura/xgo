@@ -172,6 +172,8 @@ func pushMockHandler(pc uintptr, recvPtr interface{}, handler func(fnInfo *core.
 	if runtime.XgoInitFinished() {
 		stackData := getOrAttachStackData()
 		holder = &stackData.interceptors
+	} else {
+		globalInterceptorHolderUsed = true
 	}
 	if holder.mock == nil {
 		holder.mock = map[uintptr][]*mockHolder{}
@@ -204,6 +206,8 @@ func pushVarMockHandler(varAddr uintptr, mock func(fnInfo *core.FuncInfo, res in
 	if runtime.XgoInitFinished() {
 		stackData := getOrAttachStackData()
 		holder = &stackData.interceptors
+	} else {
+		globalInterceptorHolderUsed = true
 	}
 	if holder.varMock == nil {
 		holder.varMock = map[uintptr][]*varMockHolder{}
@@ -236,6 +240,8 @@ func pushVarPtrMockHandler(varAddr uintptr, mock func(fnInfo *core.FuncInfo, res
 	if runtime.XgoInitFinished() {
 		stackData := getOrAttachStackData()
 		holder = &stackData.interceptors
+	} else {
+		globalInterceptorHolderUsed = true
 	}
 	if holder.varPtrMock == nil {
 		holder.varPtrMock = map[uintptr][]*varMockHolder{}

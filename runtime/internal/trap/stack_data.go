@@ -12,6 +12,11 @@ var dataKey = dataKeyType{}
 
 var globalInterceptorHolder interceptorHolders
 
+// globalInterceptorHolderUsed is set once anything is registered into
+// globalInterceptorHolder. That only happens during init, so after init it
+// is read without synchronization, like the holder itself.
+var globalInterceptorHolderUsed bool
+
 type StackData struct {
 	hasStartedTracing bool
 

@@ -40,6 +40,8 @@ func pushInterceptor(pre PreInterceptor, post PostInterceptor) func() {
 	if runtime.XgoInitFinished() {
 		stack := getOrAttachStackData()
 		holder = &stack.interceptors
+	} else {
+		globalInterceptorHolderUsed = true
 	}
 
 	preHandler, postHandler := buildRecorderFromInterceptor(nil, pre, post)
