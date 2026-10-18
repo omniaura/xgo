@@ -50,7 +50,7 @@ type instrumentResult struct {
 // goroot is critical for stdlib
 // includeAsMainModules: extra module paths treated as main for mock/trap (option B:
 // reclassify packages already on the load graph; do not bulk-load module/...).
-func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool, trimpath bool) (*instrumentResult, error) {
+func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool, trimpath bool, pkgPatterns []string) (*instrumentResult, error) {
 	logDebug("instrumentUserSpace: mod=%s, modfile=%s, xgoRuntimeModuleDir=%s, includeTest=%v, collectTestTrace=%v, includeAsMainModules=%v, overlayFile=%s", mod, modfile, xgoRuntimeModuleDir, includeTest, collectTestTrace, includeAsMainModules, overlayFile)
 	if mod == "" {
 		// check vendor dir
@@ -127,7 +127,15 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	}
 	logDebug("loadPkgs: includeMain=%v loadPkgs=%v", includeMain, loadPkgs)
 	var loadArgs []string
-	if includeMain {
+	// targeted: list only what the command compiles, i.e. the packages
+	// of its patterns, their dependencies and those of their tests
+	// (`go list -deps -test`), rather than the whole main module
+	targeted := includeMain && len(pkgPatterns) > 0
+	// packages whose tests the command builds; nil means unknown
+	var targetPkgs map[string]bool
+	if targeted {
+		loadArgs = append(loadArgs, pkgPatterns...)
+	} else if includeMain {
 		loadArgs = append(loadArgs, mainModule+"/...")
 		loadArgs = append(loadArgs, "main")
 	}
@@ -152,11 +160,24 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 			// Most dependencies are not instrumented unless a mock refers
 			// to them, and traverse loads those on demand: only parse what
 			// is instrumented regardless.
+			Test: targeted,
+			OnList: func(list []*goinfo.Package) {
+				if targeted {
+					targetPkgs = matchedPackages(list, pkgPatterns)
+				}
+			},
 			ParseFilter: func(p *goinfo.Package) bool {
 				if !p.DepOnly || pkgWithinAnyModule(p.ImportPath, mainModule, includeAsMainModules) {
 					return true
 				}
 				return p.Standard && config.GetPkgConfig(p.ImportPath) != nil
+			},
+			// test files of other packages are not compiled
+			TestFilter: func(p *goinfo.Package) bool {
+				if targetPkgs != nil {
+					return targetPkgs[p.ImportPath]
+				}
+				return !p.DepOnly
 			},
 		},
 	}
@@ -168,6 +189,12 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	pkgs.Add(loadPackages)
 	// remove deps flag
 	pkgs.LoadOptions.Deps = false
+	// later loads list single packages: keep the targets of the initial load
+	pkgs.LoadOptions.Test = false
+	pkgs.LoadOptions.OnList = nil
+	if targeted {
+		logDebug("instrument: %d target packages", len(targetPkgs))
+	}
 
 	// merge with xgo pkgs with override
 	// because xgoPkgs may have instrumented files
@@ -723,4 +750,20 @@ func writeCompilerExtra(compilerExtra *compiler_extra.Packages, compilerExtraFil
 		return fmt.Errorf("write compiler extra sum file: %w", err)
 	}
 	return nil
+}
+
+// matchedPackages returns the packages that patterns select, according to
+// go list's Match.
+func matchedPackages(list []*goinfo.Package, patterns []string) map[string]bool {
+	targets := make(map[string]bool)
+	for _, p := range list {
+		for _, m := range p.Match {
+			for _, pattern := range patterns {
+				if m == pattern {
+					targets[p.ImportPath] = true
+				}
+			}
+		}
+	}
+	return targets
 }

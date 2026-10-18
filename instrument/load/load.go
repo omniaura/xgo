@@ -24,6 +24,7 @@ type LoadOptions struct {
 	IncludeTest bool
 	ModFile     string // -modfile flag
 	Deps        bool   // -deps flag
+	Test        bool   // -test flag, test variants are mapped back to plain packages
 
 	// OverlayFile is passed to `go list -overlay=` during package discovery.
 	// Overlay (in-memory) is used only when reading/parsing file contents.
@@ -48,6 +49,14 @@ type LoadOptions struct {
 	// parsed. The others are returned with Deferred set and no Files, and
 	// can be parsed later with ParseDeferred.
 	ParseFilter func(pkg *goinfo.Package) bool
+
+	// OnList, if set, sees every listed package before ParseFilter is
+	// called, so the filter can depend on the whole listing.
+	OnList func(pkgs []*goinfo.Package)
+
+	// TestFilter, if set, selects the packages whose test files are parsed
+	// when IncludeTest is set.
+	TestFilter func(pkg *goinfo.Package) bool
 }
 
 type Package struct {
@@ -86,13 +95,16 @@ func LoadPackages(args []string, opts LoadOptions) (*Packages, error) {
 		ModFile:     modFile,
 		Goroot:      goroot,
 		Deps:        deps,
-		Test:        false, // NOTE: don't set it
+		Test:        opts.Test,
 		OverlayFile: opts.OverlayFile,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	if opts.OnList != nil {
+		opts.OnList(pkgs)
+	}
 	if fset == nil {
 		fset = token.NewFileSet()
 	}
@@ -266,7 +278,7 @@ func parsePackageFiles(loadPkgs []*Package, opts LoadOptions, fset *token.FileSe
 			}
 			files = append(files, file)
 		}
-		if opts.IncludeTest {
+		if opts.IncludeTest && (opts.TestFilter == nil || opts.TestFilter(pkg.GoPackage)) {
 			for _, file := range pkg.GoPackage.TestGoFiles {
 				if !strings.HasSuffix(file, ".go") {
 					continue

@@ -23,9 +23,17 @@ type Package struct {
 	// package name of normal file is xxx
 	XTestGoFiles []string
 
+	// Imports are the resolved import paths of GoFiles
+	Imports []string
 	// imports of TestGoFiles and XTestGoFiles
 	TestImports  []string
 	XTestImports []string
+
+	// Match lists the command-line patterns matching this package
+	Match []string
+	// ForTest is set on the variants of packages that -test lists: the
+	// package whose test they are compiled for
+	ForTest string
 
 	Goroot   bool // is this package in the Go root?
 	Standard bool // is this package part of the standard Go library?
@@ -47,7 +55,7 @@ type LoadPackageOptions struct {
 	ModFile string // -modfile flag
 	Goroot  string // GOROOT env
 	Deps    bool   // -deps flag
-	Test    bool   // -test flag, if true, will have packages like "github.com/xhd2015/xgo/runtime/test/trap/inspect [github.com/xhd2015/xgo/runtime/test/trap/inspect.test]", so don't set it
+	Test    bool   // -test flag, see testPackages for how its extra packages are reported
 	// OverlayFile is a go -overlay JSON path. Must be passed to `go list` as
 	// well as to later file reads: callers such as doctest synthesize missing
 	// nested vendor go.mod files only via overlay; without -overlay here,
@@ -94,7 +102,44 @@ func ListPackages(args []string, opts LoadPackageOptions) ([]*Package, error) {
 		}
 		pkgs = append(pkgs, &pkg)
 	}
+	if opts.Test {
+		pkgs = testPackages(pkgs)
+	}
 	return pkgs, nil
+}
+
+// testPackages maps the output of `go list -test` back to plain packages.
+// The test mains ("p.test") and external test packages ("p_test [p.test]")
+// are dropped: the files of the latter are p's XTestGoFiles. A variant
+// recompiled for a test ("q [p.test]") is dropped too when q itself is
+// listed, and otherwise reported as q, which it is built from.
+func testPackages(pkgs []*Package) []*Package {
+	plain := make(map[string]bool, len(pkgs))
+	for _, pkg := range pkgs {
+		if pkg.ForTest == "" && !strings.Contains(pkg.ImportPath, " ") {
+			plain[pkg.ImportPath] = true
+		}
+	}
+	result := make([]*Package, 0, len(plain))
+	for _, pkg := range pkgs {
+		if pkg.Name == "main" && strings.HasSuffix(pkg.ImportPath, ".test") && plain[strings.TrimSuffix(pkg.ImportPath, ".test")] {
+			continue
+		}
+		idx := strings.Index(pkg.ImportPath, " [")
+		if idx < 0 {
+			result = append(result, pkg)
+			continue
+		}
+		base := pkg.ImportPath[:idx]
+		if plain[base] || base == pkg.ForTest+"_test" {
+			continue
+		}
+		plain[base] = true
+		pkg.ImportPath = base
+		pkg.ForTest = ""
+		result = append(result, pkg)
+	}
+	return result
 }
 
 // go list ./pkg
