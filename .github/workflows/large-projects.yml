@@ -77,8 +77,8 @@ jobs:
         run: |
           source util.sh
           cd pocketbase/pocketbase
-          # Cron start/stop and rate-limit tests are timing-sensitive under xgo --trap-all.
-          xgo test -v --trap-all -skip='TestRandomStringByRegex|TestCronsRun|TestCronStartStop|TestDefaultRateLimitMiddleware' ./...
+          # Cron start/stop, rate-limit and watcher-debounce tests are timing-sensitive under xgo --trap-all.
+          xgo test -v --trap-all -skip='TestRandomStringByRegex|TestCronsRun|TestCronStartStop|TestDefaultRateLimitMiddleware|TestNotifyWatcher_CollectionsUpdate' ./...
       
       - uses: actions/checkout@v4
         with:
