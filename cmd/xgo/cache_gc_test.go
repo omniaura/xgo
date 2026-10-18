@@ -81,7 +81,7 @@ func TestCacheGCUnitsSkipsExternalInstrumentDir(t *testing.T) {
 	if len(units) != 3 ||
 		units[0].dir != "/shared/go1.27.2_xgo1.2.9_abc" || units[0].nameContains != "_xgo" ||
 		units[1].dir != "/tmp/xgo/go-instrument/x" || !units[1].noMark ||
-		units[2].dir != "/home/.xgo/go-instrument/y" || units[2].cacheParent != "/tmp/xgo/go-instrument" {
+		units[2].dir != "/home/.xgo/go-instrument/y" || units[2].cacheParent != filepath.Dir("/tmp/xgo/go-instrument/x") {
 		t.Fatalf("unexpected units: %+v", units)
 	}
 }
