@@ -47,6 +47,12 @@ var closeDebug func()
 const V1_0_0 = false
 
 func main() {
+	// instrumenting keeps the syntax of every main module package alive
+	// while it allocates: collecting less often saves several percent of
+	// the setup time for about a tenth more peak memory
+	if os.Getenv("GOGC") == "" {
+		runtimedebug.SetGCPercent(400)
+	}
 	args := os.Args[1:]
 
 	var cmd string

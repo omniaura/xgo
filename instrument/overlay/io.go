@@ -147,7 +147,7 @@ func CanonicalizeAbsFile(file AbsFile, opts PathOptions) AbsFile {
 
 func evalSymlinksAbs(file AbsFile) AbsFile {
 	path := filepath.FromSlash(string(file))
-	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+	if resolved, err := evalSymlinks(path); err == nil {
 		path = resolved
 	}
 	return AbsFile(filepath.ToSlash(filepath.Clean(path)))

@@ -33,7 +33,7 @@ func MakeOverlay() Overlay {
 func absFileKey(file AbsFile) AbsFile {
 	path := filepath.FromSlash(string(file))
 	path = filepath.Clean(path)
-	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+	if resolved, err := evalSymlinks(path); err == nil {
 		path = resolved
 	}
 	return AbsFile(path)
