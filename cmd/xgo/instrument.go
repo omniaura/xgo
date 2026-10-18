@@ -228,7 +228,8 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 		}
 	}
 	if err := pkgs.ListPackages(testImports); err != nil {
-		return nil, err
+		// only a prefetch: traverse loads whatever it reaches on its own
+		logDebug("list test imports: %v", err)
 	}
 
 	traverseBegin := time.Now()
