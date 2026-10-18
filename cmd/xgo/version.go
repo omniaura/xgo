@@ -2,10 +2,10 @@ package main
 
 import "fmt"
 
-// REVISION and NUMBER are auto updated when run 'git commit'
-// they correspond to a unique commit.
-// VERSION is manually updated when needed a new tag
-// if you did not install git hooks, you can manually update them
+// VERSION, REVISION and NUMBER are set by `go run ./script/release`,
+// which also tags the release; `go run ./script/release bump-core`
+// moves REVISION and NUMBER together with the core ones below.
+// They are no longer stamped on every commit.
 const VERSION = "1.3.0"
 const REVISION = "768ba6d2c53c3c0dbfd8ab61bba30ee17bde1e35+1"
 const NUMBER = 681
@@ -35,12 +35,8 @@ const NUMBER = 681
 // The CORE_VERSION is manually updated
 // once updated, it will be copied to runtime/core/version.go
 //
-// steps to update:
-//  1. run `go run ./script/generate cmd/xgo/version.go`
-//  2. copy from REVISION and NUMBER above to the following constants
-//  3. run `go run ./script/generate runtime/core/version.go`
-//
-// finally you will find that the two groups of constants are the same.
+// to update, run `go run ./script/release bump-core`, it sets both groups
+// of constants to the current commit and regenerates the runtime copies.
 const CORE_VERSION = "1.2.2"
 const CORE_REVISION = "04ac83543bcc3f8a76e32472c44c7d39e283052d+1"
 const CORE_NUMBER = 650

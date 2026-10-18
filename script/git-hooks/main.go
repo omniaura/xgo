@@ -106,7 +106,8 @@ func preCommitCheck(noCommit bool, amend bool, noUpdateVersion bool) error {
 		xgoArgs := []string{
 			"run",
 			"./script/generate",
-			string(gen_defs.GenernateType_CmdXgoVersion),
+			// cmd/xgo/version.go is stamped by releases and core bumps
+			// only, see script/release
 			string(gen_defs.GenernateType_RuntimeCoreVersion),
 		}
 		if amend {
@@ -120,9 +121,7 @@ func preCommitCheck(noCommit bool, amend bool, noUpdateVersion bool) error {
 			return err
 		}
 
-		// cmd/xgo/version.go
-		// runtime/core/version.go
-		affectedFiles = append(affectedFiles, revision.GetXgoVersionFile(rootDir), revision.GetRuntimeVersionFile(rootDir))
+		affectedFiles = append(affectedFiles, revision.GetRuntimeVersionFile(rootDir))
 	}
 
 	genDirs := [][]string{

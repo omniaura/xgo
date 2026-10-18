@@ -107,6 +107,16 @@ func main() {
 
 type SubGens []GenernateType
 
+// HasExplicit reports whether genType was named on the command line.
+func (c SubGens) HasExplicit(genType GenernateType) bool {
+	for _, subGen := range c {
+		if subGen == genType {
+			return true
+		}
+	}
+	return false
+}
+
 func (c SubGens) Has(genType GenernateType) bool {
 	if len(c) == 0 {
 		return true
@@ -128,7 +138,10 @@ func generate(rootDir string, subGens SubGens, amend bool, noUpdateVersion bool)
 		rootDir = resolvedRoot
 	}
 
-	if subGens.Has(gen_defs.GenernateType_CmdXgoVersion) {
+	// cmd/xgo/version.go changes only when asked for by name (releases and
+	// core bumps, see script/release): stamping it on every commit made
+	// every pair of open PRs conflict
+	if subGens.HasExplicit(gen_defs.GenernateType_CmdXgoVersion) {
 		err := revision.IncrementXgoVersion(rootDir, amend, !noUpdateVersion)
 		if err != nil {
 			return err
