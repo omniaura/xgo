@@ -1,7 +1,6 @@
 package trap
 
 import (
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/xhd2015/xgo/runtime/internal/flags"
@@ -11,9 +10,9 @@ import (
 
 func init() {
 	runtime.XgoSetTrap(trap)
-	if !flags.COLLECT_TEST_TRACE && atomic.LoadInt32(&trapEnabled) == 0 {
+	if !flags.COLLECT_TEST_TRACE {
 		// collecting test traces needs every call to detect tests
-		runtime.XgoSetTrapSkip(true)
+		initTrapSkip()
 	}
 	runtime.XgoSetVarTrap(trapVar)
 	runtime.XgoSetVarPtrTrap(trapVarPtr)

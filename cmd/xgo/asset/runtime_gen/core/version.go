@@ -10,8 +10,8 @@ import (
 // from when running
 // `go run ./script/generate runtime/core/version.go`
 const VERSION = "1.2.2"
-const REVISION = "14c6504495dfcd448f3cc11e735be36aaf2f4c23+1"
-const NUMBER = 646
+const REVISION = "6cb673dcf89971197f1b6af4ee4a942f9f4daa4c+1"
+const NUMBER = 647
 
 // these fields will be filled by compiler when xgo builds with xgo/runtime
 // see CORE_VERSION in cmd/xgo/version.go

@@ -42,8 +42,8 @@ const NUMBER = 675
 //
 // finally you will find that the two groups of constants are the same.
 const CORE_VERSION = "1.2.2"
-const CORE_REVISION = "14c6504495dfcd448f3cc11e735be36aaf2f4c23+1"
-const CORE_NUMBER = 646
+const CORE_REVISION = "6cb673dcf89971197f1b6af4ee4a942f9f4daa4c+1"
+const CORE_NUMBER = 647
 
 func getRevision() string {
 	return formatRevision(VERSION, REVISION, NUMBER)
