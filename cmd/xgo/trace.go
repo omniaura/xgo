@@ -111,7 +111,15 @@ func importRuntimeDepGenOverlay(test bool, goroot string, goBinary string, goVer
 	if err != nil {
 		return nil, err
 	}
-	suffix := ""
+	// the runtime is extracted per runtime version: xgo always uses the one
+	// it embeds, and binaries of different versions can run in the same
+	// project (e.g. `go tool xgo` pinned per branch). Sharing a directory
+	// left an older xgo with a newer runtime whose links it lacks.
+	runtimeNumber, err := embeddedRuntimeNumber()
+	if err != nil {
+		return nil, err
+	}
+	suffix := "_" + strconv.Itoa(runtimeNumber)
 	if isDevelopment {
 		suffix = "_dev"
 	}
@@ -444,20 +452,9 @@ func needCopyRuntimeFromXgo(targetRuntimeDir string) (bool, error) {
 	if len(fsVersion) == 0 {
 		return true, nil
 	}
-	// you need to run `go run ./script/generate` to sync runtime and cmd/xgo/runtime_gen
-	embedPath := concatEmbedPath(asset.RuntimeGen, joinEmbedPath(versionFilePath))
-	emebedVersion, err := asset.RuntimeGenFS.ReadFile(embedPath)
-	if err != nil {
-		return false, err
-	}
-
 	fsConstants, fsErr := goparse.ExtractConstants(fsVersionFile, string(fsVersion))
 	if fsErr != nil {
 		return true, nil
-	}
-	embedConstants, err := goparse.ExtractConstants(embedPath, string(emebedVersion))
-	if err != nil {
-		return false, err
 	}
 
 	fsNumber, ok := fsConstants["NUMBER"]
@@ -468,13 +465,9 @@ func needCopyRuntimeFromXgo(targetRuntimeDir string) (bool, error) {
 	if fsNumberInt <= 0 {
 		return true, nil
 	}
-	embedNumber, ok := embedConstants["NUMBER"]
-	if !ok {
-		return true, nil
-	}
-	embedNumberInt, _ := strconv.Atoi(embedNumber)
-	if embedNumberInt <= 0 {
-		return true, nil
+	embedNumberInt, err := embeddedRuntimeNumber()
+	if err != nil {
+		return false, err
 	}
 	if fsNumberInt < embedNumberInt {
 		logDebug("fs version number: %d < embed version number: %d, need extracting from xgo", fsNumberInt, embedNumberInt)
@@ -763,4 +756,23 @@ func createGoModPlaceholder(file string, modPath string, goVersion string) error
 // dependencies that declare a full version.
 func formatGoDirectiveVersion(goVersion *goinfo.GoVersion) string {
 	return fmt.Sprintf("%d.%d.%d", goVersion.Major, goVersion.Minor, goVersion.Patch)
+}
+
+// embeddedRuntimeNumber returns the NUMBER of the runtime xgo embeds.
+func embeddedRuntimeNumber() (int, error) {
+	// you need to run `go run ./script/generate` to sync runtime and cmd/xgo/runtime_gen
+	embedPath := concatEmbedPath(asset.RuntimeGen, joinEmbedPath([]string{"core", "version.go"}))
+	embedVersion, err := asset.RuntimeGenFS.ReadFile(embedPath)
+	if err != nil {
+		return 0, err
+	}
+	embedConstants, err := goparse.ExtractConstants(embedPath, string(embedVersion))
+	if err != nil {
+		return 0, err
+	}
+	number, err := strconv.Atoi(embedConstants["NUMBER"])
+	if err != nil || number <= 0 {
+		return 0, fmt.Errorf("invalid NUMBER in embedded %s: %q", embedPath, embedConstants["NUMBER"])
+	}
+	return number, nil
 }

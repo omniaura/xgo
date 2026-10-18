@@ -16,6 +16,7 @@ func RegisterFuncTab(fset *token.FileSet, file *edit.File, pkgPath string, stdli
 	perFilePkgNames := compiler_extra.PkgNames{
 		REGISTER:     constants.Register(fileIndex),
 		TRAP_FUNC:    constants.Trap(fileIndex),
+		TRAP_ON:      constants.TrapOn(fileIndex),
 		TRAP_VAR:     constants.TrapVar(fileIndex),
 		TRAP_VAR_PTR: constants.TrapVarPtr(fileIndex),
 

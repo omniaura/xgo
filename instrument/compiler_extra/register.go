@@ -9,8 +9,11 @@ import (
 )
 
 type PkgNames struct {
-	REGISTER     string
-	TRAP_FUNC    string
+	REGISTER  string
+	TRAP_FUNC string
+	// TRAP_ON is optional, only set for files instrumented with
+	// guarded traps
+	TRAP_ON      string
 	TRAP_VAR     string
 	TRAP_VAR_PTR string
 
@@ -190,7 +193,7 @@ func JoinQuoteNames(names []string, sep string) string {
 }
 
 func DeclarePkgStubs(pkgPath string, names PkgNames) []string {
-	return []string{
+	stubs := []string{
 		fmt.Sprintf("type %s struct{%s}", names.FUNC_INFO_TYPE, strings.Join(constants.FUNC_INFO_FIELDS, ";")),
 		fmt.Sprintf("var %s = %s", names.REGISTER, constants.REGISTER_SIGNATURE),
 		fmt.Sprintf("var %s = %s", names.TRAP_FUNC, constants.TRAP_FUNC_SIGNATURE),
@@ -198,6 +201,15 @@ func DeclarePkgStubs(pkgPath string, names PkgNames) []string {
 		fmt.Sprintf("var %s = %s", names.TRAP_VAR_PTR, constants.TRAP_VAR_PTR_SIGNATURE),
 		fmt.Sprintf("var %s=%q", names.PKG_VAR, pkgPath),
 	}
+	if names.TRAP_ON != "" {
+		// a named function rather than a func literal: a literal would take
+		// a closure slot and rename the package's own top-level closures
+		stubs = append(stubs,
+			fmt.Sprintf("func %s_default() bool {return true;}", names.TRAP_ON),
+			fmt.Sprintf("var %s = %s_default", names.TRAP_ON, names.TRAP_ON),
+		)
+	}
+	return stubs
 }
 
 func DeclareFileStub(fileIndex int, absFile string) string {
@@ -215,12 +227,17 @@ func DeclareFileStubGc(fileIndex int, absFile string) string {
 // make IR not inline
 // check patch/link/link_ir.go
 func DeclareInitFunc(names PkgNames) string {
-	return fmt.Sprintf("//go:noinline\nfunc %s(){%s=%s;%s=%s;%s=%s;%s=%s;}", names.XGO_INIT,
+	var trapOn string
+	if names.TRAP_ON != "" {
+		trapOn = fmt.Sprintf("%s=%s;", names.TRAP_ON, names.TRAP_ON)
+	}
+	return fmt.Sprintf("//go:noinline\nfunc %s(){%s=%s;%s=%s;%s=%s;%s=%s;%s}", names.XGO_INIT,
 		// self assign
 		names.REGISTER, names.REGISTER,
 		names.TRAP_FUNC, names.TRAP_FUNC,
 		names.TRAP_VAR, names.TRAP_VAR,
 		names.TRAP_VAR_PTR, names.TRAP_VAR_PTR,
+		trapOn,
 	)
 }
 

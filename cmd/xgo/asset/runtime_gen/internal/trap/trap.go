@@ -121,6 +121,7 @@ func trap(infoPtr unsafe.Pointer, recvPtr interface{}, args []interface{}, resul
 					// this should never happen
 					panic("stackData is nil while stk is not nil!")
 				}
+				enableTrap()
 				stackData = &StackData{
 					hasStartedTracing: true,
 				}

@@ -21,6 +21,10 @@ func XgoSetTrap(trap func(info unsafe.Pointer, recvPtr interface{}, args []inter
 	runtime.XgoSetTrap(trap)
 }
 
+func XgoSetTrapSkip(skip bool) {
+	runtime.XgoSetTrapSkip(skip)
+}
+
 func XgoSetVarTrap(trap func(info unsafe.Pointer, varAddr interface{}, res interface{})) {
 	runtime.XgoSetVarTrap(trap)
 }
