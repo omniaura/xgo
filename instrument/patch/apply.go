@@ -155,17 +155,17 @@ func ApplyPatches(patchDir, goroot, xgoRepoRoot string, extraEnv map[string]stri
 			if generateHandler == nil {
 				return fmt.Errorf("generate kind %q requires a GenerateHandler", gen.Kind)
 			}
-			if err := generateHandler(gen.Kind, extraEnv); err != nil {
+			if err := generateHandler(gen.Kind, genEnv); err != nil {
 				return fmt.Errorf("generate kind %q: %w", gen.Kind, err)
 			}
 			continue
 		}
 		args := gen.EffectiveCmd()
-		args = substituteEnvSlice(args, extraEnv)
+		args = substituteEnvSlice(args, genEnv)
 		if len(args) == 0 {
 			continue
 		}
-		cmdDir := resolveCwd(gen.Cwd, goroot, extraEnv)
+		cmdDir := resolveCwd(gen.Cwd, goroot, genEnv)
 		execCmd := exec.Command(args[0], args[1:]...)
 		execCmd.Dir = cmdDir
 		newEnv := make([]string, 0, len(os.Environ())+4)
