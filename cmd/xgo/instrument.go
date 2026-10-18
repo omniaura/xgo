@@ -158,6 +158,7 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 			MaxFileSize:     MAX_FILE_SIZE,
 			FilterErrorFile: true,
 			Goroot:          goroot,
+			GoVersion:       goVersion,
 			Fset:            fset,
 			// always load deps, should be fast enough
 			Deps: true,
