@@ -15,6 +15,11 @@ func (c *Scope) collectIdent(addr *ast.UnaryExpr, idt *ast.Ident) bool {
 	if isBlankName(idt.Name) || c.Has(idt.Name) {
 		return false
 	}
+	// only a variable (or constant) of the package resolves to a
+	// PkgVariable: skip resolving functions, types, imports and builtins
+	if decl := c.Package.Decls[idt.Name]; decl == nil || (decl.Kind != edit.DeclKindVar && decl.Kind != edit.DeclKindConst) {
+		return false
+	}
 	if config.DEBUG {
 		config_debug.OnCollectVarRef(c.File.File.File.Name, idt.Name)
 	}
@@ -23,6 +28,9 @@ func (c *Scope) collectIdent(addr *ast.UnaryExpr, idt *ast.Ident) bool {
 
 // if is &pkg.VarName, return &pkg.VarName_xgo_get_addr()
 func (c *Scope) collectSelector(addr *ast.UnaryExpr, sel *ast.SelectorExpr) bool {
+	if !c.mayReferPkgVar(sel) {
+		return false
+	}
 	// parse the whole A.B to determine A's type
 	selInfo := c.resolveInfo(sel)
 	if types.IsUnknown(selInfo) {
@@ -162,4 +170,42 @@ func (c *Scope) tryResolveDeclType(decl *edit.Decl) bool {
 
 	decl.ResolvedValueType = objType
 	return true
+}
+
+// mayReferPkgVar reports whether resolving sel can find a package variable
+// to rewrite, judging from the root of its selector chain: a package var or
+// const v (v.F, v.F.G...) or an instrumented import pkg (pkg.Var,
+// pkg.Var.F...). Resolving a chain is also what finds that a pointer method
+// is called on a field of a variable (v.F.Lock()), so a chain is resolved
+// whole whenever its root may be a variable. Selectors on anything else,
+// like locals or packages that are not instrumented (fmt.Sprintf), cannot
+// refer to one: they are most of a program and were most of the traversal.
+func (c *Scope) mayReferPkgVar(sel *ast.SelectorExpr) bool {
+	root := deparen(sel.X)
+	for {
+		x, ok := root.(*ast.SelectorExpr)
+		if !ok {
+			break
+		}
+		root = deparen(x.X)
+	}
+	idt, ok := root.(*ast.Ident)
+	if !ok || c.Has(idt.Name) {
+		return false
+	}
+	if decl := c.Package.Decls[idt.Name]; decl != nil {
+		return decl.Kind == edit.DeclKindVar || decl.Kind == edit.DeclKindConst
+	}
+	return c.isInstrumentedImport(idt)
+}
+
+// isInstrumentedImport reports whether idt, not declared in the package
+// or a local scope, names an import of an instrumented package.
+func (c *Scope) isInstrumentedImport(idt *ast.Ident) bool {
+	pkgPath, ok := c.File.Imports[idt.Name]
+	if !ok {
+		return false
+	}
+	_, allow := config.CheckInstrument(pkgPath)
+	return allow
 }
