@@ -31,6 +31,12 @@ type importResult struct {
 	//   /project/go.sum => /project/.xgo/gen/overlay/project/go.sum
 	modReplace  map[overlay.AbsFile]overlay.AbsFile
 	fileReplace map[overlay.AbsFile]overlay.AbsFile
+
+	// traceImportsDeferred: the import of runtime/trace was not added to
+	// the packages of the command, instrumentUserCode adds it to the ones
+	// it loads, or addBlankImports must still run (with overlayDir)
+	traceImportsDeferred bool
+	overlayDir           string
 }
 
 func getProjectRoot(projectDir string, modRootRel []string) string {
@@ -65,7 +71,7 @@ func getVendorDir(projectRoot string) (string, error) {
 // by employing this technique with -modfile=replacedModFile, we can instruct go
 // to build with different modules.
 // TODO: may apply tags
-func importRuntimeDepGenOverlay(test bool, goroot string, goBinary string, goVersion *goinfo.GoVersion, absModFile string, xgoSrc string, projectDir string, projectRoot string, localXgoGenDir string, mainModule string, mod string, forceCopyRuntime bool, forceLoad bool, args []string) (*importResult, error) {
+func importRuntimeDepGenOverlay(test bool, goroot string, goBinary string, goVersion *goinfo.GoVersion, absModFile string, xgoSrc string, projectDir string, projectRoot string, localXgoGenDir string, mainModule string, mod string, forceCopyRuntime bool, forceLoad bool, args []string, deferTraceImports bool) (*importResult, error) {
 	if mainModule == "" {
 		// only work with module
 		return nil, nil
@@ -153,9 +159,15 @@ func importRuntimeDepGenOverlay(test bool, goroot string, goBinary string, goVer
 		// The runtime module already compiles all its packages; injecting
 		// import _ "runtime/trace" creates a cycle: core → trace → internal/trap → core.
 		// See patches/go1.25/issues/RUNTIME_LIB_SELF_REQUIRE.md
-		fileReplace, err = addBlankImports(goroot, goBinary, projectDir, pkgArgs, test, overlayDir)
-		if err != nil {
-			return nil, err
+		if deferTraceImports {
+			// saves listing the packages here: instrumentation loads them
+			res.traceImportsDeferred = true
+			res.overlayDir = overlayDir
+		} else {
+			fileReplace, err = addBlankImports(goroot, goBinary, projectDir, pkgArgs, test, overlayDir)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

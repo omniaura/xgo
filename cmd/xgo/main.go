@@ -735,9 +735,13 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		// Always load runtime into a local dir so xgo writes modifications
 		// there instead of creating GOMODCACHE overlays.
 		needLocalRuntime := goVersion.Minor >= 25
+		pkgPatterns := targetPatterns(cmd, remainArgs)
+		// set when instrumentUserCode should add import _ "…/runtime/trace"
+		// to the packages of the command
+		var traceImports *importResult
 		if enableStackTrace || needUpgrade || needLocalRuntime {
 			// check if xgo/runtime ready
-			impResult, impRuntimeErr := importRuntimeDepGenOverlay(cmdTest, instrumentGoroot, instrumentGo, goVersion, modfile, realXgoSrc, projectDir, projectRoot, localXgoGenDir, mainModule, mod, resetInstrument || flagA, needUpgrade || needLocalRuntime, remainArgs)
+			impResult, impRuntimeErr := importRuntimeDepGenOverlay(cmdTest, instrumentGoroot, instrumentGo, goVersion, modfile, realXgoSrc, projectDir, projectRoot, localXgoGenDir, mainModule, mod, resetInstrument || flagA, needUpgrade || needLocalRuntime, remainArgs, pkgPatterns != nil)
 			if impRuntimeErr != nil {
 				// can be silently ignored
 				if enableStackTrace {
@@ -764,6 +768,9 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 				err = applyBlankImportThroughOverlay(overlayFS, impResult.fileReplace)
 				if err != nil {
 					return err
+				}
+				if impResult.traceImportsDeferred {
+					traceImports = impResult
 				}
 				// after we have replaced modules, and use -mod=mod
 				// go will try to read target modules's go.mod even
@@ -808,9 +815,24 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		if len(instrumentIncludeAsMain) == 0 {
 			instrumentIncludeAsMain = opts.MockRuleIncludeAsMainModule
 		}
-		instrumentUserCodeResult, err = instrumentUserCode(instrumentGoroot, projectDir, projectRoot, goVersion, realXgoSrc, modForLoad, modfileForLoad, mainModule, instrumentIncludeAsMain, xgoRuntimeModuleDir, mayHaveCover, overlayFS, overlayFile, cmdTest, opts.FilterRules, trapPkgs, trapAll, collectTestTrace, collectTestTraceDir, xgoRaceSafe, goFlag, needUpgrade, trimpath, targetPatterns(cmd, remainArgs))
+		instrumentUserCodeResult, err = instrumentUserCode(instrumentGoroot, projectDir, projectRoot, goVersion, realXgoSrc, modForLoad, modfileForLoad, mainModule, instrumentIncludeAsMain, xgoRuntimeModuleDir, mayHaveCover, overlayFS, overlayFile, cmdTest, opts.FilterRules, trapPkgs, trapAll, collectTestTrace, collectTestTraceDir, xgoRaceSafe, goFlag, needUpgrade, trimpath, pkgPatterns, traceImports != nil)
 		if err != nil {
 			return err
+		}
+		if traceImports != nil && (instrumentUserCodeResult == nil || !instrumentUserCodeResult.traceImportsAdded) {
+			// instrumentation stopped before adding them
+			fileReplace, err := addBlankImports(instrumentGoroot, instrumentGo, projectDir, getPkgArgs(remainArgs), cmdTest, traceImports.overlayDir)
+			if err != nil {
+				return err
+			}
+			absFileReplace := make(map[overlay.AbsFile]overlay.AbsFile, len(fileReplace))
+			for k, v := range fileReplace {
+				absFileReplace[overlay.AbsFile(k)] = overlay.AbsFile(v)
+			}
+			err = applyBlankImportThroughOverlay(overlayFS, absFileReplace)
+			if err != nil {
+				return err
+			}
 		}
 
 		// write compiler extra file
