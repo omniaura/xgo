@@ -11,6 +11,7 @@ import (
 	"go/token"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -795,16 +796,44 @@ func writeCompilerExtra(compilerExtra *compiler_extra.Packages, compilerExtraFil
 // go list's Match.
 func matchedPackages(list []*goinfo.Package, patterns []string) map[string]bool {
 	targets := make(map[string]bool)
-	for _, p := range list {
-		for _, m := range p.Match {
-			for _, pattern := range patterns {
+	for _, pattern := range patterns {
+		pattern = cleanPattern(pattern)
+		var matched bool
+		for _, p := range list {
+			for _, m := range p.Match {
 				if m == pattern {
 					targets[p.ImportPath] = true
+					matched = true
 				}
 			}
 		}
+		if !matched {
+			// written differently than go list reports it (or matching
+			// nothing): instrument the whole main module rather than
+			// miss the packages it names
+			return nil
+		}
 	}
 	return targets
+}
+
+// cleanPattern puts a package pattern in the canonical form go list
+// reports in Match, like cmd/go does: "./a/" and "./a//b" become "./a"
+// and "./a/b".
+func cleanPattern(pattern string) string {
+	if strings.Contains(pattern, "@") || strings.Contains(pattern, ":") {
+		// pkg@version, or windows paths: left to the fallback
+		return pattern
+	}
+	pattern = filepath.ToSlash(pattern)
+	if strings.HasPrefix(pattern, "./") {
+		pattern = "./" + path.Clean(pattern)
+		if pattern == "./." {
+			pattern = "."
+		}
+		return pattern
+	}
+	return path.Clean(pattern)
 }
 
 func hasString(list []string, s string) bool {
