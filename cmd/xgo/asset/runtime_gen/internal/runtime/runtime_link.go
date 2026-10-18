@@ -19,6 +19,9 @@ func XgoSetTrap(trap func(info unsafe.Pointer, recvPtr interface{}, args []inter
 	logError("WARNING: failed to link runtime.XgoSetTrap(requires xgo).")
 }
 
+func XgoSetTrapSkip(skip bool) {
+}
+
 func XgoSetVarTrap(trap func(info unsafe.Pointer, varAddr interface{}, res interface{})) {
 	logError("WARNING: failed to link runtime.XgoSetVarTrap(requires xgo).")
 }

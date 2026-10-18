@@ -4,6 +4,7 @@ import (
 	"sync/atomic"
 
 	"github.com/xhd2015/xgo/runtime/core"
+	"github.com/xhd2015/xgo/runtime/internal/runtime"
 	"github.com/xhd2015/xgo/runtime/internal/stack"
 	"github.com/xhd2015/xgo/runtime/trace/stack_model"
 )
@@ -22,10 +23,29 @@ var globalInterceptorHolderUsed int32
 
 func markGlobalInterceptorHolderUsed() {
 	atomic.StoreInt32(&globalInterceptorHolderUsed, 1)
+	enableTrap()
 }
 
 func isGlobalInterceptorHolderUsed() bool {
 	return atomic.LoadInt32(&globalInterceptorHolderUsed) != 0
+}
+
+// trapEnabled is 1 once enableTrap was called. Registrations can race, so
+// it is accessed atomically.
+var trapEnabled int32
+
+// enableTrap makes instrumented functions call trap again. Until then they
+// skip it, which is only valid while nothing has been registered and no
+// trace or inspection was started, i.e. trap would return immediately.
+// Once enabled it stays enabled.
+func enableTrap() {
+	if atomic.LoadInt32(&trapEnabled) != 0 {
+		return
+	}
+	// clear the skip before publishing the flag: a caller that sees the
+	// flag and returns early must find the skip already cleared
+	runtime.XgoSetTrapSkip(false)
+	atomic.StoreInt32(&trapEnabled, 1)
 }
 
 type StackData struct {
@@ -78,6 +98,7 @@ func getOrAttachStackDataOf(stk *stack.Stack) *StackData {
 	if ok {
 		return d
 	}
+	enableTrap()
 	d = &StackData{}
 	stk.SetData(dataKey, d)
 	return d

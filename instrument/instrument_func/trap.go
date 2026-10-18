@@ -207,15 +207,25 @@ func TrapFuncs(editor *goedit.Edit, pkgPath string, file *ast.File, fileIndex in
 		//     }
 		// trap: func(recvName string, recvPtr interface{}, argNames []string, args []interface{}, resultNames []string, results []interface{}) (func(), bool)
 		funcInfo := fmt.Sprintf("%s_%d_%d", constants.FUNC_INFO, fileIndex, len(funcInfos))
-		editor.Insert(pos, fmt.Sprintf(trapTemplate,
-			line, line,
-			fileIndex,
-			funcInfo,
-			receiverAddr,
-			strings.Join(paramAddrs, ","),
-			strings.Join(resultAddrs, ","),
-			line, line, line,
-		))
+		if pkgPath == constants.RUNTIME_TRACE_PKG {
+			// starting a trace is detected inside the trap, so the trace
+			// entry must reach it even while the trap is skipped
+			editor.Insert(pos, fmt.Sprintf(trapTemplate,
+				line, line,
+				fileIndex,
+				funcInfo,
+				receiverAddr,
+				strings.Join(paramAddrs, ","),
+				strings.Join(resultAddrs, ","),
+				line, line, line,
+			))
+		} else {
+			var recvName string
+			if receiver != nil {
+				recvName = receiver.Name
+			}
+			editor.Insert(pos, guardedTrap(line, fileIndex, funcInfo, recvName, fieldNames(paramFields), fieldNames(resultFields)))
+		}
 
 		funcInfos = append(funcInfos, &edit.FuncInfo{
 			InfoVar:      funcInfo,
@@ -254,6 +264,14 @@ func toNameAddr(name *edit.Field) (string, string) {
 		return `""`, "nil"
 	}
 	return strconv.Quote(name.Name), "&" + name.Name
+}
+
+func fieldNames(fields []*edit.Field) []string {
+	names := make([]string, len(fields))
+	for i, f := range fields {
+		names[i] = f.Name
+	}
+	return names
 }
 
 func toNameAddrs(names []*edit.Field) ([]string, []string) {
