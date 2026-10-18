@@ -96,7 +96,11 @@ func CleanGoOverlay(overlayDir string, maxAge time.Duration) error {
 			return nil
 		}
 		if strings.HasPrefix(info.Name(), ".tmp-") || isContentDir(filepath.Base(filepath.Dir(path))) {
-			os.Remove(path)
+			// a run reusing the file touches it: check again just before
+			// removing, rather than on what the walk saw
+			if cur, err := os.Stat(path); err == nil && cur.ModTime().Before(deadline) {
+				os.Remove(path)
+			}
 		}
 		return nil
 	})
@@ -167,8 +171,13 @@ func MaybeCleanGoOverlay(overlayDir string, interval time.Duration, maxAge time.
 	if err := os.MkdirAll(overlayDir, 0755); err != nil {
 		return err
 	}
+	// stamped first so that concurrent runs do not all clean
 	if err := os.WriteFile(stamp, nil, 0644); err != nil {
 		return err
 	}
-	return CleanGoOverlay(overlayDir, maxAge)
+	if err := CleanGoOverlay(overlayDir, maxAge); err != nil {
+		os.Remove(stamp)
+		return err
+	}
+	return nil
 }
