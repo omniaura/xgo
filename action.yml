@@ -86,8 +86,6 @@ runs:
 
     - id: paths
       shell: bash
-      env:
-        DEP_PATH: ${{ inputs.cache-dependency-path }}
       run: |
         set -euo pipefail
         # A fixed XGO_BUILD_CACHE_DIR makes the instrumented build cache
@@ -104,23 +102,6 @@ runs:
           echo "goos=$(go env GOOS)"
           echo "goarch=$(go env GOARCH)"
         } >> "$GITHUB_OUTPUT"
-        # hash of the dependency files, like actions/setup-go: one path or
-        # glob per line, defaulting to every go.sum in the workspace
-        shopt -s globstar nullglob
-        files=()
-        while IFS= read -r pattern; do
-          pattern="${pattern#"${pattern%%[![:space:]]*}"}"
-          [ -n "$pattern" ] || continue
-          files+=($pattern)
-        done <<< "${DEP_PATH:-**/go.sum}"
-        if [ ${#files[@]} -eq 0 ]; then
-          echo "::warning::setup-xgo: no dependency files match '${DEP_PATH:-**/go.sum}'"
-          deps=none
-        else
-          if command -v sha256sum >/dev/null; then sum=sha256sum; else sum="shasum -a 256"; fi
-          deps=$(printf '%s\n' "${files[@]}" | sort -u | while IFS= read -r f; do $sum "$f"; done | $sum | cut -c1-16)
-        fi
-        echo "deps=$deps" >> "$GITHUB_OUTPUT"
 
     - id: cache
       if: inputs.cache == 'true'
@@ -135,7 +116,7 @@ runs:
         # restores the newest entry of the same toolchain and xgo revision
         # (build caches stay valid across dependency changes: entries are
         # content-addressed), then saves a new entry.
-        key: setup-xgo-${{ runner.os }}-${{ steps.paths.outputs.goarch }}-go${{ steps.setup-go.outputs.go-version }}-xgo${{ steps.install.outputs.xgo-id }}${{ inputs.cache-key-suffix }}-${{ steps.paths.outputs.deps }}
+        key: setup-xgo-${{ runner.os }}-${{ steps.paths.outputs.goarch }}-go${{ steps.setup-go.outputs.go-version }}-xgo${{ steps.install.outputs.xgo-id }}${{ inputs.cache-key-suffix }}-${{ hashFiles(inputs.cache-dependency-path || '**/go.sum') }}
         restore-keys: |
           setup-xgo-${{ runner.os }}-${{ steps.paths.outputs.goarch }}-go${{ steps.setup-go.outputs.go-version }}-xgo${{ steps.install.outputs.xgo-id }}${{ inputs.cache-key-suffix }}-
 
