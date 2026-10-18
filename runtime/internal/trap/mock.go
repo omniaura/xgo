@@ -168,6 +168,7 @@ func pushMockReplacer(fn interface{}, replacer interface{}) func() {
 // the caller returned.
 // `mock` returns `false` if the original function should be called.
 func pushMockHandler(pc uintptr, recvPtr interface{}, handler func(fnInfo *core.FuncInfo, recvPtr interface{}, args []interface{}, results []interface{}) bool) func() {
+	enableTrapForPC(pc)
 	holder := &globalInterceptorHolder
 	if runtime.XgoInitFinished() {
 		stackData := getOrAttachStackData()

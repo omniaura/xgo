@@ -62,7 +62,7 @@ func guardedTrap(line int, fileIndex int, helper string, funcInfo string, recv *
 		paramCopies = copies[1:nIn]
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "if __xgo_trap_on_%d() {", fileIndex)
+	fmt.Fprintf(&b, "if __xgo_trap_on_%d(&%s) {", fileIndex, trapOnVar(funcInfo))
 	if len(vars) > 0 {
 		fmt.Fprintf(&b, "%s:=%s;", strings.Join(copies, ","), strings.Join(names, ","))
 	}
@@ -101,7 +101,7 @@ func guardedTrap(line int, fileIndex int, helper string, funcInfo string, recv *
 // them (generic functions and methods). It still skips the trap call, but
 // the variables whose addresses it takes live on the heap.
 func guardedDirectTrap(line int, fileIndex int, funcInfo string, recvAddr string, paramAddrs []string, resultAddrs []string) string {
-	return fmt.Sprintf("if __xgo_trap_on_%d() {", fileIndex) + fmt.Sprintf(trapTemplate,
+	return fmt.Sprintf("if __xgo_trap_on_%d(&%s) {", fileIndex, trapOnVar(funcInfo)) + fmt.Sprintf(trapTemplate,
 		line, line,
 		fileIndex,
 		funcInfo,
@@ -117,4 +117,11 @@ func guardedDirectTrap(line int, fileIndex int, funcInfo string, recvAddr string
 type guardVar struct {
 	name string
 	typ  string
+}
+
+// trapOnVar is the name of the flag that the guard of the function with
+// info variable funcInfo passes to __xgo_trap_on_. The runtime sets it
+// when something is registered for that function.
+func trapOnVar(funcInfo string) string {
+	return funcInfo + "_on"
 }

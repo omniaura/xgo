@@ -25,7 +25,7 @@ func TestAppendTrapSkipImpl(t *testing.T) {
 		if !strings.Contains(got, "package runtime\n\n"+c.atomic+"\n") {
 			t.Errorf("go1.%d: atomic import missing after the package clause:\n%s", c.minor, got)
 		}
-		if strings.Count(got, "func XgoTrapOn()") != 1 || strings.Count(got, "func XgoSetTrapSkip(") != 1 {
+		if strings.Count(got, "func XgoTrapOn(") != 1 || strings.Count(got, "func XgoSetTrapSkip(") != 1 {
 			t.Errorf("go1.%d: expected XgoTrapOn and XgoSetTrapSkip once:\n%s", c.minor, got)
 		}
 		// a template that already defines them is kept as is
@@ -36,5 +36,9 @@ func TestAppendTrapSkipImpl(t *testing.T) {
 	}
 	if _, err := AppendTrapSkipImpl(&goinfo.GoVersion{Major: 1, Minor: 27}, "package main\n"); err == nil {
 		t.Errorf("expected an error without the runtime package clause")
+	}
+	legacy := tmpl + "\nfunc XgoTrapOn() bool { return true }\n"
+	if _, err := AppendTrapSkipImpl(&goinfo.GoVersion{Major: 1, Minor: 27}, legacy); err == nil {
+		t.Errorf("expected an error for XgoTrapOn without the flag parameter")
 	}
 }

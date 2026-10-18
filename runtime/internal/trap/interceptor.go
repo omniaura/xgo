@@ -36,6 +36,8 @@ func PushRecorderInterceptor(fn interface{}, preInterceptor PreInterceptor, post
 }
 
 func pushInterceptor(pre PreInterceptor, post PostInterceptor) func() {
+	// general interceptors see every call
+	enableTrap()
 	holder := &globalInterceptorHolder
 	if runtime.XgoInitFinished() {
 		stack := getOrAttachStackData()

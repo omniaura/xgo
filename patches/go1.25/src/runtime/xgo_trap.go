@@ -302,9 +302,11 @@ func (f *Func) __xgo_no_print_name() string {
 // run concurrently, hence atomic.
 var __xgo_trap_skip uint32
 
-// XgoTrapOn reports whether instrumented functions should call XgoTrap.
-func XgoTrapOn() bool {
-	return __xgo_atomic.Load(&__xgo_trap_skip) == 0
+// XgoTrapOn reports whether an instrumented function should call XgoTrap:
+// when nothing makes every function skip it, or when something was
+// registered for that function, which sets its flag.
+func XgoTrapOn(flag *uint32) bool {
+	return __xgo_atomic.Load(&__xgo_trap_skip) == 0 || __xgo_atomic.Load(flag) != 0
 }
 
 func XgoSetTrapSkip(skip bool) {
