@@ -41,7 +41,7 @@ func pushInterceptor(pre PreInterceptor, post PostInterceptor) func() {
 		stack := getOrAttachStackData()
 		holder = &stack.interceptors
 	} else {
-		globalInterceptorHolderUsed = true
+		markGlobalInterceptorHolderUsed()
 	}
 
 	preHandler, postHandler := buildRecorderFromInterceptor(nil, pre, post)

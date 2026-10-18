@@ -54,7 +54,7 @@ func trap(infoPtr unsafe.Pointer, recvPtr interface{}, args []interface{}, resul
 		return nil, false
 	}
 	stackData := getStackDataOf(stk)
-	if stackData == nil && !globalInterceptorHolderUsed && !mayStartTracing(funcInfo, recvPtr, args, results) {
+	if stackData == nil && !isGlobalInterceptorHolderUsed() && !mayStartTracing(funcInfo, recvPtr, args, results) {
 		// fast path: nothing is registered that could apply to this call.
 		// Unwinding the caller below costs far more than the function
 		// itself for most instrumented calls.

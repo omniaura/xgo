@@ -143,7 +143,7 @@ func PushRecordHandler(pc uintptr, recvPtr interface{}, pre func(fnInfo *core.Fu
 		stack := getOrAttachStackData()
 		holder = &stack.interceptors
 	} else {
-		globalInterceptorHolderUsed = true
+		markGlobalInterceptorHolderUsed()
 	}
 	if holder.recorder == nil {
 		holder.recorder = map[uintptr][]*recorderHolder{}
@@ -177,7 +177,7 @@ func PushVarRecordHandler(varAddr uintptr, pre func(fnInfo *core.FuncInfo, res i
 		stack := getOrAttachStackData()
 		holder = &stack.interceptors
 	} else {
-		globalInterceptorHolderUsed = true
+		markGlobalInterceptorHolderUsed()
 	}
 	if holder.varRecorder == nil {
 		holder.varRecorder = map[uintptr][]*varRecordHolder{}
@@ -211,7 +211,7 @@ func PushVarPtrRecordHandler(varAddr uintptr, pre func(fnInfo *core.FuncInfo, re
 		stack := getOrAttachStackData()
 		holder = &stack.interceptors
 	} else {
-		globalInterceptorHolderUsed = true
+		markGlobalInterceptorHolderUsed()
 	}
 	if holder.varPtrRecorder == nil {
 		holder.varPtrRecorder = map[uintptr][]*varRecordHolder{}
