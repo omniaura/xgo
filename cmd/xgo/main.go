@@ -555,7 +555,7 @@ func handleBuild(cmd string, args []string) error {
 					fmt.Fprintf(os.Stderr, "sync GOROOT %s -> %s\n", goroot, instrumentGoroot)
 				}
 				logDebug("sync goroot %s -> %s", goroot, instrumentGoroot)
-				err = syncGoroot(goroot, instrumentGoroot, fullSyncRecord)
+				err = syncGoroot(goroot, instrumentGoroot, fullSyncRecord, *opts.useFilePatches && !isDevelopment)
 				if err != nil {
 					return err
 				}
