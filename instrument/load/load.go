@@ -25,6 +25,8 @@ type LoadOptions struct {
 	ModFile     string // -modfile flag
 	Deps        bool   // -deps flag
 	Test        bool   // -test flag, test variants are mapped back to plain packages
+	// GoVersion of the go command, lets go list skip unused fields
+	GoVersion *goinfo.GoVersion
 
 	// OverlayFile is passed to `go list -overlay=` during package discovery.
 	// Overlay (in-memory) is used only when reading/parsing file contents.
@@ -97,6 +99,7 @@ func LoadPackages(args []string, opts LoadOptions) (*Packages, error) {
 		Deps:        deps,
 		Test:        opts.Test,
 		OverlayFile: opts.OverlayFile,
+		GoVersion:   opts.GoVersion,
 	})
 	if err != nil {
 		return nil, err

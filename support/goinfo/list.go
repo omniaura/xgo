@@ -3,6 +3,7 @@ package goinfo
 import (
 	"encoding/json"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/xhd2015/xgo/support/cmd"
@@ -61,11 +62,30 @@ type LoadPackageOptions struct {
 	// nested vendor go.mod files only via overlay; without -overlay here,
 	// packages resolve Incomplete and instrumentation inserts no traps.
 	OverlayFile string
+	// GoVersion is the version of the go command, if known: from go1.19
+	// only the fields of Package are listed
+	GoVersion *GoVersion
 }
+
+// packageJSONFields are the fields of Package, for go list -json=fields:
+// the go command then skips computing and printing the others, which are
+// most of its output (embed and cgo file lists, deps, module info...).
+var packageJSONFields = func() string {
+	t := reflect.TypeOf(Package{})
+	names := make([]string, t.NumField())
+	for i := range names {
+		names[i] = t.Field(i).Name
+	}
+	return strings.Join(names, ",")
+}()
 
 // go list -e -json ./pkg
 func ListPackages(args []string, opts LoadPackageOptions) ([]*Package, error) {
-	flags := []string{"list", "-e", "-json"}
+	jsonFlag := "-json"
+	if v := opts.GoVersion; v != nil && (v.Major > 1 || v.Major == 1 && v.Minor >= 19) {
+		jsonFlag = "-json=" + packageJSONFields
+	}
+	flags := []string{"list", "-e", jsonFlag}
 	if opts.Mod != "" {
 		flags = append(flags, "-mod="+opts.Mod)
 	}
