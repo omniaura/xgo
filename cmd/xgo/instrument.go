@@ -50,7 +50,7 @@ type instrumentResult struct {
 // goroot is critical for stdlib
 // includeAsMainModules: extra module paths treated as main for mock/trap (option B:
 // reclassify packages already on the load graph; do not bulk-load module/...).
-func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool, trimpath bool) (*instrumentResult, error) {
+func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool, trimpath bool, pkgPatterns []string) (*instrumentResult, error) {
 	logDebug("instrumentUserSpace: mod=%s, modfile=%s, xgoRuntimeModuleDir=%s, includeTest=%v, collectTestTrace=%v, includeAsMainModules=%v, overlayFile=%s", mod, modfile, xgoRuntimeModuleDir, includeTest, collectTestTrace, includeAsMainModules, overlayFile)
 	if mod == "" {
 		// check vendor dir
@@ -127,9 +127,15 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	}
 	logDebug("loadPkgs: includeMain=%v loadPkgs=%v", includeMain, loadPkgs)
 	var loadArgs []string
+	// main module packages the command builds; nil means all of them
+	var neededMain map[string]bool
+	// packages whose tests the command builds; nil means unknown
+	var targetPkgs map[string]bool
 	if includeMain {
 		loadArgs = append(loadArgs, mainModule+"/...")
 		loadArgs = append(loadArgs, "main")
+		// listed only to learn, from Match, which packages they select
+		loadArgs = append(loadArgs, pkgPatterns...)
 	}
 	loadArgs = append(loadArgs, loadPkgs...)
 	loadArgs = append(loadArgs, trapPkgs...)
@@ -152,11 +158,29 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 			// Most dependencies are not instrumented unless a mock refers
 			// to them, and traverse loads those on demand: only parse what
 			// is instrumented regardless.
+			OnList: func(list []*goinfo.Package) {
+				if includeMain {
+					targetPkgs, neededMain = neededPackages(list, pkgPatterns)
+				}
+			},
 			ParseFilter: func(p *goinfo.Package) bool {
+				if neededMain != nil && !neededMain[p.ImportPath] {
+					if _, ok := goinfo.PkgWithinModule(p.ImportPath, mainModule); ok {
+						// not built by the command: nothing to instrument
+						return false
+					}
+				}
 				if !p.DepOnly || pkgWithinAnyModule(p.ImportPath, mainModule, includeAsMainModules) {
 					return true
 				}
 				return p.Standard && config.GetPkgConfig(p.ImportPath) != nil
+			},
+			// test files of other packages are not compiled
+			TestFilter: func(p *goinfo.Package) bool {
+				if targetPkgs != nil {
+					return targetPkgs[p.ImportPath]
+				}
+				return !p.DepOnly
 			},
 		},
 	}
@@ -168,6 +192,11 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	pkgs.Add(loadPackages)
 	// remove deps flag
 	pkgs.LoadOptions.Deps = false
+	// later loads list single packages: keep the sets of the initial load
+	pkgs.LoadOptions.OnList = nil
+	if neededMain != nil {
+		logDebug("instrument: %d target packages, %d needed packages", len(targetPkgs), len(neededMain))
+	}
 
 	// merge with xgo pkgs with override
 	// because xgoPkgs may have instrumented files
@@ -723,4 +752,59 @@ func writeCompilerExtra(compilerExtra *compiler_extra.Packages, compilerExtraFil
 		return fmt.Errorf("write compiler extra sum file: %w", err)
 	}
 	return nil
+}
+
+// neededPackages returns the packages selected by patterns (targets), and
+// every package that building and testing them compiles: the targets, their
+// test imports and everything those import. Both are nil if patterns is
+// empty or a pattern selects nothing, as the sets would then be unreliable.
+func neededPackages(list []*goinfo.Package, patterns []string) (targets map[string]bool, needed map[string]bool) {
+	if len(patterns) == 0 {
+		return nil, nil
+	}
+	byPath := make(map[string]*goinfo.Package, len(list))
+	matched := make(map[string]bool, len(patterns))
+	targets = make(map[string]bool)
+	for _, p := range list {
+		byPath[p.ImportPath] = p
+		for _, m := range p.Match {
+			for _, pattern := range patterns {
+				if m == pattern {
+					matched[pattern] = true
+					targets[p.ImportPath] = true
+				}
+			}
+		}
+	}
+	if len(matched) != len(patterns) {
+		return nil, nil
+	}
+	needed = make(map[string]bool)
+	var queue []string
+	add := func(pkgPath string) {
+		if !needed[pkgPath] {
+			needed[pkgPath] = true
+			queue = append(queue, pkgPath)
+		}
+	}
+	for target := range targets {
+		add(target)
+		p := byPath[target]
+		for _, imp := range p.TestImports {
+			add(imp)
+		}
+		for _, imp := range p.XTestImports {
+			add(imp)
+		}
+	}
+	for len(queue) > 0 {
+		pkgPath := queue[0]
+		queue = queue[1:]
+		if p := byPath[pkgPath]; p != nil {
+			for _, imp := range p.Imports {
+				add(imp)
+			}
+		}
+	}
+	return targets, needed
 }

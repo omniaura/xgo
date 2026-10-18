@@ -23,9 +23,14 @@ type Package struct {
 	// package name of normal file is xxx
 	XTestGoFiles []string
 
+	// Imports are the resolved import paths of GoFiles
+	Imports []string
 	// imports of TestGoFiles and XTestGoFiles
 	TestImports  []string
 	XTestImports []string
+
+	// Match lists the command-line patterns matching this package
+	Match []string
 
 	Goroot   bool // is this package in the Go root?
 	Standard bool // is this package part of the standard Go library?
