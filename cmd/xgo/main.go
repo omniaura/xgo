@@ -473,6 +473,9 @@ func handleBuild(cmd string, args []string) error {
 	if err != nil {
 		return err
 	}
+	if !noInstrument {
+		gcStaleCaches(cacheGCUnits(instrumentDir, instrumentCacheDir, buildCacheDir, os.Getenv(XGO_BUILD_CACHE_DIR), !instrumented), time.Now())
+	}
 
 	var realXgoSrc string
 	if isDevelopment {
