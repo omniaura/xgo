@@ -433,8 +433,9 @@ func LinkReplaceDir(srcDir string, targetDir string) error {
 }
 
 // Unshare gives path its own storage if it is a regular file, so a later
-// in-place write cannot reach other hard links of the same file. It is a
-// no-op when path does not exist.
+// in-place write cannot reach other hard links of the same file. A symlink
+// is followed, as writes through it would be. It is a no-op when path does
+// not exist.
 func Unshare(path string) error {
 	info, err := os.Lstat(path)
 	if err != nil {
@@ -442,6 +443,16 @@ func Unshare(path string) error {
 			return nil
 		}
 		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		target, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
+		return Unshare(target)
 	}
 	if !info.Mode().IsRegular() {
 		return nil

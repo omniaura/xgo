@@ -60,3 +60,40 @@ func TestLinkReplaceDirAndUnshare(t *testing.T) {
 		t.Errorf("Unshare of a missing file: %v", err)
 	}
 }
+
+func TestUnshareFollowsSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("xgo does not hard-link GOROOTs on windows")
+	}
+	src := t.TempDir()
+	dst := filepath.Join(t.TempDir(), "dst")
+	file := filepath.Join(src, "tool")
+	if err := os.WriteFile(file, []byte("orig"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("tool", filepath.Join(src, "alias")); err != nil {
+		t.Fatal(err)
+	}
+	if err := LinkReplaceDir(src, dst); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(dst, "alias")
+	if err := Unshare(alias); err != nil {
+		t.Fatal(err)
+	}
+	if fi, err := os.Lstat(alias); err != nil || fi.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("symlink not kept: %v %v", fi, err)
+	}
+	if err := os.WriteFile(alias, []byte("changed"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(file); string(got) != "orig" {
+		t.Errorf("source modified through the symlink: %q", got)
+	}
+	if err := os.Symlink("nowhere", filepath.Join(dst, "dangling")); err != nil {
+		t.Fatal(err)
+	}
+	if err := Unshare(filepath.Join(dst, "dangling")); err != nil {
+		t.Errorf("Unshare of a dangling symlink: %v", err)
+	}
+}
