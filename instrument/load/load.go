@@ -55,6 +55,9 @@ type LoadOptions struct {
 	// OnList, if set, sees every listed package before ParseFilter is
 	// called, so the filter can depend on the whole listing.
 	OnList func(pkgs []*goinfo.Package)
+	// Listed, if set, returns the result of listing the packages, as
+	// ListOptions describes, which the caller started earlier
+	Listed func() ([]*goinfo.Package, error)
 
 	// TestFilter, if set, selects the packages whose test files are parsed
 	// when IncludeTest is set.
@@ -83,24 +86,30 @@ type Packages struct {
 	Packages []*Package
 }
 
-func LoadPackages(args []string, opts LoadOptions) (*Packages, error) {
-	dir := opts.Dir
-	deps := opts.Deps
-	mod := opts.Mod
-	modFile := opts.ModFile
-	goroot := opts.Goroot
-	fset := opts.Fset
-
-	pkgs, err := goinfo.ListPackages(args, goinfo.LoadPackageOptions{
-		Dir:         dir,
-		Mod:         mod,
-		ModFile:     modFile,
-		Goroot:      goroot,
-		Deps:        deps,
+// ListOptions are the options LoadPackages lists packages with.
+func ListOptions(opts LoadOptions) goinfo.LoadPackageOptions {
+	return goinfo.LoadPackageOptions{
+		Dir:         opts.Dir,
+		Mod:         opts.Mod,
+		ModFile:     opts.ModFile,
+		Goroot:      opts.Goroot,
+		Deps:        opts.Deps,
 		Test:        opts.Test,
 		OverlayFile: opts.OverlayFile,
 		GoVersion:   opts.GoVersion,
-	})
+	}
+}
+
+func LoadPackages(args []string, opts LoadOptions) (*Packages, error) {
+	fset := opts.Fset
+
+	var pkgs []*goinfo.Package
+	var err error
+	if opts.Listed != nil {
+		pkgs, err = opts.Listed()
+	} else {
+		pkgs, err = goinfo.ListPackages(args, ListOptions(opts))
+	}
 	if err != nil {
 		return nil, err
 	}
