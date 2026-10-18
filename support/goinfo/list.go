@@ -23,6 +23,10 @@ type Package struct {
 	// package name of normal file is xxx
 	XTestGoFiles []string
 
+	// imports of TestGoFiles and XTestGoFiles
+	TestImports  []string
+	XTestImports []string
+
 	Goroot   bool // is this package in the Go root?
 	Standard bool // is this package part of the standard Go library?
 	DepOnly  bool // package is only a dependency, not explicitly listed
