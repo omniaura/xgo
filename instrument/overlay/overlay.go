@@ -3,7 +3,9 @@ package overlay
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/xhd2015/xgo/instrument/patch"
 	"github.com/xhd2015/xgo/support/fileutil"
@@ -156,22 +158,26 @@ func (o Overlay) MakeGoOverlay(overlayDir string, opts Options) (*GoOverlay, err
 		return nil, err
 	}
 	replace := make(Replace, len(o))
+	type writeJob struct {
+		file    string
+		absFile AbsFile
+		content string
+	}
+	var jobs []writeJob
+	dirs := make(map[string]bool)
 	for absFile, fileOverlay := range o {
 		if fileOverlay.hasOverriddenContent {
 			absFilePath := getPathMapping(string(absFile), pathMappings)
 			writeFile := fileutil.RebaseAbsPath(absOverlayDir, absFilePath)
-			err := os.MkdirAll(filepath.Dir(writeFile), 0755)
-			if err != nil {
-				return nil, err
+			dir := filepath.Dir(writeFile)
+			if !dirs[dir] {
+				dirs[dir] = true
+				err := os.MkdirAll(dir, 0755)
+				if err != nil {
+					return nil, err
+				}
 			}
-			content := fileOverlay.Content
-			if !noLineDirective {
-				content = patch.FmtLineDirective(string(absFile), 1) + "\n" + content
-			}
-			err = os.WriteFile(writeFile, []byte(content), 0644)
-			if err != nil {
-				return nil, err
-			}
+			jobs = append(jobs, writeJob{file: writeFile, absFile: absFile, content: fileOverlay.Content})
 			replace[AbsFile(filepath.ToSlash(string(absFile)))] = AbsFile(filepath.ToSlash(writeFile))
 			continue
 		}
@@ -179,6 +185,42 @@ func (o Overlay) MakeGoOverlay(overlayDir string, opts Options) (*GoOverlay, err
 			continue
 		}
 		replace[AbsFile(filepath.ToSlash(string(absFile)))] = AbsFile(filepath.ToSlash(string(fileOverlay.AbsFile)))
+	}
+	// a large module has thousands of instrumented files: write them in
+	// parallel
+	write := func(job writeJob) error {
+		var prefix string
+		if !noLineDirective {
+			prefix = patch.FmtLineDirective(string(job.absFile), 1) + "\n"
+		}
+		data := make([]byte, 0, len(prefix)+len(job.content))
+		data = append(data, prefix...)
+		data = append(data, job.content...)
+		return os.WriteFile(job.file, data, 0644)
+	}
+	workers := runtime.GOMAXPROCS(0)
+	if workers > len(jobs) {
+		workers = len(jobs)
+	}
+	var wg sync.WaitGroup
+	errs := make([]error, workers)
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func(w int) {
+			defer wg.Done()
+			for i := w; i < len(jobs); i += workers {
+				if err := write(jobs[i]); err != nil {
+					errs[w] = err
+					return
+				}
+			}
+		}(w)
+	}
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &GoOverlay{Replace: replace}, nil
 }
