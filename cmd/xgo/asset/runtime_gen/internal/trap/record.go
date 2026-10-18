@@ -138,6 +138,7 @@ func pushRecorderInterceptor(fn interface{}, preInterceptor PreInterceptor, post
 }
 
 func PushRecordHandler(pc uintptr, recvPtr interface{}, pre func(fnInfo *core.FuncInfo, recvPtr interface{}, args []interface{}, results []interface{}) (interface{}, bool), post func(fnInfo *core.FuncInfo, recvPtr interface{}, args []interface{}, results []interface{}, data interface{})) func() {
+	enableTrapForPC(pc)
 	holder := &globalInterceptorHolder
 	if runtime.XgoInitFinished() {
 		stack := getOrAttachStackData()

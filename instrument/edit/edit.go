@@ -121,7 +121,9 @@ type File struct {
 }
 
 type FuncInfo struct {
-	InfoVar      string
+	InfoVar string
+	// TrapOnVar is the flag the guard of the function checks, if guarded
+	TrapOnVar    string
 	FuncDecl     *ast.FuncDecl
 	IdentityName string
 	RecvPtr      bool

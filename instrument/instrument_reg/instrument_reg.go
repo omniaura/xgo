@@ -86,7 +86,8 @@ func buildCompilerExtra(fset *token.FileSet, file *edit.File) *compiler_extra.Fi
 			HasGenericParams: astutil.IsGenericFunc(funcInfo.FuncDecl),
 			LineNum:          lineNum,
 
-			InfoVar: funcInfo.InfoVar,
+			InfoVar:   funcInfo.InfoVar,
+			TrapOnVar: funcInfo.TrapOnVar,
 
 			RecvPtr:      funcInfo.RecvPtr,
 			RecvGeneric:  funcInfo.RecvGeneric,

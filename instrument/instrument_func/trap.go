@@ -209,6 +209,7 @@ func TrapFuncs(editor *goedit.Edit, pkgPath string, file *ast.File, fileIndex in
 		//     }
 		// trap: func(recvName string, recvPtr interface{}, argNames []string, args []interface{}, resultNames []string, results []interface{}) (func(), bool)
 		funcInfo := fmt.Sprintf("%s_%d_%d", constants.FUNC_INFO, fileIndex, len(funcInfos))
+		var trapOn string
 		if pkgPath == constants.RUNTIME_TRACE_PKG {
 			// starting a trace is detected inside the trap, so the trace
 			// entry must reach it even while the trap is skipped
@@ -221,19 +222,24 @@ func TrapFuncs(editor *goedit.Edit, pkgPath string, file *ast.File, fileIndex in
 				strings.Join(resultAddrs, ","),
 				line, line, line,
 			))
-		} else if recv, params, results, ok := guardVars(fset, funcDecl, recvGeneric, receiver, paramFields, resultFields); ok {
-			helper := fmt.Sprintf("__xgo_sync_%d_%d", fileIndex, len(funcInfos))
-			stmt, helperDecl := guardedTrap(line, fileIndex, helper, funcInfo, recv, params, results)
-			editor.Insert(pos, stmt)
-			if helperDecl != "" {
-				editor.Insert(funcDecl.End(), helperDecl)
-			}
 		} else {
-			editor.Insert(pos, guardedDirectTrap(line, fileIndex, funcInfo, receiverAddr, paramAddrs, resultAddrs))
+			if recv, params, results, ok := guardVars(fset, funcDecl, recvGeneric, receiver, paramFields, resultFields); ok {
+				helper := fmt.Sprintf("__xgo_sync_%d_%d", fileIndex, len(funcInfos))
+				stmt, helperDecl := guardedTrap(line, fileIndex, helper, funcInfo, recv, params, results)
+				editor.Insert(pos, stmt)
+				if helperDecl != "" {
+					editor.Insert(funcDecl.End(), helperDecl)
+				}
+			} else {
+				editor.Insert(pos, guardedDirectTrap(line, fileIndex, funcInfo, receiverAddr, paramAddrs, resultAddrs))
+			}
+			trapOn = trapOnVar(funcInfo)
+			editor.Insert(funcDecl.End(), ";var "+trapOn+" uint32")
 		}
 
 		funcInfos = append(funcInfos, &edit.FuncInfo{
 			InfoVar:      funcInfo,
+			TrapOnVar:    trapOn,
 			FuncDecl:     funcDecl,
 			IdentityName: identityName,
 			RecvPtr:      recvPtr,

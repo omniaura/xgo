@@ -112,6 +112,11 @@ func DefineFuncLiteral(funcInfo *FuncInfo, stdlib bool, fileVar string, names Pk
 		extra = append(extra, fmt.Sprintf("ResNames:[]string{%s}", JoinQuoteNames(funcInfo.Results.Names(), ",")))
 	}
 
+	if funcInfo.TrapOnVar != "" {
+		// the runtime sets it when something is registered for the function
+		extra = append(extra, "Var:&"+funcInfo.TrapOnVar)
+	}
+
 	literal := makeLiteral(FUNC_INFO_TYPE, PKG_VAR, FILE_VAR, constants.InfoKind_Func, funcInfo.Name, identityName, funcInfo.LineNum, stdlib, extra)
 	return defineLiteral(REGISTER, funcInfo.InfoVar, literal, delayInitProp, delayInitValue)
 }
@@ -207,7 +212,7 @@ func DeclarePkgStubs(pkgPath string, names PkgNames) []string {
 		// a named function rather than a func literal: a literal would take
 		// a closure slot and rename the package's own top-level closures
 		stubs = append(stubs,
-			fmt.Sprintf("func %s_default() bool {return true;}", names.TRAP_ON),
+			fmt.Sprintf("func %s_default(flag *uint32) bool {return true;}", names.TRAP_ON),
 			fmt.Sprintf("var %s = %s_default", names.TRAP_ON, names.TRAP_ON),
 		)
 	}

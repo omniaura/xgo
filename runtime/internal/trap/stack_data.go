@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 
 	"github.com/xhd2015/xgo/runtime/core"
+	"github.com/xhd2015/xgo/runtime/functab"
 	"github.com/xhd2015/xgo/runtime/internal/runtime"
 	"github.com/xhd2015/xgo/runtime/internal/stack"
 	"github.com/xhd2015/xgo/runtime/trace/stack_model"
@@ -22,9 +23,10 @@ var globalInterceptorHolder interceptorHolders
 // accessed atomically.
 var globalInterceptorHolderUsed int32
 
+// markGlobalInterceptorHolderUsed is called after enabling the trap for
+// what was registered: a caller that sees the holder used must also find
+// the trap enabled.
 func markGlobalInterceptorHolderUsed() {
-	// a caller that sees the holder used must also find the trap enabled
-	enableTrap()
 	atomic.StoreInt32(&globalInterceptorHolderUsed, 1)
 }
 
@@ -52,6 +54,33 @@ func enableTrap() {
 	// flag and returns early must find the skip already cleared
 	runtime.XgoSetTrapSkip(false)
 	atomic.StoreInt32(&trapEnabled, 1)
+}
+
+// enableTrapFor makes the function of funcInfo call trap again, so that
+// registering a mock for one function does not slow down every other
+// instrumented call:
+//   - functions guarded by xgo carry their own flag (as FuncInfo.Var, which
+//     only variables use otherwise), and only that flag is set
+//   - functions without a flag are not guarded (dependencies instrumented by
+//     the compiler, the trace package) and always call trap
+//   - when the function is unknown (nil, e.g. a generic instantiation not
+//     registered by PC), every instrumented function is enabled
+func enableTrapFor(funcInfo *core.FuncInfo) {
+	if funcInfo == nil {
+		enableTrap()
+		return
+	}
+	if funcInfo.Kind != core.Kind_Func {
+		return
+	}
+	if flag, ok := funcInfo.Var.(*uint32); ok && flag != nil {
+		atomic.StoreUint32(flag, 1)
+	}
+}
+
+// enableTrapForPC is enableTrapFor the function registered at pc.
+func enableTrapForPC(pc uintptr) {
+	enableTrapFor(functab.InfoPC(pc))
 }
 
 // initTrapSkip lets instrumented functions skip the trap until the first
@@ -114,7 +143,6 @@ func getOrAttachStackDataOf(stk *stack.Stack) *StackData {
 	if ok {
 		return d
 	}
-	enableTrap()
 	d = &StackData{}
 	stk.SetData(dataKey, d)
 	return d
