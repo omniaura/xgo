@@ -31,28 +31,16 @@ func TestTargetPatterns(t *testing.T) {
 	}
 }
 
-func TestNeededPackages(t *testing.T) {
+func TestMatchedPackages(t *testing.T) {
 	list := []*goinfo.Package{
-		{ImportPath: "m/a", Match: []string{"m/...", "./a"}, Imports: []string{"m/b", "fmt"}, XTestImports: []string{"m/testutil"}},
-		{ImportPath: "m/b", Match: []string{"m/..."}, Imports: []string{"m/c"}},
-		{ImportPath: "m/c", Match: []string{"m/..."}},
-		{ImportPath: "m/testutil", Match: []string{"m/..."}, Imports: []string{"m/d"}},
-		{ImportPath: "m/d", Match: []string{"m/..."}},
-		{ImportPath: "m/unrelated", Match: []string{"m/..."}, Imports: []string{"m/b"}},
-		{ImportPath: "fmt", DepOnly: true},
+		{ImportPath: "m/a", Match: []string{"./a"}},
+		{ImportPath: "m/b", Match: []string{"./b/..."}},
+		{ImportPath: "m/b/c", Match: []string{"./b/..."}},
+		{ImportPath: "m/d", DepOnly: true},
 	}
-	targets, needed := neededPackages(list, []string{"./a"})
-	if !reflect.DeepEqual(targets, map[string]bool{"m/a": true}) {
-		t.Errorf("targets = %v", targets)
-	}
-	want := map[string]bool{"m/a": true, "m/b": true, "m/c": true, "m/testutil": true, "m/d": true, "fmt": true}
-	if !reflect.DeepEqual(needed, want) {
-		t.Errorf("needed = %v, want %v", needed, want)
-	}
-	if targets, needed := neededPackages(list, []string{"./a", "./missing"}); targets != nil || needed != nil {
-		t.Errorf("a pattern matching nothing must disable the sets, got %v %v", targets, needed)
-	}
-	if targets, needed := neededPackages(list, nil); targets != nil || needed != nil {
-		t.Errorf("no patterns must disable the sets")
+	got := matchedPackages(list, []string{"./a", "./b/..."})
+	want := map[string]bool{"m/a": true, "m/b": true, "m/b/c": true}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("matchedPackages = %v, want %v", got, want)
 	}
 }

@@ -11,8 +11,9 @@ import (
 // xgo instruments only the main module packages that the command builds.
 // Testing one package must still instrument everything its tests can mock:
 // its dependencies, packages imported only by its tests, and their
-// dependencies (helperdep, mocked by name so that only instrumenting the
-// whole package makes it work).
+// dependencies, and packages that its external tests import which import
+// it in turn (helperdep and consumer are mocked by name, which only works
+// if the package itself was instrumented).
 func TestSinglePackageMocksDepsAndTestOnlyImports(t *testing.T) {
 	root := findXgoRepoRoot(t)
 	modDir := t.TempDir()
@@ -34,6 +35,26 @@ func TestSinglePackageMocksDepsAndTestOnlyImports(t *testing.T) {
 	write("testutil/testutil.go", "package testutil\n\nimport \"example.com/targeted/helperdep\"\n\n"+
 		"func Fixture() string { return \"fixture:\" + helperdep.Seed() }\n")
 	write("unrelated/unrelated.go", "package unrelated\n\nfunc Unused() int { return 0 }\n")
+	// consumer imports svc and only svc's external test imports consumer:
+	// go list -test reports it only as a variant built for svc's test
+	write("consumer/consumer.go", "package consumer\n\nimport \"example.com/targeted/svc\"\n\n"+
+		"func Use() int { return svc.Total() * 2 }\n")
+	write("svc/svc_ext_test.go", `package svc_test
+
+import (
+	"testing"
+
+	"example.com/targeted/consumer"
+	"github.com/xhd2015/xgo/runtime/mock"
+)
+
+func TestConsumer(t *testing.T) {
+	mock.PatchByName("example.com/targeted/consumer", "Use", func() int { return 42 })
+	if got := consumer.Use(); got != 42 {
+		t.Errorf("Use mocked by name: %d", got)
+	}
+}
+`)
 	write("svc/svc.go", "package svc\n\nimport \"example.com/targeted/dep\"\n\n"+
 		"func Total() int { return dep.Compute() + 1 }\n")
 	write("svc/svc_test.go", `package svc
