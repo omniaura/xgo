@@ -36,7 +36,13 @@ type importResult struct {
 	// the packages of the command, instrumentUserCode adds it to the ones
 	// it loads, or addBlankImports must still run (with overlayDir)
 	traceImportsDeferred bool
-	overlayDir           string
+	// pristineTrace is the content of the extracted runtime's trace.go,
+	// whose instrumented version replaces it on disk: instrumentation reads
+	// this instead of resetting the file, which concurrent runs may be
+	// compiling
+	pristineTraceFile string
+	pristineTrace     []byte
+	overlayDir        string
 }
 
 func getProjectRoot(projectDir string, modRootRel []string) string {
@@ -149,6 +155,8 @@ func importRuntimeDepGenOverlay(test bool, goroot string, goBinary string, goVer
 			res.mod = overlayInfo.mod
 			res.modfile = overlayInfo.modfile
 			res.runtimeModuleDir = runtimeModuleDir
+			res.pristineTraceFile = overlayInfo.pristineTraceFile
+			res.pristineTrace = overlayInfo.pristineTrace
 		}
 	}
 
@@ -247,9 +255,14 @@ type dependencyInfo struct {
 	mod string
 	// the -modfile flag
 	modfile string // alternative go.mod
+
+	pristineTraceFile string
+	pristineTrace     []byte
 }
 
 func loadDependency(goroot string, goBinary string, goVersion *goinfo.GoVersion, modfileOption string, xgoSrc string, projectRoot string, mainModule string, vendorDir string, tmpOverlayDir string, tmpRuntime string, forceCopyRuntime bool) (*dependencyInfo, error) {
+	var pristineTraceFile string
+	var pristineTrace []byte
 	if isDevelopment {
 		err := filecopy.NewOptions().Ignore(".xgo", "test").CopyReplaceDir(filepath.Join(xgoSrc, "runtime"), tmpRuntime)
 		if err != nil {
@@ -282,26 +295,35 @@ func loadDependency(goroot string, goBinary string, goVersion *goinfo.GoVersion,
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			// always copy trace.go because it will be instrumented
-			logDebug("extracting runtime/trace/trace.go from xgo to %s", tmpRuntime)
-			content, err := asset.RuntimeGenFS.ReadFile(asset.RuntimeGen + "/trace/trace.go")
-			if err != nil {
-				return nil, err
-			}
-			err = os.WriteFile(filepath.Join(tmpRuntime, "trace", "trace.go"), content, 0755)
-			if err != nil {
-				return nil, err
-			}
 		}
+		// trace.go is instrumented from its pristine content every time
+		content, err := asset.RuntimeGenFS.ReadFile(asset.RuntimeGen + "/trace/trace.go")
+		if err != nil {
+			return nil, err
+		}
+		pristineTraceFile, err = filepath.Abs(filepath.Join(tmpRuntime, "trace", "trace.go"))
+		if err != nil {
+			return nil, err
+		}
+		pristineTrace = content
 	}
 
 	goMod := modfileOption
 	if modfileOption == "" {
 		goMod = filepath.Join(projectRoot, "go.mod")
 	}
-	tmpGoMod := fileutil.RebasePath(tmpOverlayDir, goMod)
-	err := filecopy.CopyFileAll(goMod, tmpGoMod)
+	// edit a private copy: other runs in the project may be using the
+	// published one, see publishGoMod
+	if err := os.MkdirAll(tmpOverlayDir, 0755); err != nil {
+		return nil, err
+	}
+	editDir, err := os.MkdirTemp(tmpOverlayDir, ".tmp-gomod-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(editDir)
+	tmpGoMod := filepath.Join(editDir, "go.mod")
+	err = filecopy.CopyFileAll(goMod, tmpGoMod)
 	if err != nil {
 		return nil, err
 	}
@@ -430,14 +452,21 @@ func loadDependency(goroot string, goBinary string, goVersion *goinfo.GoVersion,
 			return nil, err
 		}
 	}
-	if modfile == "" {
-		goModReplace[overlay.AbsFile(goMod)] = overlay.AbsFile(tmpGoMod)
+	publishedGoMod, err := publishGoMod(filepath.Dir(fileutil.RebasePath(tmpOverlayDir, goMod)), tmpGoMod, tmpGoSum)
+	if err != nil {
+		return nil, err
 	}
-
+	if modfile == "" {
+		goModReplace[overlay.AbsFile(goMod)] = overlay.AbsFile(publishedGoMod)
+	} else if modfile == tmpGoMod {
+		modfile = publishedGoMod
+	}
 	return &dependencyInfo{
-		modReplace: goModReplace,
-		mod:        mod,
-		modfile:    modfile,
+		modReplace:        goModReplace,
+		mod:               mod,
+		modfile:           modfile,
+		pristineTraceFile: pristineTraceFile,
+		pristineTrace:     pristineTrace,
 	}, nil
 }
 
@@ -624,14 +653,10 @@ func addBlankImportForPackage(srcDir string, dstDir string, imports []string, fi
 	mapping := make(map[string]string, len(files))
 	for _, file := range files {
 		srcFile := filepath.Join(srcDir, file)
-		dstFile := fileutil.RebasePath(dstDir, srcFile)
-		err := filecopy.CopyFileAll(srcFile, dstFile)
-		if err != nil {
-			return nil, err
-		}
+		rebased := fileutil.RebasePath(dstDir, srcFile)
 		// add blank import
 		// NOTE: go allows duplicate blank imports
-		content, err := os.ReadFile(dstFile)
+		content, err := os.ReadFile(srcFile)
 		if err != nil {
 			return nil, err
 		}
@@ -639,7 +664,8 @@ func addBlankImportForPackage(srcDir string, dstDir string, imports []string, fi
 		if !ok {
 			return nil, nil
 		}
-		err = os.WriteFile(dstFile, []byte(newContent), 0755)
+		// by content: concurrent runs may read it, see overlay.MakeGoOverlay
+		dstFile, err := overlay.WriteContentFile(filepath.Dir(rebased), filepath.Base(rebased), []byte(newContent))
 		if err != nil {
 			return nil, err
 		}
@@ -756,7 +782,7 @@ func createGoModPlaceholder(file string, modPath string, goVersion string) error
 		return err
 	}
 	content := fmt.Sprintf("module %s\ngo %s\n", modPath, goVersion)
-	err = os.WriteFile(file, []byte(content), 0755)
+	err = overlay.WriteFileIfChanged(file, []byte(content))
 	if err != nil {
 		return err
 	}
@@ -787,4 +813,25 @@ func embeddedRuntimeNumber() (int, error) {
 		return 0, fmt.Errorf("invalid NUMBER in embedded %s: %q", embedPath, embedConstants["NUMBER"])
 	}
 	return number, nil
+}
+
+// publishGoMod copies the edited go.mod, and its go.sum, into a directory
+// under dir named after their contents and returns the new go.mod: the go
+// command of a run reads them (and may add to go.sum) while other runs in
+// the project prepare theirs.
+func publishGoMod(dir string, goMod string, goSum string) (string, error) {
+	files := make(map[string][]byte, 2)
+	content, err := os.ReadFile(goMod)
+	if err != nil {
+		return "", err
+	}
+	files["go.mod"] = content
+	if content, err := os.ReadFile(goSum); err == nil {
+		files["go.sum"] = content
+	}
+	contentDir, err := overlay.WriteContentFiles(dir, files)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(contentDir, "go.mod"), nil
 }

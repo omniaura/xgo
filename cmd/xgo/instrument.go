@@ -68,13 +68,17 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	}
 
 	overrideXgoContent := func(absFile overlay.AbsFile, content string) {
-		if xgoRuntimeModuleDir == "" {
+		// a file instrumented from an in-memory content (the pristine
+		// trace.go, see importResult.pristineTrace) stays in the overlay:
+		// other runs in the project may be compiling the file on disk
+		if xgoRuntimeModuleDir == "" || overlayFS.Get(absFile) != nil {
 			overlayFS.OverrideContent(absFile, content)
 			return
 		}
-		// we can directly replace the go files in the xgoRuntimeModuleDir
-		// just write back the content to the file
-		err := os.WriteFile(string(absFile), strutil.ToReadonlyBytes(content), 0644)
+		// we can directly replace the other go files in the
+		// xgoRuntimeModuleDir: their content is the same for the same
+		// runtime, write it only when it differs, and atomically
+		err := overlay.WriteFileIfChanged(string(absFile), strutil.ToReadonlyBytes(content))
 		if err != nil {
 			panic(err)
 		}
@@ -770,28 +774,31 @@ func humanReadablePath(path string) string {
 	return rel
 }
 
-func writeCompilerExtra(compilerExtra *compiler_extra.Packages, compilerExtraFile string, compilerExtraSumFile string) error {
+// writeCompilerExtra writes the compiler extra mapping and its sums into
+// content directories under overlayDir, so that concurrent runs needing
+// different ones do not overwrite each other's, and returns their paths.
+func writeCompilerExtra(compilerExtra *compiler_extra.Packages, overlayDir string) (string, string, error) {
 	mapping := compilerExtra.BuildMapping()
 	extraData, err := json.Marshal(mapping)
 	if err != nil {
-		return err
+		return "", "", err
 	}
-	err = os.WriteFile(compilerExtraFile, extraData, 0755)
+	compilerExtraFile, err := overlay.WriteContentFile(overlayDir, "compiler_extra.json", extraData)
 	if err != nil {
-		return fmt.Errorf("write compiler extra file: %w", err)
+		return "", "", fmt.Errorf("write compiler extra file: %w", err)
 	}
 
 	// pkg->sum
 	md5sumMapping := compilerExtra.BuildMD5SumMapping()
 	sumData, err := json.Marshal(md5sumMapping)
 	if err != nil {
-		return fmt.Errorf("write compiler extra sum file: %w", err)
+		return "", "", fmt.Errorf("write compiler extra sum file: %w", err)
 	}
-	err = os.WriteFile(compilerExtraSumFile, sumData, 0755)
+	compilerExtraSumFile, err := overlay.WriteContentFile(overlayDir, "compiler_extra.sum.json", sumData)
 	if err != nil {
-		return fmt.Errorf("write compiler extra sum file: %w", err)
+		return "", "", fmt.Errorf("write compiler extra sum file: %w", err)
 	}
-	return nil
+	return compilerExtraFile, compilerExtraSumFile, nil
 }
 
 // matchedPackages returns the packages that patterns select, according to

@@ -787,6 +787,10 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 					overlayFS.OverrideFile(mod, target)
 				}
 				xgoRuntimeModuleDir = impResult.runtimeModuleDir
+				if impResult.pristineTraceFile != "" {
+					// instrumented from this, see overrideXgoContent
+					overlayFS.OverrideContent(overlay.AbsFile(impResult.pristineTraceFile), string(impResult.pristineTrace))
+				}
 			}
 		}
 
@@ -847,9 +851,7 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 			if err != nil {
 				return fmt.Errorf("make compiler extra file absolute: %w", err)
 			}
-			compilerExtraFile := filepath.Join(absLocalGen, "compiler_extra.json")
-			compilerExtraSumFile := filepath.Join(absLocalGen, "compiler_extra.sum.json")
-			err = writeCompilerExtra(instrumentUserCodeResult.compilerExtra, compilerExtraFile, compilerExtraSumFile)
+			compilerExtraFile, compilerExtraSumFile, err := writeCompilerExtra(instrumentUserCodeResult.compilerExtra, filepath.Join(absLocalGen, "overlay"))
 			if err != nil {
 				return err
 			}
@@ -859,7 +861,12 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		}
 
 		if len(overlayFS) > 0 {
-			generatedGoOverlay, err := overlayFS.MakeGoOverlay(filepath.Join(localXgoGenDir, "overlay"), overlay.Options{
+			// generated files are kept by content, see MakeGoOverlay
+			genOverlayDir := filepath.Join(localXgoGenDir, "overlay")
+			if err := overlay.MaybeCleanGoOverlay(genOverlayDir, 24*time.Hour, 7*24*time.Hour); err != nil {
+				logDebug("clean overlay: %v", err)
+			}
+			generatedGoOverlay, err := overlayFS.MakeGoOverlay(genOverlayDir, overlay.Options{
 				NoLineDirective: noLineDirective,
 				PathMappings:    getPathMappings(instrumentGoroot, projectRoot),
 			})
@@ -876,12 +883,12 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 				callerOverlay.ProjectOntoCallerSources(goOverlay)
 			}
 			if len(goOverlay.Replace) > 0 {
-				overlayFile = filepath.Join(localXgoGenDir, "overlay.json")
-				logDebug("write overlay file: %s", overlayFile)
-				err = goOverlay.Write(overlayFile)
+				// other runs in the project can use other overlays
+				overlayFile, err = goOverlay.WriteContent(genOverlayDir)
 				if err != nil {
 					return err
 				}
+				logDebug("write overlay file: %s", overlayFile)
 				if projectDir != "" {
 					overlayFile, err = filepath.Abs(overlayFile)
 					if err != nil {
