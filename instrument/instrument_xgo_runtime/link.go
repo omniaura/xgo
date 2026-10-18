@@ -63,6 +63,7 @@ func LinkXgoRuntime(goroot string, projectDir string, xgoRuntimeModuleDir string
 			Overlay:     overlayFS,
 			Fset:        fset,
 			OverlayFile: linkOpts.OverlayFile,
+			Goroot:      goroot,
 			GoVersion:   goVersion,
 		}
 	} else {
@@ -73,6 +74,7 @@ func LinkXgoRuntime(goroot string, projectDir string, xgoRuntimeModuleDir string
 			ModFile:     modfile,
 			Fset:        fset,
 			OverlayFile: linkOpts.OverlayFile,
+			Goroot:      goroot,
 			GoVersion:   goVersion,
 		}
 	}
