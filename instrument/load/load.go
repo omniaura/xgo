@@ -150,7 +150,7 @@ func readFile(overlayFS overlay.Overlay, absFilePath string, maxFileSize int64) 
 }
 
 func parseFile(fset *token.FileSet, absFilePath string, content []byte) (*ast.File, error) {
-	return parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments)
+	return parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments|parser.SkipObjectResolution)
 }
 
 func (c *Packages) Filter(f func(pkg *Package) bool) *Packages {
@@ -179,7 +179,7 @@ func readAndParseFile(fset *token.FileSet, absFilePath string, overlayFS overlay
 	}
 	f.Content = content
 
-	file, err := parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments)
+	file, err := parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments|parser.SkipObjectResolution)
 	if err != nil {
 		f.Error = err
 		return f
