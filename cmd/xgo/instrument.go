@@ -45,12 +45,15 @@ const MAX_FILE_SIZE = 1 * 1024 * 1024
 
 type instrumentResult struct {
 	compilerExtra *compiler_extra.Packages
+	// traceImportsAdded: import _ "…/runtime/trace" was added to the
+	// packages of the command
+	traceImportsAdded bool
 }
 
 // goroot is critical for stdlib
 // includeAsMainModules: extra module paths treated as main for mock/trap (option B:
 // reclassify packages already on the load graph; do not bulk-load module/...).
-func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool, trimpath bool, pkgPatterns []string) (*instrumentResult, error) {
+func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool, trimpath bool, pkgPatterns []string, addTraceImports bool) (*instrumentResult, error) {
 	logDebug("instrumentUserSpace: mod=%s, modfile=%s, xgoRuntimeModuleDir=%s, includeTest=%v, collectTestTrace=%v, includeAsMainModules=%v, overlayFile=%s", mod, modfile, xgoRuntimeModuleDir, includeTest, collectTestTrace, includeAsMainModules, overlayFile)
 	if mod == "" {
 		// check vendor dir
@@ -397,6 +400,12 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	logDebug("generate functab register")
 	registerFuncTab(pkgs, trimpath)
 
+	var traceImportsAdded bool
+	if addTraceImports && targetPkgs != nil {
+		addTraceImportEdits(pkgs, targetPkgs)
+		traceImportsAdded = true
+	}
+
 	logDebug("collect edits")
 	updatedFiles, err := applyInstrumentWithEditNotes(overlayFS, pkgs, mayHaveCover, overrideXgoContent)
 	if err != nil {
@@ -410,8 +419,38 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	}
 	logDebug("finish instruments, updated %d files", updatedFiles)
 	return &instrumentResult{
-		compilerExtra: compilerExtra,
+		compilerExtra:     compilerExtra,
+		traceImportsAdded: traceImportsAdded,
 	}, nil
+}
+
+// addTraceImportEdits adds import _ "…/runtime/trace" to the packages of
+// the command, like addBlankImports does with copies of their files, but
+// as an edit of the files already loaded: one Go file, or every test file
+// of packages that only have tests. Inserted right after the package
+// name, it keeps line numbers.
+func addTraceImportEdits(pkgs *edit.Packages, targets map[string]bool) {
+	for _, pkg := range pkgs.Packages {
+		goPkg := pkg.LoadPackage.GoPackage
+		if !targets[goPkg.ImportPath] || goPkg.Standard {
+			continue
+		}
+		var files []string
+		if len(goPkg.GoFiles) > 0 {
+			if hasString(goPkg.Imports, constants.RUNTIME_TRACE_PKG) {
+				continue
+			}
+			files = goPkg.GoFiles[:1]
+		} else {
+			files = append(append(files, goPkg.TestGoFiles...), goPkg.XTestGoFiles...)
+		}
+		for _, file := range pkg.Files {
+			if file.File.Syntax == nil || !hasString(files, file.File.Name) {
+				continue
+			}
+			file.Edit.Insert(file.File.Syntax.Name.End(), fmt.Sprintf(";import _ %q", constants.RUNTIME_TRACE_PKG))
+		}
+	}
 }
 
 func md5sumTraps(files []*compiler_extra.File, hasVarTrap bool) string {
@@ -766,4 +805,13 @@ func matchedPackages(list []*goinfo.Package, patterns []string) map[string]bool 
 		}
 	}
 	return targets
+}
+
+func hasString(list []string, s string) bool {
+	for _, e := range list {
+		if e == s {
+			return true
+		}
+	}
+	return false
 }
