@@ -146,6 +146,12 @@ func Traverse(registry PackageRegistry, packages []*edit.Package, recorder *Reco
 				// skip test files outside main package
 				continue
 			}
+			// Expressions are resolved, and looked up again, within the
+			// file being traversed. Keeping the results of every file grew
+			// the cache to every expression of the program, and let a
+			// result derived from an unfinished (cyclic) resolution in one
+			// file shadow the actual type in all files after it.
+			global.ExprInfo = nil
 			traverseFuncDecls(global, pkg, file)
 		}
 	}
