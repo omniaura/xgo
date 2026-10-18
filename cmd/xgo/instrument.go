@@ -492,7 +492,8 @@ func applyInstrumentWithEditNotes(overlayFS overlay.Overlay, packages *edit.Pack
 			if !file.Edit.HasEdit() {
 				continue
 			}
-			content := string(file.Edit.Buffer().Bytes())
+			// Bytes returns a new slice, used nowhere else
+			content := strutil.ToReadonlyString(file.Edit.Buffer().Bytes())
 			if mayHaveCover {
 				var err error
 				content, err = instrument_go.AddEditsNotes(file.Edit, file.File.AbsPath, strutil.ToReadonlyString(file.File.Content), content)
