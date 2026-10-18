@@ -7,8 +7,8 @@ import "fmt"
 // moves REVISION and NUMBER together with the core ones below.
 // They are no longer stamped on every commit.
 const VERSION = "1.3.1"
-const REVISION = "7e4dc2cab0e7f4a6f9a037097edcaa7911644d53+1"
-const NUMBER = 682
+const REVISION = "bb465ba5d5e08c217c4c8f917b5b825dda5512c6+1"
+const NUMBER = 683
 
 // Rationale: xgo consists of these modules:
 //
@@ -38,8 +38,8 @@ const NUMBER = 682
 // to update, run `go run ./script/release bump-core`, it sets both groups
 // of constants to the current commit and regenerates the runtime copies.
 const CORE_VERSION = "1.2.2"
-const CORE_REVISION = "04ac83543bcc3f8a76e32472c44c7d39e283052d+1"
-const CORE_NUMBER = 650
+const CORE_REVISION = "bb465ba5d5e08c217c4c8f917b5b825dda5512c6+1"
+const CORE_NUMBER = 683
 
 func getRevision() string {
 	return formatRevision(VERSION, REVISION, NUMBER)
