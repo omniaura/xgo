@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/xhd2015/xgo/cmd/xgo/pathsum"
 )
 
 // xgo keeps one instrumented GOROOT per Go toolchain and one instrumented
@@ -16,6 +18,7 @@ import (
 const (
 	gcMarkFile     = ".xgo-last-used"
 	gcStampFile    = ".xgo-gc.txt"
+	gcTombPrefix   = ".xgo-gc-removing-"
 	gcMarkInterval = 1 * time.Hour
 	gcInterval     = 24 * time.Hour
 
@@ -23,6 +26,9 @@ const (
 	staleBuildCacheAge = 5 * 24 * time.Hour
 	// an instrumented GOROOT is small but costs a minute to recreate
 	staleInstrumentDirAge = 14 * 24 * time.Hour
+	// an instrumented GOROOT from an xgo that did not mark it, whose build
+	// cache is gone too, has no reliable last-use time
+	staleUnmarkedInstrumentDirAge = 30 * 24 * time.Hour
 )
 
 type gcUnit struct {
@@ -33,13 +39,21 @@ type gcUnit struct {
 	namePrefix   string
 	nameContains string
 	maxAge       time.Duration
+	// noMark: only collect siblings, dir is not in use by this run
+	noMark bool
+	// for instrumented GOROOTs: the parent of their default build caches.
+	// Using a GOROOT does not touch it, so for one without a mark the
+	// activity of its build cache tells when it was last used.
+	cacheParent string
 }
 
 // gcStaleCaches marks every unit's dir as used and removes stale siblings.
 // It is best-effort: errors only skip the affected directory.
 func gcStaleCaches(units []gcUnit, now time.Time) {
 	for _, u := range units {
-		markUsed(u.dir, now)
+		if !u.noMark {
+			markUsed(u.dir, now)
+		}
 	}
 	for _, u := range units {
 		parent := filepath.Dir(u.dir)
@@ -50,7 +64,13 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 		if err != nil {
 			continue
 		}
+		recordGC(parent, now)
 		for _, e := range entries {
+			if e.IsDir() && strings.HasPrefix(e.Name(), gcTombPrefix) {
+				// left by an interrupted removal
+				os.RemoveAll(filepath.Join(parent, e.Name()))
+				continue
+			}
 			if !e.IsDir() || !strings.HasPrefix(e.Name(), u.namePrefix) || !strings.Contains(e.Name(), u.nameContains) {
 				continue
 			}
@@ -58,14 +78,70 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 			if dir == u.dir {
 				continue
 			}
-			lastUsed, ok := lastUsedTime(dir)
-			if !ok || now.Sub(lastUsed) < u.maxAge {
+			if !u.isStale(dir, now) {
 				continue
 			}
-			logDebug("gc: remove %s, last used %s", dir, lastUsed.Format(time.RFC3339))
-			os.RemoveAll(dir)
+			// Another run may start using dir right now. Move it out of the
+			// way first, so no run can find it while it is half removed,
+			// then check its mark again and restore it if it was just used.
+			tomb := filepath.Join(parent, gcTombPrefix+e.Name())
+			if os.Rename(dir, tomb) != nil {
+				continue
+			}
+			if t, ok := markTime(tomb); ok && now.Sub(t) < u.maxAge {
+				os.Rename(tomb, dir)
+				continue
+			}
+			logDebug("gc: remove %s", dir)
+			os.RemoveAll(tomb)
 		}
 	}
+}
+
+func (u gcUnit) isStale(dir string, now time.Time) bool {
+	if t, ok := markTime(dir); ok {
+		return now.Sub(t) >= u.maxAge
+	}
+	lastUsed, ok := lastUsedTime(dir)
+	if !ok {
+		return false
+	}
+	if u.cacheParent == "" {
+		return now.Sub(lastUsed) >= u.maxAge
+	}
+	cacheDir, ok := instrumentCacheDirOf(u.cacheParent, dir)
+	if ok {
+		if t, ok := lastUsedTime(cacheDir); ok {
+			if t.After(lastUsed) {
+				lastUsed = t
+			}
+			return now.Sub(lastUsed) >= u.maxAge
+		}
+	}
+	return now.Sub(lastUsed) >= staleUnmarkedInstrumentDirAge
+}
+
+// instrumentCacheDirOf returns the default build cache dir xgo uses for the
+// instrumented GOROOT dir (named <goVersion>_<path sum>), see main.go.
+func instrumentCacheDirOf(cacheParent string, instrumentDir string) (string, bool) {
+	name := filepath.Base(instrumentDir)
+	i := strings.IndexByte(name, '_')
+	if i < 0 {
+		return "", false
+	}
+	mapped, err := pathsum.PathSum(name[:i+1], instrumentDir)
+	if err != nil {
+		return "", false
+	}
+	return filepath.Join(cacheParent, mapped), true
+}
+
+func markTime(dir string) (time.Time, bool) {
+	info, err := os.Stat(filepath.Join(dir, gcMarkFile))
+	if err != nil {
+		return time.Time{}, false
+	}
+	return info.ModTime(), true
 }
 
 func markUsed(dir string, now time.Time) {
@@ -81,19 +157,21 @@ func markUsed(dir string, now time.Time) {
 	}
 }
 
-// shouldGC reports whether parent was not scanned within gcInterval, and
-// records this scan.
+// shouldGC reports whether parent was not scanned within gcInterval.
 func shouldGC(parent string, now time.Time) bool {
+	info, err := os.Stat(filepath.Join(parent, gcStampFile))
+	if err != nil {
+		return true
+	}
+	d := now.Sub(info.ModTime())
+	return d >= gcInterval || d <= -gcMarkInterval
+}
+
+func recordGC(parent string, now time.Time) {
 	stamp := filepath.Join(parent, gcStampFile)
-	if info, err := os.Stat(stamp); err == nil {
-		if d := now.Sub(info.ModTime()); d < gcInterval && d > -gcMarkInterval {
-			return false
-		}
+	if os.WriteFile(stamp, []byte(now.Format(time.RFC3339)), 0644) == nil {
+		os.Chtimes(stamp, now, now)
 	}
-	if err := os.WriteFile(stamp, []byte(now.Format(time.RFC3339)), 0644); err != nil {
-		return false
-	}
-	return true
 }
 
 // lastUsedTime returns when dir was last used by an xgo run. Directories
@@ -101,8 +179,8 @@ func shouldGC(parent string, now time.Time) bool {
 // modification time among dir and its direct entries, which for a build
 // cache includes the trim stamp go refreshes daily while the cache is used.
 func lastUsedTime(dir string) (time.Time, bool) {
-	if info, err := os.Stat(filepath.Join(dir, gcMarkFile)); err == nil {
-		return info.ModTime(), true
+	if t, ok := markTime(dir); ok {
+		return t, true
 	}
 	info, err := os.Stat(dir)
 	if err != nil {
@@ -134,14 +212,18 @@ func lastUsedTime(dir string) (time.Time, bool) {
 // cacheGCUnits lists what this run uses: the build cache (the per-GOROOT
 // cache dir, or the namespace under XGO_BUILD_CACHE_DIR) and, unless GOROOT
 // was instrumented elsewhere, the instrumented GOROOT under the xgo home.
+// With XGO_BUILD_CACHE_DIR, default per-GOROOT caches left by earlier runs
+// are still collected.
 func cacheGCUnits(instrumentDir string, instrumentCacheDir string, buildCacheDir string, buildCacheOverride string, xgoManagedInstrumentDir bool) []gcUnit {
-	units := []gcUnit{{dir: instrumentCacheDir, namePrefix: "go", maxAge: staleBuildCacheAge}}
+	defaultCache := gcUnit{dir: instrumentCacheDir, namePrefix: "go", maxAge: staleBuildCacheAge}
+	var units []gcUnit
 	if buildCacheOverride != "" {
-		units[0] = gcUnit{dir: buildCacheDir, namePrefix: "go", nameContains: "_xgo", maxAge: staleBuildCacheAge}
+		defaultCache.noMark = true
+		units = append(units, gcUnit{dir: buildCacheDir, namePrefix: "go", nameContains: "_xgo", maxAge: staleBuildCacheAge})
 	}
+	units = append(units, defaultCache)
 	if xgoManagedInstrumentDir {
-		units = append(units, gcUnit{dir: instrumentDir, namePrefix: "go", maxAge: staleInstrumentDirAge})
+		units = append(units, gcUnit{dir: instrumentDir, namePrefix: "go", maxAge: staleInstrumentDirAge, cacheParent: filepath.Dir(instrumentCacheDir)})
 	}
 	return units
 }
-
