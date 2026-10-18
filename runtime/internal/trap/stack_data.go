@@ -1,6 +1,8 @@
 package trap
 
 import (
+	"sync/atomic"
+
 	"github.com/xhd2015/xgo/runtime/core"
 	"github.com/xhd2015/xgo/runtime/internal/stack"
 	"github.com/xhd2015/xgo/runtime/trace/stack_model"
@@ -11,6 +13,20 @@ type dataKeyType struct{}
 var dataKey = dataKeyType{}
 
 var globalInterceptorHolder interceptorHolders
+
+// globalInterceptorHolderUsed is 1 once anything is registered into
+// globalInterceptorHolder. That only happens during init, but goroutines
+// started by init functions may already run instrumented code, so it is
+// accessed atomically.
+var globalInterceptorHolderUsed int32
+
+func markGlobalInterceptorHolderUsed() {
+	atomic.StoreInt32(&globalInterceptorHolderUsed, 1)
+}
+
+func isGlobalInterceptorHolderUsed() bool {
+	return atomic.LoadInt32(&globalInterceptorHolderUsed) != 0
+}
 
 type StackData struct {
 	hasStartedTracing bool
