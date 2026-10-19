@@ -54,13 +54,13 @@ func TestPrepareInstrumentDirConcurrentAndRepair(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			lease, err := prepareInstrumentDir(dir, "revision", false, build)
+			lease, err := prepareInstrumentDir(dir, testSetupRecord("revision", filepath.Join("src", "html", "template", "template.go")), false, build)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			defer lease.close()
-			if !completeInstrumentDir(dir, "revision") {
+			if !completeInstrumentDir(dir, testSetupRecord("revision", filepath.Join("src", "html", "template", "template.go"))) {
 				t.Error("published incomplete tree")
 			}
 		}()
@@ -72,15 +72,15 @@ func TestPrepareInstrumentDirConcurrentAndRepair(t *testing.T) {
 	if err := os.RemoveAll(filepath.Join(dir, "src", "html")); err != nil {
 		t.Fatal(err)
 	}
-	lease, err := prepareInstrumentDir(dir, "revision", false, build)
+	lease, err := prepareInstrumentDir(dir, testSetupRecord("revision", filepath.Join("src", "html", "template", "template.go")), false, build)
 	if err != nil {
 		t.Fatal(err)
 	}
 	lease.close()
-	if builds != 2 || !completeInstrumentDir(dir, "revision") {
+	if builds != 2 || !completeInstrumentDir(dir, testSetupRecord("revision", filepath.Join("src", "html", "template", "template.go"))) {
 		t.Fatal("did not repair partially deleted tree")
 	}
-	if completeInstrumentDir(dir, "other-revision") {
+	if completeInstrumentDir(dir, testSetupRecord("other-revision", filepath.Join("src", "html", "template", "template.go"))) {
 		t.Fatal("accepted wrong revision")
 	}
 }
@@ -90,15 +90,15 @@ func TestPrepareInstrumentDirFailureAndReset(t *testing.T) {
 	build := func(stage string) error {
 		return os.WriteFile(filepath.Join(stage, "file"), []byte("ready"), 0644)
 	}
-	lease, err := prepareInstrumentDir(dir, "r", false, build)
+	lease, err := prepareInstrumentDir(dir, testSetupRecord("r", "file"), false, build)
 	if err != nil {
 		t.Fatal(err)
 	}
 	lease.close()
-	_, err = prepareInstrumentDir(dir, "r", true, func(stage string) error {
+	_, err = prepareInstrumentDir(dir, testSetupRecord("r", "file"), true, func(stage string) error {
 		return fmt.Errorf("interrupted setup")
 	})
-	if err == nil || !completeInstrumentDir(dir, "r") {
+	if err == nil || !completeInstrumentDir(dir, testSetupRecord("r", "file")) {
 		t.Fatal("failed staging build damaged published tree")
 	}
 	entries, err := os.ReadDir(filepath.Dir(dir))
@@ -152,14 +152,14 @@ func TestResetWaitsForConsumer(t *testing.T) {
 	build := func(stage string) error {
 		return os.WriteFile(filepath.Join(stage, "file"), []byte("ready"), 0644)
 	}
-	lease, err := prepareInstrumentDir(dir, "r", false, build)
+	lease, err := prepareInstrumentDir(dir, testSetupRecord("r", "file"), false, build)
 	if err != nil {
 		t.Fatal(err)
 	}
 	entered := make(chan struct{})
 	done := make(chan error, 1)
 	go func() {
-		next, err := prepareInstrumentDir(dir, "r", true, func(stage string) error {
+		next, err := prepareInstrumentDir(dir, testSetupRecord("r", "file"), true, func(stage string) error {
 			close(entered)
 			return build(stage)
 		})
@@ -181,5 +181,133 @@ func TestResetWaitsForConsumer(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("reset did not resume after consumer exited")
+	}
+}
+
+func testSetupRecord(revision, path string) setupRecord {
+	return setupRecord{Revision: revision, Sentinels: []setupSentinel{{Path: path}}}
+}
+
+func TestSetupSentinels(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "target"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "target", "file"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "link")
+	if err := os.Symlink("target", link); err != nil {
+		t.Skip(err)
+	}
+	record := setupRecord{Revision: "r", GoVersion: "go1.27.2", FilePatches: true, Sentinels: []setupSentinel{{Path: "link", Dir: true}, {Path: filepath.Join("link", "file")}}}
+	if err := writeSetupManifest(dir, record); err != nil {
+		t.Fatal(err)
+	}
+	if !completeInstrumentDir(dir, record) {
+		t.Fatal("directory symlink rejected")
+	}
+	changed := record
+	changed.FilePatches = false
+	if completeInstrumentDir(dir, changed) {
+		t.Fatal("accepted incompatible patch mode")
+	}
+	changed = record
+	changed.GoVersion = "go1.28.0"
+	if completeInstrumentDir(dir, changed) {
+		t.Fatal("accepted incompatible Go version")
+	}
+	if err := os.Remove(filepath.Join(dir, "target", "file")); err != nil {
+		t.Fatal(err)
+	}
+	if completeInstrumentDir(dir, record) {
+		t.Fatal("accepted missing sentinel")
+	}
+}
+
+func TestGCAbandonedSetup(t *testing.T) {
+	parent := t.TempDir()
+	current := filepath.Join(parent, "go_current")
+	now := time.Now()
+	for _, name := range []string{"go_current", ".xgo-setup-old", ".xgo-setup-live", ".xgo-setup-new"} {
+		dir := filepath.Join(parent, name)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		when := now.Add(-2 * staleSetupAge)
+		if name == ".xgo-setup-new" {
+			when = now
+		}
+		if err := os.Chtimes(dir, when, when); err != nil {
+			t.Fatal(err)
+		}
+	}
+	live := filepath.Join(parent, ".xgo-setup-live")
+	lease, err := lockCache(live, true, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lease.close()
+	units := []gcUnit{{dir: current, namePrefix: "go", maxAge: staleInstrumentDirAge}}
+	gcStaleCaches(units, now)
+	if _, err := os.Stat(filepath.Join(parent, ".xgo-setup-old")); !os.IsNotExist(err) {
+		t.Fatal("abandoned stage retained", err)
+	}
+	for _, name := range []string{".xgo-setup-live", ".xgo-setup-new"} {
+		if _, err := os.Stat(filepath.Join(parent, name)); err != nil {
+			t.Fatal("collected active or young stage", err)
+		}
+	}
+	lease.close()
+	gcStaleCaches(units, now.Add(2*gcInterval))
+	if _, err := os.Stat(live); !os.IsNotExist(err) {
+		t.Fatal("released abandoned stage retained", err)
+	}
+}
+
+func TestSetupMarkerIsBounded(t *testing.T) {
+	dir := t.TempDir()
+	record := instrumentSetupRecord("revision", "go1.27.2", true)
+	for _, sentinel := range record.Sentinels {
+		path := filepath.Join(dir, sentinel.Path)
+		if sentinel.Dir {
+			if err := os.MkdirAll(path, 0755); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, nil, 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if err := writeSetupManifest(dir, record); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(filepath.Join(dir, setupManifest))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() > 1024 {
+		t.Fatal("marker grew beyond fixed sentinel metadata", info.Size())
+	}
+	if !completeInstrumentDir(dir, record) {
+		t.Fatal("complete sentinels rejected")
+	}
+	// Other source trees are deliberately not inventoried. Repair on an
+	// arbitrary Go error is not automatic; use setup --reset in that case.
+	if err := os.MkdirAll(filepath.Join(dir, "other", "tree"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if !completeInstrumentDir(dir, record) {
+		t.Fatal("unrelated source tree affected validation")
+	}
+	if err := os.RemoveAll(filepath.Join(dir, record.Sentinels[3].Path)); err != nil {
+		t.Fatal(err)
+	}
+	if completeInstrumentDir(dir, record) {
+		t.Fatal("missing html/template sentinel accepted")
 	}
 }

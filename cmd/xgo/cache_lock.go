@@ -16,7 +16,7 @@ func lockCache(dir string, exclusive, wait bool) (*cacheLock, error) {
 	if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(filepath.Join(filepath.Dir(dir), "."+filepath.Base(dir)+".lock"), os.O_CREATE|os.O_RDWR, 0644)
+	f, err := os.OpenFile(cacheLockPath(dir), os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -33,4 +33,8 @@ func (l *cacheLock) close() {
 		l.file.Close()
 		l.file = nil
 	}
+}
+
+func cacheLockPath(dir string) string {
+	return filepath.Join(filepath.Dir(dir), "."+filepath.Base(dir)+".lock")
 }

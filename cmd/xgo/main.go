@@ -507,7 +507,7 @@ func handleBuild(cmd string, args []string) error {
 		// tries locks without waiting, so it cannot invert this order.
 		var instrumentLease *cacheLock
 		if !noSetup && !instrumented && !opts.patchGorootInPlace && !isDevelopment {
-			instrumentLease, err = prepareInstrumentDir(instrumentDir, getCoreRevision(), resetInstrument || buildCompiler, func(stage string) error {
+			instrumentLease, err = prepareInstrumentDir(instrumentDir, instrumentSetupRecord(getCoreRevision(), goVersionName, *opts.useFilePatches), resetInstrument || buildCompiler, func(stage string) error {
 				stageGoroot := filepath.Join(stage, goVersionName)
 				if err := syncGoroot(goroot, stageGoroot, filepath.Join(stage, "full-sync-record.txt"), *opts.useFilePatches && runtime.GOOS != "windows"); err != nil {
 					return err

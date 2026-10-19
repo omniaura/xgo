@@ -18,6 +18,8 @@ import (
 const (
 	gcMarkFile     = ".xgo-last-used"
 	gcStampFile    = ".xgo-gc.txt"
+	staleSetupAge  = time.Hour
+	gcSetupPrefix  = ".xgo-setup-"
 	gcTombPrefix   = ".xgo-gc-removing-"
 	gcMarkInterval = 1 * time.Hour
 	gcInterval     = 24 * time.Hour
@@ -66,6 +68,25 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 		}
 		recordGC(parent, now)
 		for _, e := range entries {
+			if e.IsDir() && strings.HasPrefix(e.Name(), gcSetupPrefix) {
+				stage := filepath.Join(parent, e.Name())
+				info, err := e.Info()
+				if err != nil || now.Sub(info.ModTime()) < staleSetupAge {
+					continue
+				}
+				lease, err := lockCache(stage, true, false)
+				if err == nil {
+					// Recheck after acquiring the lease; active stages retain
+					// an exclusive lease through publication or cleanup.
+					info, err := os.Stat(stage)
+					removed := err == nil && now.Sub(info.ModTime()) >= staleSetupAge && os.RemoveAll(stage) == nil
+					lease.close()
+					if removed {
+						os.Remove(cacheLockPath(stage))
+					}
+				}
+				continue
+			}
 			if e.IsDir() && strings.HasPrefix(e.Name(), gcTombPrefix) {
 				original := filepath.Join(parent, strings.TrimPrefix(e.Name(), gcTombPrefix))
 				lease, err := lockCache(original, true, false)
