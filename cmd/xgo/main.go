@@ -523,7 +523,12 @@ func handleBuild(cmd string, args []string) error {
 		} else {
 			// Development and in-place patching mutate their tree directly;
 			// serialize them for the entire invocation, including consumers.
-			instrumentLease, err = lockCache(instrumentDir, !noSetup && (!instrumented || isDevelopment || opts.patchGorootInPlace), true)
+			leaseDir := instrumentDir
+			if opts.patchGorootInPlace {
+				// All revisions patch the same source tree in this mode.
+				leaseDir = goroot
+			}
+			instrumentLease, err = lockCache(leaseDir, !noSetup && (!instrumented || isDevelopment || opts.patchGorootInPlace), true)
 		}
 		if err != nil {
 			return err

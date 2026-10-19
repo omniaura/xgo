@@ -40,7 +40,7 @@ func instrumentSetupRecord(revision, goVersion string, filePatches bool) setupRe
 }
 
 func instrumentRevisionKey(revision string, filePatches bool) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s:file-patches=%t", revision, filePatches))))[:16]
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s:file-patches=%t:%s/%s", revision, filePatches, runtime.GOOS, runtime.GOARCH))))[:16]
 }
 
 // The marker is written last after the private build. Warm validation is
