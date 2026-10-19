@@ -12,6 +12,7 @@ import (
 	"github.com/xhd2015/xgo/instrument/config"
 	"github.com/xhd2015/xgo/instrument/config/config_debug"
 	"github.com/xhd2015/xgo/instrument/edit"
+	"github.com/xhd2015/xgo/instrument/load"
 )
 
 func CollectDecls(pkg *edit.Package) {
@@ -215,12 +216,29 @@ type declVarRef struct {
 	ref  *edit.VarRef
 }
 
-// syncRegistry serializes loading packages for the parallel traversal. A
-// package is handed out only with its declarations collected, so that the
-// workers can read them without locking.
+// syncRegistry makes a registry safe for the parallel traversal. A package
+// is handed out only with its declarations collected, so that the workers
+// can read them without locking. Packages listed but not parsed yet are
+// parsed outside of the lock, so that the workers parse different packages
+// in parallel; a package being parsed is waited for, not reported missing,
+// so the lookups give the same answers whatever the scheduling.
 type syncRegistry struct {
 	mu       sync.Mutex
 	registry PackageRegistry
+	inflight map[string]*inflightPackage
+}
+
+type inflightPackage struct {
+	pkg  *load.Package
+	done chan struct{}
+}
+
+// deferredRegistry is implemented by registries that can parse a listed
+// package without being locked.
+type deferredRegistry interface {
+	TakeDeferred(pkgPath string) *load.Package
+	ParseDeferredPackage(pkg *load.Package)
+	AddParsed(pkg *load.Package)
 }
 
 func (c *syncRegistry) Fset() *token.FileSet {
@@ -230,16 +248,58 @@ func (c *syncRegistry) Fset() *token.FileSet {
 
 func (c *syncRegistry) LoadPackage(pkgPath string) (*edit.Package, bool, error) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	pkg, ok, err := c.registry.LoadPackage(pkgPath)
+	if f := c.inflight[pkgPath]; f != nil {
+		c.mu.Unlock()
+		<-f.done
+		c.mu.Lock()
+	}
+	if pkg := c.registry.GetPackage(pkgPath); pkg != nil {
+		CollectDecls(pkg)
+		c.mu.Unlock()
+		return pkg, true, nil
+	}
+	dr, ok := c.registry.(deferredRegistry)
+	var deferred *load.Package
+	if ok {
+		deferred = dr.TakeDeferred(pkgPath)
+	}
+	if deferred == nil {
+		// not listed: go list it, rare enough to do under the lock
+		defer c.mu.Unlock()
+		pkg, ok, err := c.registry.LoadPackage(pkgPath)
+		if pkg != nil {
+			CollectDecls(pkg)
+		}
+		return pkg, ok, err
+	}
+	f := &inflightPackage{pkg: deferred, done: make(chan struct{})}
+	if c.inflight == nil {
+		c.inflight = make(map[string]*inflightPackage)
+	}
+	c.inflight[pkgPath] = f
+	c.mu.Unlock()
+
+	dr.ParseDeferredPackage(deferred)
+
+	c.mu.Lock()
+	dr.AddParsed(deferred)
+	pkg := c.registry.GetPackage(pkgPath)
 	if pkg != nil {
 		CollectDecls(pkg)
 	}
-	return pkg, ok, err
+	delete(c.inflight, pkgPath)
+	close(f.done)
+	c.mu.Unlock()
+	return pkg, true, nil
 }
 
 func (c *syncRegistry) GetPackage(pkgPath string) *edit.Package {
 	c.mu.Lock()
+	if f := c.inflight[pkgPath]; f != nil {
+		c.mu.Unlock()
+		<-f.done
+		c.mu.Lock()
+	}
 	defer c.mu.Unlock()
 	pkg := c.registry.GetPackage(pkgPath)
 	if pkg != nil {
@@ -251,6 +311,9 @@ func (c *syncRegistry) GetPackage(pkgPath string) *edit.Package {
 func (c *syncRegistry) PackageName(pkgPath string) string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if f := c.inflight[pkgPath]; f != nil {
+		return f.pkg.GoPackage.Name
+	}
 	return c.registry.PackageName(pkgPath)
 }
 
@@ -264,6 +327,18 @@ func (c *packagesRegistry) Fset() *token.FileSet {
 
 func (c *packagesRegistry) LoadPackage(pkgPath string) (*edit.Package, bool, error) {
 	return c.packages.LoadPackage(pkgPath)
+}
+
+func (c *packagesRegistry) TakeDeferred(pkgPath string) *load.Package {
+	return c.packages.TakeDeferred(pkgPath)
+}
+
+func (c *packagesRegistry) ParseDeferredPackage(pkg *load.Package) {
+	c.packages.ParseDeferredPackage(pkg)
+}
+
+func (c *packagesRegistry) AddParsed(pkg *load.Package) {
+	c.packages.AddParsed(pkg)
 }
 
 func (c *packagesRegistry) PackageName(pkgPath string) string {

@@ -112,6 +112,32 @@ func (c *Packages) ParseDeferred() {
 	c.parseDeferred(pkgs)
 }
 
+// TakeDeferred removes the listed but not yet parsed package pkgPath and
+// returns it, or nil if there is none. Parse it with ParseDeferredPackage
+// and add it back with AddParsed: the parsing needs no access to c, so it
+// can run while c is used for other packages.
+func (c *Packages) TakeDeferred(pkgPath string) *load.Package {
+	pkg, ok := c.deferred[pkgPath]
+	if !ok {
+		return nil
+	}
+	delete(c.deferred, pkgPath)
+	return pkg
+}
+
+// ParseDeferredPackage parses the files of pkg, taken by TakeDeferred.
+func (c *Packages) ParseDeferredPackage(pkg *load.Package) {
+	opts := c.LoadOptions
+	// positions must belong to the FileSet the packages are registered with
+	opts.Fset = c.Fset
+	load.ParseDeferred([]*load.Package{pkg}, opts)
+}
+
+// AddParsed adds pkg, parsed by ParseDeferredPackage.
+func (c *Packages) AddParsed(pkg *load.Package) {
+	c.Add(&load.Packages{Fset: c.Fset, Packages: []*load.Package{pkg}})
+}
+
 func (c *Packages) parseDeferred(pkgs []*load.Package) {
 	if len(pkgs) == 0 {
 		return
