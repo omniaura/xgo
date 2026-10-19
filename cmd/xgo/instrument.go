@@ -84,7 +84,86 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 			panic(err)
 		}
 	}
+	includeMain, loadPkgs, err := getLoadPackages(rules)
+	if err != nil {
+		return nil, err
+	}
+	logDebug("loadPkgs: includeMain=%v loadPkgs=%v", includeMain, loadPkgs)
+	var loadArgs []string
+	// targeted: list only what the command compiles, i.e. the packages
+	// of its patterns, their dependencies and those of their tests
+	// (`go list -deps -test`), rather than the whole main module
+	targeted := includeMain && len(pkgPatterns) > 0
+	// packages whose tests the command builds; nil means unknown
+	var targetPkgs map[string]bool
+	if targeted {
+		loadArgs = append(loadArgs, pkgPatterns...)
+	} else if includeMain {
+		loadArgs = append(loadArgs, mainModule+"/...")
+		loadArgs = append(loadArgs, "main")
+	}
+	loadArgs = append(loadArgs, loadPkgs...)
+	loadArgs = append(loadArgs, trapPkgs...)
+
 	fset := token.NewFileSet()
+	pkgs := &edit.Packages{
+		Fset: fset,
+		LoadOptions: load.LoadOptions{
+			Dir:             projectDir,
+			Mod:             mod,
+			Overlay:         overlayFS,
+			OverlayFile:     overlayFile,
+			IncludeTest:     includeTest,
+			ModFile:         modfile,
+			MaxFileSize:     MAX_FILE_SIZE,
+			FilterErrorFile: true,
+			Goroot:          goroot,
+			GoVersion:       goVersion,
+			Fset:            fset,
+			// always load deps, should be fast enough
+			Deps: true,
+			// Most dependencies are not instrumented unless a mock refers
+			// to them, and traverse loads those on demand: only parse what
+			// is instrumented regardless.
+			Test: targeted,
+			OnList: func(list []*goinfo.Package) {
+				if targeted {
+					targetPkgs = matchedPackages(list, pkgPatterns)
+				}
+			},
+			ParseFilter: func(p *goinfo.Package) bool {
+				if !p.DepOnly || pkgWithinAnyModule(p.ImportPath, mainModule, includeAsMainModules) {
+					return true
+				}
+				return p.Standard && config.GetPkgConfig(p.ImportPath) != nil
+			},
+			// test files of other packages are not compiled
+			TestFilter: func(p *goinfo.Package) bool {
+				if targetPkgs != nil {
+					return targetPkgs[p.ImportPath]
+				}
+				return !p.DepOnly
+			},
+		},
+	}
+	// List the packages to instrument while the xgo runtime is linked
+	// below: both mostly wait for a go list. If the runtime turns out not
+	// to need instrumenting, the listing is wasted, which is rare.
+	type listResult struct {
+		pkgs []*goinfo.Package
+		err  error
+	}
+	listDone := make(chan listResult, 1)
+	listOpts := load.ListOptions(pkgs.LoadOptions)
+	go func() {
+		list, err := goinfo.ListPackages(loadArgs, listOpts)
+		listDone <- listResult{list, err}
+	}()
+	pkgs.LoadOptions.Listed = func() ([]*goinfo.Package, error) {
+		r := <-listDone
+		return r.pkgs, r.err
+	}
+
 	xgoPkgs, err := instrument_xgo_runtime.LinkXgoRuntime(goroot, projectDir, xgoRuntimeModuleDir, goVersion, overlayFS, overrideXgoContent, instrument_xgo_runtime.LinkOptions{
 		Fset:                fset,
 		Mod:                 mod,
@@ -130,67 +209,6 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 		return nil, nil
 	}
 
-	includeMain, loadPkgs, err := getLoadPackages(rules)
-	if err != nil {
-		return nil, err
-	}
-	logDebug("loadPkgs: includeMain=%v loadPkgs=%v", includeMain, loadPkgs)
-	var loadArgs []string
-	// targeted: list only what the command compiles, i.e. the packages
-	// of its patterns, their dependencies and those of their tests
-	// (`go list -deps -test`), rather than the whole main module
-	targeted := includeMain && len(pkgPatterns) > 0
-	// packages whose tests the command builds; nil means unknown
-	var targetPkgs map[string]bool
-	if targeted {
-		loadArgs = append(loadArgs, pkgPatterns...)
-	} else if includeMain {
-		loadArgs = append(loadArgs, mainModule+"/...")
-		loadArgs = append(loadArgs, "main")
-	}
-	loadArgs = append(loadArgs, loadPkgs...)
-	loadArgs = append(loadArgs, trapPkgs...)
-
-	pkgs := &edit.Packages{
-		Fset: fset,
-		LoadOptions: load.LoadOptions{
-			Dir:             projectDir,
-			Mod:             mod,
-			Overlay:         overlayFS,
-			OverlayFile:     overlayFile,
-			IncludeTest:     includeTest,
-			ModFile:         modfile,
-			MaxFileSize:     MAX_FILE_SIZE,
-			FilterErrorFile: true,
-			Goroot:          goroot,
-			GoVersion:       goVersion,
-			Fset:            fset,
-			// always load deps, should be fast enough
-			Deps: true,
-			// Most dependencies are not instrumented unless a mock refers
-			// to them, and traverse loads those on demand: only parse what
-			// is instrumented regardless.
-			Test: targeted,
-			OnList: func(list []*goinfo.Package) {
-				if targeted {
-					targetPkgs = matchedPackages(list, pkgPatterns)
-				}
-			},
-			ParseFilter: func(p *goinfo.Package) bool {
-				if !p.DepOnly || pkgWithinAnyModule(p.ImportPath, mainModule, includeAsMainModules) {
-					return true
-				}
-				return p.Standard && config.GetPkgConfig(p.ImportPath) != nil
-			},
-			// test files of other packages are not compiled
-			TestFilter: func(p *goinfo.Package) bool {
-				if targetPkgs != nil {
-					return targetPkgs[p.ImportPath]
-				}
-				return !p.DepOnly
-			},
-		},
-	}
 	logDebug("start load: %v", loadArgs)
 	loadPackages, err := load.LoadPackages(loadArgs, pkgs.LoadOptions)
 	if err != nil {
@@ -202,6 +220,7 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	// later loads list single packages: keep the targets of the initial load
 	pkgs.LoadOptions.Test = false
 	pkgs.LoadOptions.OnList = nil
+	pkgs.LoadOptions.Listed = nil
 	if targeted {
 		logDebug("instrument: %d target packages", len(targetPkgs))
 	}
