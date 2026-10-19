@@ -34,6 +34,12 @@ func TestEvalSymlinksMatchesFilepath(t *testing.T) {
 	mustLink(filepath.Join(root, "real", "sub", "a.go"), "real/filelink.go")
 	mustLink("sub/a.go", "real/rellink.go")
 	mustLink("missing.go", "real/dangling.go")
+	// directory links resolved through links, and relative to their parent
+	mustLink("../../real", "real/sub/up")
+	mustLink("dirlink/sub", "sublink")
+	mustMkdir("deep/a/b")
+	mustWrite("deep/a/b/c.go")
+	mustLink("deep/a", "alink")
 
 	paths := []string{
 		"real/sub/a.go",
@@ -47,6 +53,13 @@ func TestEvalSymlinksMatchesFilepath(t *testing.T) {
 		"real/b.go/x.go",
 		"dirlink/sub/../b.go",
 		"dirlink",
+		"real/sub/up/b.go",
+		"dirlink/sub/up/sub/up/b.go",
+		"sublink/a.go",
+		"sublink/up/sub/a.go",
+		"alink/b/c.go",
+		"alink/b/missing/c.go",
+		"deep/a/b/c.go",
 	}
 	// twice: resolving from the cache must not change the result
 	for i := 0; i < 2; i++ {
