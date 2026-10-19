@@ -228,12 +228,17 @@ func TrapFuncs(editor *goedit.Edit, pkgPath string, file *ast.File, fileIndex in
 		} else {
 			if recv, params, results, ok := guardVars(fset, funcDecl, recvGeneric, receiver, paramFields, resultFields); ok {
 				key := guardHelperKey(recv, params, results)
-				helper, declared := helpers[key]
+				fnRef := reenterFuncRef(funcDecl, recv, params, results)
+				helperKey := key
+				if fnRef == "" {
+					// its helper also syncs around post
+					helperKey += ";sync"
+				}
+				helper, declared := helpers[helperKey]
 				if !declared {
 					helper = fmt.Sprintf("__xgo_trap_helper_%d_%d", fileIndex, len(helpers))
-					helpers[key] = helper
+					helpers[helperKey] = helper
 				}
-				fnRef := reenterFuncRef(funcDecl, recv, params, results)
 				reenter, reenterDeclared := reenters[key]
 				if fnRef != "" && !reenterDeclared {
 					reenter = fmt.Sprintf("__xgo_trap_reenter_%d_%d", fileIndex, len(reenters))

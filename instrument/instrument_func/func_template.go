@@ -71,15 +71,19 @@ func guardedTrap(line int, fileIndex int, helper string, reenter string, fnRef s
 	fmt.Fprintf(&b, "%s, %s, %s, %s := %s(nil,nil,%s);", l("c"), l("r"), l("a"), l("s"), helper, vs)
 	fmt.Fprintf(&b, "%s, %s := __xgo_trap_%d(%s,%s,%s,%s);", l("post"), l("stop"), fileIndex, funcInfo, l("r"), l("a"), l("s"))
 	if fnRef != "" {
-		resultNames := make([]string, 0, len(vars)-nIn)
-		for _, v := range vars[nIn:] {
-			resultNames = append(resultNames, v.name)
+		// reenter leaves the results in the copies, where post sees and
+		// may change them
+		var takeResults string
+		if nIn < len(vars) {
+			names := make([]string, 0, len(vars)-nIn)
+			copies := make([]string, 0, len(vars)-nIn)
+			for i, v := range vars[nIn:] {
+				names = append(names, v.name)
+				copies = append(copies, fmt.Sprintf("%s.c%d", l("c"), nIn+i))
+			}
+			takeResults = strings.Join(names, ",") + "=" + strings.Join(copies, ",") + ";"
 		}
-		assignResults := ""
-		if len(resultNames) > 0 {
-			assignResults = strings.Join(resultNames, ",") + " = "
-		}
-		fmt.Fprintf(&b, "if %s!=nil { %s%s(%s,%s,%s,%s); return; };", l("post"), assignResults, reenter, l("post"), l("stop"), l("c"), fnRef)
+		fmt.Fprintf(&b, "if %s!=nil { %s(%s,%s,%s,%s);%s return; };", l("post"), reenter, l("post"), l("stop"), l("c"), fnRef, takeResults)
 		fmt.Fprintf(&b, "%s(nil,%s,%s);", helper, l("c"), vs)
 	} else {
 		fmt.Fprintf(&b, "%s(nil,%s,%s);", helper, l("c"), vs)
@@ -118,16 +122,19 @@ func guardedTrap(line int, fileIndex int, helper string, reenter string, fnRef s
 	copiesType := "*struct{" + strings.Join(fields, ";") + "}"
 	var h strings.Builder
 	fmt.Fprintf(&h, ";func %s(__xgo_post func(),__xgo_c %s,%s) (%s,interface{},[]interface{},[]interface{}) {", helper, copiesType, strings.Join(hParams, ","), copiesType)
-	fmt.Fprintf(&h, "if __xgo_post!=nil {%s__xgo_post();%sreturn nil,nil,nil,nil};", assign(hCopies, hVars), assign(hVars[nIn:], hCopies[nIn:]))
+	if fnRef == "" {
+		// only the functions that defer post need it synced
+		fmt.Fprintf(&h, "if __xgo_post!=nil {%s__xgo_post();%sreturn nil,nil,nil,nil};", assign(hCopies, hVars), assign(hVars[nIn:], hCopies[nIn:]))
+	}
 	fmt.Fprintf(&h, "if __xgo_c!=nil {%sreturn nil,nil,nil,nil};", assign(hVars, hCopies))
 	fmt.Fprintf(&h, "__xgo_c=new(%s);%s", copiesType[1:], assign(hCopies, hVars))
 	fmt.Fprintf(&h, "__xgo_c.a=[%d]interface{}{%s};__xgo_c.r=[%d]interface{}{%s};", len(paramAddrs), strings.Join(paramAddrs, ","), len(vars)-nIn, strings.Join(hAddrs[nIn:], ","))
 	fmt.Fprintf(&h, "return __xgo_c,%s,__xgo_c.a[:],__xgo_c.r[:]}", recvAddr)
 
 	if fnRef != "" {
-		// reenter: results start from the copies, which hold what the
-		// interceptor set when it stopped the call, and post sees and may
-		// change the results the nested call returned
+		// reenter: the copies hold what the interceptor set when it
+		// stopped the call, or receive what the nested call returns; post
+		// sees and may change them through the trap's pointers
 		inTypes := make([]string, nIn)
 		args := make([]string, nIn)
 		for i, v := range vars[:nIn] {
@@ -139,23 +146,15 @@ func guardedTrap(line int, fileIndex int, helper string, reenter string, fnRef s
 			}
 		}
 		outTypes := make([]string, 0, len(vars)-nIn)
-		outs := make([]string, 0, len(vars)-nIn)
-		outDecls := make([]string, 0, len(vars)-nIn)
-		for i, v := range vars[nIn:] {
+		for _, v := range vars[nIn:] {
 			outTypes = append(outTypes, v.typ)
-			outs = append(outs, fmt.Sprintf("__xgo_r%d", i))
-			outDecls = append(outDecls, fmt.Sprintf("__xgo_r%d %s", i, v.typ))
 		}
-		var r strings.Builder
-		fmt.Fprintf(&r, ";func %s(__xgo_post func(),__xgo_stop bool,__xgo_c %s,__xgo_fn func(%s) (%s)) (%s) {", reenter, copiesType, strings.Join(inTypes, ","), strings.Join(outTypes, ","), strings.Join(outDecls, ","))
-		r.WriteString(assign(outs, hCopies[nIn:]))
-		fmt.Fprintf(&r, "defer func(){%s__xgo_post();%s}();", assign(hCopies[nIn:], outs), assign(outs, hCopies[nIn:]))
 		call := fmt.Sprintf("__xgo_fn(%s)", strings.Join(args, ","))
-		if len(outs) > 0 {
-			call = strings.Join(outs, ",") + "=" + call
+		if nIn < len(vars) {
+			call = strings.Join(hCopies[nIn:], ",") + "=" + call
 		}
-		fmt.Fprintf(&r, "if !__xgo_stop {__xgo_trap_on_%d(nil);%s};return}", fileIndex, call)
-		reenterDecl = r.String()
+		reenterDecl = fmt.Sprintf(";func %s(__xgo_post func(),__xgo_stop bool,__xgo_c %s,__xgo_fn func(%s) (%s)) {defer __xgo_post();if !__xgo_stop {__xgo_trap_on_%d(nil);%s}}",
+			reenter, copiesType, strings.Join(inTypes, ","), strings.Join(outTypes, ","), fileIndex, call)
 	}
 	return b.String(), h.String(), reenterDecl
 }
