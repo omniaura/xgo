@@ -24,16 +24,9 @@ func evalSymlinks(path string) (string, error) {
 	if dir == path {
 		return filepath.EvalSymlinks(path)
 	}
-	var resolvedDir string
-	if v, ok := resolvedDirs.Load(dir); ok {
-		resolvedDir = v.(string)
-	} else {
-		var err error
-		resolvedDir, err = filepath.EvalSymlinks(dir)
-		if err != nil {
-			return "", err
-		}
-		resolvedDirs.Store(dir, resolvedDir)
+	resolvedDir, err := resolveDir(dir)
+	if err != nil {
+		return "", err
 	}
 	file := filepath.Join(resolvedDir, filepath.Base(path))
 	info, err := os.Lstat(file)
@@ -44,4 +37,35 @@ func evalSymlinks(path string) (string, error) {
 		return filepath.EvalSymlinks(file)
 	}
 	return file, nil
+}
+
+// resolveDir is filepath.EvalSymlinks of the clean absolute directory dir,
+// resolved from its cached parent: the generated files live in one
+// directory each (named after their content), and resolving each of them
+// from the root took one lstat per component.
+func resolveDir(dir string) (string, error) {
+	if v, ok := resolvedDirs.Load(dir); ok {
+		return v.(string), nil
+	}
+	parent := filepath.Dir(dir)
+	if parent == dir {
+		return filepath.EvalSymlinks(dir)
+	}
+	resolvedParent, err := resolveDir(parent)
+	if err != nil {
+		return "", err
+	}
+	resolved := filepath.Join(resolvedParent, filepath.Base(dir))
+	info, err := os.Lstat(resolved)
+	if err != nil {
+		return "", err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		resolved, err = filepath.EvalSymlinks(resolved)
+		if err != nil {
+			return "", err
+		}
+	}
+	resolvedDirs.Store(dir, resolved)
+	return resolved, nil
 }
