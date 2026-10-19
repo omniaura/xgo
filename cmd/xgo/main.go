@@ -503,11 +503,22 @@ func handleBuild(cmd string, args []string) error {
 
 	var coreRevisionChanged bool
 	if !noInstrument {
-		// Lock order is GOROOT, default cache, then override cache. GC only
+		// Lock order is target GOROOT, source (cold setup only), default cache,
+		// then override cache. In-place writers hold only their GOROOT lease. GC only
 		// tries locks without waiting, so it cannot invert this order.
+		var sourceLease *cacheLock
+		defer func() { sourceLease.close() }()
 		var instrumentLease *cacheLock
 		if !noSetup && !instrumented && !opts.patchGorootInPlace && !isDevelopment {
 			instrumentLease, err = prepareInstrumentDir(instrumentDir, instrumentSetupRecord(getCoreRevision(), goVersionName, *opts.useFilePatches), resetInstrument || buildCompiler, func(stage string) error {
+				// Only cold setup reads the original tree. Keep its lease
+				// through the invocation so in-place patchers cannot race it.
+				if sourceLease == nil {
+					sourceLease, err = lockCache(goroot, false, true)
+					if err != nil {
+						return err
+					}
+				}
 				stageGoroot := filepath.Join(stage, goVersionName)
 				if err := syncGoroot(goroot, stageGoroot, filepath.Join(stage, "full-sync-record.txt"), *opts.useFilePatches && runtime.GOOS != "windows"); err != nil {
 					return err

@@ -323,3 +323,45 @@ func TestInstrumentLeaseDir(t *testing.T) {
 		t.Fatal("managed setup must retain wrapper lease")
 	}
 }
+
+func TestStagedSetupWaitsForSourceWriter(t *testing.T) {
+	parent := t.TempDir()
+	source := filepath.Join(parent, "source")
+	target := filepath.Join(parent, "target")
+	writer, err := lockCache(source, true, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer writer.close()
+	entered := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		lease, err := prepareInstrumentDir(target, testSetupRecord("r", "file"), false, func(stage string) error {
+			sourceLease, err := lockCache(source, false, true)
+			if err != nil {
+				return err
+			}
+			defer sourceLease.close()
+			close(entered)
+			return os.WriteFile(filepath.Join(stage, "file"), []byte("complete"), 0644)
+		})
+		if lease != nil {
+			lease.close()
+		}
+		done <- err
+	}()
+	select {
+	case <-entered:
+		t.Error("staged setup read source while in-place writer held lease")
+	case <-time.After(50 * time.Millisecond):
+	}
+	writer.close()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("staged setup did not resume after writer exited")
+	}
+}
