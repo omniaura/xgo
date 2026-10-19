@@ -157,9 +157,11 @@ func Traverse(registry PackageRegistry, packages []*edit.Package, recorder *Reco
 	reg := &syncRegistry{registry: registry}
 
 	workers := runtime.GOMAXPROCS(0)
-	if config.DEBUG || workers > len(items) {
+	if config.DEBUG {
 		// the debug hooks expect one file at a time
 		workers = 1
+	} else if workers > len(items) {
+		workers = len(items)
 	}
 	var next int64 = -1
 	var wg sync.WaitGroup
