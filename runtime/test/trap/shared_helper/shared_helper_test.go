@@ -57,13 +57,13 @@ func TestSharedHelperKeepsReceivers(t *testing.T) {
 
 func TestSharedHelperPostChangesResults(t *testing.T) {
 	var seen []string
-	trap.AddFuncInterceptor(double, &trap.Interceptor{
+	t.Cleanup(trap.AddFuncInterceptor(double, &trap.Interceptor{
 		Post: func(ctx context.Context, f *core.FuncInfo, args core.Object, result core.Object, data interface{}) error {
 			seen = append(seen, args.GetFieldIndex(0).Value().(string)+"="+result.GetFieldIndex(0).Value().(string))
 			result.GetFieldIndex(0).Set("post")
 			return nil
 		},
-	})
+	}))
 	if got := double("x", 2); got != "post" {
 		t.Fatalf("double = %q, want post", got)
 	}
