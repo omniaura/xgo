@@ -793,6 +793,14 @@ func createGoModPlaceholder(file string, modPath string, goVersion string) error
 // component (1.26.0, not 1.26) so the generated modfile is never older than
 // dependencies that declare a full version.
 func formatGoDirectiveVersion(goVersion *goinfo.GoVersion) string {
+	// Tip identifies itself as 1.N, which is older than 1.N.0. Requiring
+	// the future stable release makes its own go command reject the module.
+	if goVersion.Development {
+		return fmt.Sprintf("%d.%d", goVersion.Major, goVersion.Minor)
+	}
+	if goVersion.Prerelease != "" {
+		return fmt.Sprintf("%d.%d%s", goVersion.Major, goVersion.Minor, goVersion.Prerelease)
+	}
 	return fmt.Sprintf("%d.%d.%d", goVersion.Major, goVersion.Minor, goVersion.Patch)
 }
 
