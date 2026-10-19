@@ -403,7 +403,11 @@ func handleBuild(cmd string, args []string) error {
 			return err
 		}
 		// ~/.xgo/go-instrument/go1.21.0
-		instrumentDir = filepath.Join(xgoDir, "go-instrument"+instrumentSuffix, mappedGorootName)
+		instrumentDir = filepath.Join(xgoDir, "go-instrument"+instrumentSuffix, mappedGorootName+"_"+instrumentRevisionKey(getCoreRevision(), *opts.useFilePatches))
+		if opts.skipRebuildCompilerAndGo {
+			// Source-only setup must never be mistaken for a runnable toolchain.
+			instrumentDir += "_src-only"
+		}
 	}
 
 	// cache maps to instrument dir
@@ -422,14 +426,16 @@ func handleBuild(cmd string, args []string) error {
 
 	logDebug("instrument dir: %s", instrumentDir)
 	if cmdSetup && deleteFlag {
-		logDebug("delete instrument dir: %s", instrumentDir)
-		err := os.RemoveAll(instrumentDir)
-		if err != nil {
-			return err
-		}
-		err = os.RemoveAll(instrumentCacheDir)
-		if err != nil {
-			return err
+		for _, dir := range []string{instrumentDir, instrumentCacheDir} {
+			lease, err := lockCache(dir, true, true)
+			if err != nil {
+				return err
+			}
+			err = os.RemoveAll(dir)
+			lease.close()
+			if err != nil {
+				return err
+			}
 		}
 		if flagV {
 			fmt.Fprintf(os.Stdout, "rm -rf %s\n", instrumentDir)
@@ -447,13 +453,6 @@ func handleBuild(cmd string, args []string) error {
 		instrumentGoroot = goroot
 	}
 	packageDataDir := filepath.Join(instrumentDir, "pkgdata")
-
-	// also ensure GOROOT itself exists
-	gstat, gstatErr := os.Stat(instrumentGoroot)
-	instrumentedGorootNeedRecreate := true
-	if gstatErr == nil && gstat.IsDir() {
-		instrumentedGorootNeedRecreate = false
-	}
 
 	includeAsMainModules := parseModuleList(opts.mockRuleIncludeAsMainModule)
 	optionsFromFile, optionsFromFileContent, err := mergeOptionFiles(sessionTmpDir, opts.optionsFromFile, opts.mockRules, includeAsMainModules)
@@ -474,15 +473,6 @@ func handleBuild(cmd string, args []string) error {
 	// but we need to separate it from normal GOCACHE
 	buildCacheDir := resolveBuildCacheDir(instrumentCacheDir, os.Getenv(XGO_BUILD_CACHE_DIR), sharedBuildCacheNamespace(goVersionName, instrumentSuffix))
 	revisionFile := filepath.Join(instrumentDir, INSTRUMENT_XGO_REVISION_FILE)
-	fullSyncRecord := filepath.Join(instrumentDir, "full-sync-record.txt")
-
-	err = os.MkdirAll(buildCacheDir, 0755)
-	if err != nil {
-		return err
-	}
-	if !noInstrument {
-		gcStaleCaches(cacheGCUnits(instrumentDir, instrumentCacheDir, buildCacheDir, os.Getenv(XGO_BUILD_CACHE_DIR), !instrumented), time.Now())
-	}
 
 	var realXgoSrc string
 	if isDevelopment {
@@ -512,82 +502,74 @@ func handleBuild(cmd string, args []string) error {
 	}()
 
 	var coreRevisionChanged bool
-	if !noInstrument && !noSetup {
-		err = ensureDirs(binDir, logDir, instrumentDir, packageDataDir)
+	if !noInstrument {
+		// Lock order is GOROOT, default cache, then override cache. GC only
+		// tries locks without waiting, so it cannot invert this order.
+		var instrumentLease *cacheLock
+		if !noSetup && !instrumented && !opts.patchGorootInPlace && !isDevelopment {
+			instrumentLease, err = prepareInstrumentDir(instrumentDir, getCoreRevision(), resetInstrument || buildCompiler, func(stage string) error {
+				stageGoroot := filepath.Join(stage, goVersionName)
+				if err := syncGoroot(goroot, stageGoroot, filepath.Join(stage, "full-sync-record.txt"), *opts.useFilePatches && runtime.GOOS != "windows"); err != nil {
+					return err
+				}
+				if err := patchRuntime(goroot, stageGoroot, realXgoSrc, goVersion, true, true, false, *opts.useFilePatches, opts.skipRebuildCompilerAndGo); err != nil {
+					return err
+				}
+				if err := os.MkdirAll(filepath.Join(stage, "pkgdata"), 0755); err != nil {
+					return err
+				}
+				return os.WriteFile(filepath.Join(stage, INSTRUMENT_XGO_REVISION_FILE), []byte(getCoreRevision()), 0644)
+			})
+		} else {
+			// Development and in-place patching mutate their tree directly;
+			// serialize them for the entire invocation, including consumers.
+			instrumentLease, err = lockCache(instrumentDir, !noSetup && (!instrumented || isDevelopment || opts.patchGorootInPlace), true)
+		}
 		if err != nil {
 			return err
 		}
-		coreRevision := getCoreRevision()
-		var err error
-		coreRevisionChanged, err = checkRevisionChanged(revisionFile, coreRevision)
+		defer instrumentLease.close()
+
+		if !noSetup && (!instrumented && isDevelopment || opts.patchGorootInPlace) {
+			if err := ensureDirs(binDir, logDir, instrumentDir, packageDataDir); err != nil {
+				return err
+			}
+			coreRevisionChanged, err = checkRevisionChanged(revisionFile, getCoreRevision())
+			if err != nil {
+				return err
+			}
+			_, gorootErr := os.Stat(instrumentGoroot)
+			if !opts.patchGorootInPlace && !instrumented {
+				if err := syncGoroot(goroot, instrumentGoroot, filepath.Join(instrumentDir, "full-sync-record.txt"), false); err != nil {
+					return err
+				}
+			}
+			if err := patchRuntime(goroot, instrumentGoroot, realXgoSrc, goVersion, isDevelopment || syncWithLink || setupDev || buildCompiler, resetInstrument || buildCompiler || coreRevisionChanged || gorootErr != nil || opts.patchGorootInPlace, isDevelopment, *opts.useFilePatches, opts.skipRebuildCompilerAndGo); err != nil {
+				return err
+			}
+			if err := os.WriteFile(revisionFile, []byte(getCoreRevision()), 0644); err != nil {
+				return err
+			}
+		}
+
+		cacheLease, err := lockCache(instrumentCacheDir, false, true)
 		if err != nil {
 			return err
 		}
-
-		if resetInstrument {
-			if !instrumented {
-				logDebug("reset instrument %s", instrumentDir)
-				err := os.RemoveAll(instrumentDir)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		// clear cache for new xgo
-		if resetInstrument || coreRevisionChanged {
-			err = os.RemoveAll(instrumentCacheDir)
+		defer cacheLease.close()
+		if os.Getenv(XGO_BUILD_CACHE_DIR) != "" {
+			buildLease, err := lockCache(buildCacheDir, false, true)
 			if err != nil {
 				return err
 			}
+			defer buildLease.close()
 		}
-
-		if !cmdSetup && (resetInstrument || flagA) {
-			logDebug("reset overlay %s", localXgoGenDir)
-			err := os.RemoveAll(localXgoGenDir)
-			if err != nil {
-				return err
-			}
-			// re init
-			err = setupLocalXgoGenDir(localXgoGenDir)
-			if err != nil {
-				return err
-			}
+		// Go's cache is content addressed and safe to share. Never clear it
+		// on reset/revision changes: a linker may still be reading it.
+		if err := os.MkdirAll(buildCacheDir, 0755); err != nil {
+			return err
 		}
-
-		resetOrRevisionChanged := resetInstrument || buildCompiler || coreRevisionChanged || instrumentedGorootNeedRecreate
-		if opts.patchGorootInPlace || isDevelopment || resetOrRevisionChanged {
-			if !opts.patchGorootInPlace && (instrumentedGorootNeedRecreate || !instrumented) {
-				if cmdSetup && flagV {
-					fmt.Fprintf(os.Stderr, "sync GOROOT %s -> %s\n", goroot, instrumentGoroot)
-				}
-				logDebug("sync goroot %s -> %s", goroot, instrumentGoroot)
-				// on Windows the read-only attribute is shared by hard links and
-				// blocks replacing a linked file, so keep full copies there
-				err = syncGoroot(goroot, instrumentGoroot, fullSyncRecord, *opts.useFilePatches && !isDevelopment && runtime.GOOS != "windows")
-				if err != nil {
-					return err
-				}
-			}
-			// patch go runtime and compiler
-			if cmdSetup && flagV {
-				fmt.Fprintf(os.Stderr, "patch GOROOT\n")
-			}
-
-			logDebug("patch runtime at: %s", instrumentGoroot)
-			err = patchRuntime(goroot, instrumentGoroot, realXgoSrc, goVersion, isDevelopment || syncWithLink || setupDev || buildCompiler, resetOrRevisionChanged || opts.patchGorootInPlace, isDevelopment, *opts.useFilePatches, opts.skipRebuildCompilerAndGo)
-			if err != nil {
-				return err
-			}
-		}
-
-		if resetOrRevisionChanged || opts.patchGorootInPlace {
-			logDebug("revision %s write to %s", coreRevision, revisionFile)
-			err := os.WriteFile(revisionFile, []byte(coreRevision), 0755)
-			if err != nil {
-				return err
-			}
-		}
+		gcStaleCaches(cacheGCUnits(instrumentDir, instrumentCacheDir, buildCacheDir, os.Getenv(XGO_BUILD_CACHE_DIR), !instrumented), time.Now())
 	}
 
 	if isDevelopment && setupDev {
