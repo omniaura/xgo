@@ -68,6 +68,8 @@ func TrapFuncs(editor *goedit.Edit, pkgPath string, file *ast.File, fileIndex in
 	instrumentMode := opts.InstrumentMode
 
 	var funcInfos []*edit.FuncInfo
+	// guardedTrap helpers of this file, by guardHelperKey
+	helpers := make(map[string]string)
 	var extraFuncs []*compiler_extra.Func
 	// Visit all decls in the AST
 	for _, decl := range file.Decls {
@@ -224,10 +226,15 @@ func TrapFuncs(editor *goedit.Edit, pkgPath string, file *ast.File, fileIndex in
 			))
 		} else {
 			if recv, params, results, ok := guardVars(fset, funcDecl, recvGeneric, receiver, paramFields, resultFields); ok {
-				helper := fmt.Sprintf("__xgo_sync_%d_%d", fileIndex, len(funcInfos))
+				key := guardHelperKey(recv, params, results)
+				helper, declared := helpers[key]
+				if !declared {
+					helper = fmt.Sprintf("__xgo_trap_helper_%d_%d", fileIndex, len(helpers))
+					helpers[key] = helper
+				}
 				stmt, helperDecl := guardedTrap(line, fileIndex, helper, funcInfo, recv, params, results)
 				editor.Insert(pos, stmt)
-				if helperDecl != "" {
+				if helperDecl != "" && !declared {
 					editor.Insert(funcDecl.End(), helperDecl)
 				}
 			} else {
