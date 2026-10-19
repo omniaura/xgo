@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -141,5 +142,79 @@ func TestGCNoMarkUnitIsNotMarked(t *testing.T) {
 	gcStaleCaches([]gcUnit{{dir: dir, namePrefix: "go", maxAge: staleBuildCacheAge, noMark: true}}, time.Now())
 	if _, err := os.Stat(filepath.Join(dir, gcMarkFile)); err == nil {
 		t.Errorf("noMark unit was marked")
+	}
+}
+
+func TestGCCapsBuildCaches(t *testing.T) {
+	now := time.Date(2026, 10, 18, 12, 0, 0, 0, time.UTC)
+	parent := t.TempDir()
+	mk := func(name string, mark time.Time) string {
+		dir := filepath.Join(parent, name)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if !mark.IsZero() {
+			markFile := filepath.Join(dir, gcMarkFile)
+			if err := os.WriteFile(markFile, nil, 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chtimes(markFile, mark, mark); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return dir
+	}
+	// a daily scan just ran: only a fresh in-use cache triggers another
+	recordGC(parent, now.Add(-time.Minute))
+
+	inUse := mk("go1.27.2_new", time.Time{})
+	ago := func(d time.Duration) time.Time { return now.Add(-d) }
+	busy := mk("go1.27.2_busy", ago(10*time.Minute))
+	h2 := mk("go1.27.2_h2", ago(2*time.Hour))
+	h3 := mk("go1.27.2_h3", ago(3*time.Hour))
+	h4 := mk("go1.27.2_h4", ago(4*time.Hour))
+	foreign := mk("other", ago(4*time.Hour))
+
+	gcStaleCaches([]gcUnit{{dir: inUse, namePrefix: "go", maxAge: staleBuildCacheAge, maxKeep: 3}}, now)
+
+	for dir, wantExist := range map[string]bool{
+		inUse:   true,
+		busy:    true,
+		h2:      true,
+		h3:      false,
+		h4:      false,
+		foreign: true,
+	} {
+		_, err := os.Stat(dir)
+		if exist := err == nil; exist != wantExist {
+			t.Errorf("%s: exist=%v, want %v", filepath.Base(dir), exist, wantExist)
+		}
+	}
+}
+
+func TestGCCapSparesRecentlyUsedCaches(t *testing.T) {
+	now := time.Date(2026, 10, 18, 12, 0, 0, 0, time.UTC)
+	parent := t.TempDir()
+	var dirs []string
+	for i, d := range []time.Duration{0, 5, 10, 20, 30} {
+		dir := filepath.Join(parent, fmt.Sprintf("go1.27.2_%d", i))
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		mark := filepath.Join(dir, gcMarkFile)
+		if err := os.WriteFile(mark, nil, 0644); err != nil {
+			t.Fatal(err)
+		}
+		at := now.Add(-d * time.Minute)
+		if err := os.Chtimes(mark, at, at); err != nil {
+			t.Fatal(err)
+		}
+		dirs = append(dirs, dir)
+	}
+	gcStaleCaches([]gcUnit{{dir: dirs[0], namePrefix: "go", maxAge: staleBuildCacheAge, maxKeep: 3}}, now)
+	for _, dir := range dirs {
+		if _, err := os.Stat(dir); err != nil {
+			t.Errorf("%s used within minEvictAge was removed", filepath.Base(dir))
+		}
 	}
 }
