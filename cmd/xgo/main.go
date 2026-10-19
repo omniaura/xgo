@@ -523,11 +523,7 @@ func handleBuild(cmd string, args []string) error {
 		} else {
 			// Development and in-place patching mutate their tree directly;
 			// serialize them for the entire invocation, including consumers.
-			leaseDir := instrumentDir
-			if opts.patchGorootInPlace {
-				// All revisions patch the same source tree in this mode.
-				leaseDir = goroot
-			}
+			leaseDir := instrumentLeaseDir(instrumentDir, goroot, instrumented, opts.patchGorootInPlace)
 			instrumentLease, err = lockCache(leaseDir, !noSetup && (!instrumented || isDevelopment || opts.patchGorootInPlace), true)
 		}
 		if err != nil {
@@ -1522,4 +1518,13 @@ func buildCacheNamespace(goVersion, version, revision, coreRevision, suffix stri
 	// A durable override must not reuse pre-instrumentation-change artifacts.
 	epoch := sha256.Sum256([]byte(coreRevision))
 	return fmt.Sprintf("%s_xgo%s_%s_core%x%s", goVersion, version, revision, epoch[:8], suffix)
+}
+
+// Managed readers and in-place writers must use the same lease namespace.
+// Unmanaged in-place roots have no wrapper, so coordinate on GOROOT itself.
+func instrumentLeaseDir(instrumentDir, goroot string, instrumented, inPlace bool) string {
+	if inPlace && !instrumented {
+		return goroot
+	}
+	return instrumentDir
 }

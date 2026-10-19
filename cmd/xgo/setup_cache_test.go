@@ -311,3 +311,15 @@ func TestSetupMarkerIsBounded(t *testing.T) {
 		t.Fatal("missing html/template sentinel accepted")
 	}
 }
+
+func TestInstrumentLeaseDir(t *testing.T) {
+	if instrumentLeaseDir("wrapper", "wrapper/go1.27.2", true, true) != "wrapper" {
+		t.Fatal("in-place managed writer must share reader lease")
+	}
+	if instrumentLeaseDir("revision-a", "original", false, true) != instrumentLeaseDir("revision-b", "original", false, true) {
+		t.Fatal("in-place unmanaged writers must share lease across revisions")
+	}
+	if instrumentLeaseDir("wrapper", "original", false, false) != "wrapper" {
+		t.Fatal("managed setup must retain wrapper lease")
+	}
+}
