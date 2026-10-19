@@ -134,7 +134,21 @@ var __xgo_trap_skip uint32
 // XgoTrapOn reports whether an instrumented function should call XgoTrap:
 // when nothing makes every function skip it, or when something was
 // registered for that function, which sets its flag.
+//
+// A nil flag instead makes the next call on this goroutine report false.
+// An instrumented function whose trap returned a post calls itself again
+// through a helper that defers post, and that nested call, the next
+// instrumented call on the goroutine, must run the body without trapping.
 func XgoTrapOn(flag *uint32) bool {
+	gp := getg()
+	if flag == nil {
+		gp.__xgo_g.trapSkipNext = true
+		return false
+	}
+	if gp.__xgo_g.trapSkipNext {
+		gp.__xgo_g.trapSkipNext = false
+		return false
+	}
 	return __xgo_atomic.Load(&__xgo_trap_skip) == 0 || __xgo_atomic.Load(flag) != 0
 }
 

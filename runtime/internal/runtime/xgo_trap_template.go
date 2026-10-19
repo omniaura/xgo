@@ -81,6 +81,9 @@ type __xgo_g struct {
 	gls                 map[interface{}]interface{}
 	looseJsonMarshaling bool
 	trappingDepth       int
+	// trapSkipNext makes the next XgoTrapOn on this goroutine report
+	// false, see XgoTrapOn
+	trapSkipNext bool
 }
 
 func XgoGetCurG() unsafe.Pointer {

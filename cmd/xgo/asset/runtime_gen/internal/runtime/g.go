@@ -11,6 +11,9 @@ type G struct {
 	// when handling trapping, prohibit
 	// another trapping from the handler
 	trappingDepth int
+
+	// set and read only by runtime.XgoTrapOn
+	trapSkipNext bool
 }
 
 func GetG() *G {
