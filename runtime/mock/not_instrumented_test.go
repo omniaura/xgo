@@ -21,8 +21,11 @@ type target struct{}
 func (target) Method() {}
 
 func TestNotInstrumented(t *testing.T) {
-	if core.Instrumented() || instrumentedAtInit {
-		t.Fatal("plain go test must not report xgo runtime linkage")
+	if core.Instrumented() {
+		t.Skip("plain-Go diagnostic test; xgo-built behavior is covered by runtime/test/core/instrumented")
+	}
+	if instrumentedAtInit {
+		t.Fatal("plain go test must not report xgo runtime linkage during init")
 	}
 	fn := func() {}
 	tests := []struct {
@@ -55,6 +58,9 @@ func TestNotInstrumented(t *testing.T) {
 }
 
 func TestPlainGoPatchFailure(t *testing.T) {
+	if core.Instrumented() {
+		t.Skip("requires a plain-Go subprocess")
+	}
 	cmd := exec.Command(os.Args[0], "-test.run=^TestPlainGoPatchChild$")
 	cmd.Env = append(os.Environ(), "XGO_PATCH_CHILD=1")
 	out, err := cmd.CombinedOutput()

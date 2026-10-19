@@ -7,10 +7,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/xhd2015/xgo/runtime/core"
 	"github.com/xhd2015/xgo/runtime/internal/runtime"
 )
 
 func TestRequire(t *testing.T) {
+	if core.Instrumented() {
+		t.Skip("plain-Go subprocess test; xgo-built behavior is covered by runtime/test/core/instrumented")
+	}
 	for _, mode := range []string{"", "fail", "skip", "invalid"} {
 		t.Run(mode, func(t *testing.T) {
 			cmd := exec.Command(os.Args[0], "-test.run=^TestRequireChild$", "-test.v")
