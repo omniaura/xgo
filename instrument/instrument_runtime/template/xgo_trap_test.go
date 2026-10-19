@@ -1,6 +1,9 @@
 package template
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"strings"
 	"testing"
 
@@ -40,5 +43,67 @@ func TestAppendTrapSkipImpl(t *testing.T) {
 	legacy := tmpl + "\nfunc XgoTrapOn() bool { return true }\n"
 	if _, err := AppendTrapSkipImpl(&goinfo.GoVersion{Major: 1, Minor: 27}, legacy); err == nil {
 		t.Errorf("expected an error for XgoTrapOn without the flag parameter")
+	}
+}
+
+func TestTrapEntrySafety(t *testing.T) {
+	// Use an old-style template without XgoTrapOn. The installed guard must
+	// protect legacy dependencies too, including unguarded variable traps.
+	const tmpl = `//go:build ignore
+
+package runtime
+func XgoTrap(info interface{}, recvPtr interface{}, args, results []interface{}) (func(), bool) { return nil, false }
+func XgoTrapVar(info interface{}, varAddr, res interface{}) {}
+func XgoTrapVarPtr(info interface{}, varAddr, res interface{}) {}
+`
+	for _, minor := range []int{17, 22, 23, 27} {
+		version := &goinfo.GoVersion{Major: 1, Minor: minor}
+		got, err := InstantiateXgoTrap(tmpl, version)
+		if err != nil {
+			t.Fatal(err)
+		}
+		file, err := parser.ParseFile(token.NewFileSet(), "xgo_trap.go", got, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		entries := 0
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok {
+				continue
+			}
+			switch fn.Name.Name {
+			case "XgoTrap", "XgoTrapVar", "XgoTrapVarPtr", "XgoTrapOn":
+			default:
+				continue
+			}
+			entries++
+			ifStmt, ok := fn.Body.List[0].(*ast.IfStmt)
+			if !ok {
+				t.Fatalf("go1.%d: %s does not start with a guard", minor, fn.Name.Name)
+			}
+			neg, ok := ifStmt.Cond.(*ast.UnaryExpr)
+			if !ok || neg.Op != token.NOT {
+				t.Fatalf("go1.%d: %s guard is not negated", minor, fn.Name.Name)
+			}
+			call, ok := neg.X.(*ast.CallExpr)
+			if !ok {
+				t.Fatalf("go1.%d: %s guard is not a call", minor, fn.Name.Name)
+			}
+			name, ok := call.Fun.(*ast.Ident)
+			if !ok || name.Name != "__xgo_can_trap" {
+				t.Fatalf("go1.%d: %s has wrong guard", minor, fn.Name.Name)
+			}
+			if _, ok := ifStmt.Body.List[0].(*ast.ReturnStmt); !ok {
+				t.Fatalf("go1.%d: %s guard does not return", minor, fn.Name.Name)
+			}
+		}
+		if entries != 4 || strings.Count(got, "func __xgo_can_trap()") != 1 {
+			t.Fatalf("go1.%d: missing guarded entries or safety helper", minor)
+		}
+		again, err := guardTrapEntries(got)
+		if err != nil || again != got {
+			t.Fatalf("go1.%d: guards installed twice: %v", minor, err)
+		}
 	}
 }
