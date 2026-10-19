@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -31,6 +32,14 @@ const (
 	// an instrumented GOROOT from an xgo that did not mark it, whose build
 	// cache is gone too, has no reliable last-use time
 	staleUnmarkedInstrumentDirAge = 30 * 24 * time.Hour
+
+	// A build cache is about the size of the project's whole native build
+	// (GBs for a large module), and every xgo upgrade starts a new one. Keep
+	// the one in use and the most recently used others, up to this many,
+	// instead of every cache used within staleBuildCacheAge.
+	maxBuildCaches = 3
+	// never evict a cache used this recently: another run may be using it
+	minEvictAge = time.Hour
 )
 
 type gcUnit struct {
@@ -41,6 +50,9 @@ type gcUnit struct {
 	namePrefix   string
 	nameContains string
 	maxAge       time.Duration
+	// if > 0, at most this many candidates (counting dir) are kept, the
+	// most recently used first
+	maxKeep int
 	// noMark: only collect siblings, dir is not in use by this run
 	noMark bool
 	// for instrumented GOROOTs: the parent of their default build caches.
@@ -52,14 +64,20 @@ type gcUnit struct {
 // gcStaleCaches marks every unit's dir as used and removes stale siblings.
 // It is best-effort: errors only skip the affected directory.
 func gcStaleCaches(units []gcUnit, now time.Time) {
-	for _, u := range units {
+	// A unit used for the first time (a new toolchain or xgo revision) is
+	// when its predecessors become garbage: scan right away rather than at
+	// the next daily scan.
+	fresh := make([]bool, len(units))
+	for i, u := range units {
 		if !u.noMark {
+			_, marked := markTime(u.dir)
+			fresh[i] = !marked
 			markUsed(u.dir, now)
 		}
 	}
-	for _, u := range units {
+	for i, u := range units {
 		parent := filepath.Dir(u.dir)
-		if !shouldGC(parent, now) {
+		if !shouldGC(parent, now) && !(fresh[i] && u.maxKeep > 0) {
 			continue
 		}
 		entries, err := os.ReadDir(parent)
@@ -67,6 +85,11 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 			continue
 		}
 		recordGC(parent, now)
+		type sibling struct {
+			dir      string
+			lastUsed time.Time
+		}
+		var kept []sibling
 		for _, e := range entries {
 			if e.IsDir() && strings.HasPrefix(e.Name(), gcSetupPrefix) {
 				stage := filepath.Join(parent, e.Name())
@@ -104,23 +127,49 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 				continue
 			}
 			if !u.isStale(dir, now) {
-				continue
-			}
-			// A live invocation holds a shared lease until its Go child exits.
-			// Recheck staleness under the exclusive lease before renaming.
-			lease, err := lockCache(dir, true, false)
-			if err != nil {
-				continue
-			}
-			if u.isStale(dir, now) {
-				tomb := filepath.Join(parent, gcTombPrefix+e.Name())
-				if os.Rename(dir, tomb) == nil {
-					logDebug("gc: remove %s", dir)
-					os.RemoveAll(tomb)
+				if u.maxKeep > 0 {
+					if t, ok := lastUsedTime(dir); ok {
+						kept = append(kept, sibling{dir, t})
+					}
 				}
+				continue
 			}
-			lease.close()
+			removeCacheDir(dir, func() bool { return u.isStale(dir, now) })
 		}
+		if u.maxKeep <= 0 || len(kept) < u.maxKeep {
+			continue
+		}
+		// keep the most recently used ones; dir itself takes one slot
+		sort.Slice(kept, func(i, j int) bool { return kept[i].lastUsed.After(kept[j].lastUsed) })
+		for _, s := range kept[u.maxKeep-1:] {
+			dir := s.dir
+			evictable := func() bool {
+				t, ok := lastUsedTime(dir)
+				return ok && now.Sub(t) >= minEvictAge
+			}
+			if evictable() {
+				removeCacheDir(dir, evictable)
+			}
+		}
+	}
+}
+
+// removeCacheDir removes dir if it is not in use and still removable once
+// that is known. A live invocation holds a shared lease until its Go child
+// exits, so recheck under the exclusive lease before renaming.
+func removeCacheDir(dir string, removable func() bool) {
+	lease, err := lockCache(dir, true, false)
+	if err != nil {
+		return
+	}
+	defer lease.close()
+	if !removable() {
+		return
+	}
+	tomb := filepath.Join(filepath.Dir(dir), gcTombPrefix+filepath.Base(dir))
+	if os.Rename(dir, tomb) == nil {
+		logDebug("gc: remove %s", dir)
+		os.RemoveAll(tomb)
 	}
 }
 
@@ -241,11 +290,11 @@ func lastUsedTime(dir string) (time.Time, bool) {
 // With XGO_BUILD_CACHE_DIR, default per-GOROOT caches left by earlier runs
 // are still collected.
 func cacheGCUnits(instrumentDir string, instrumentCacheDir string, buildCacheDir string, buildCacheOverride string, xgoManagedInstrumentDir bool) []gcUnit {
-	defaultCache := gcUnit{dir: instrumentCacheDir, namePrefix: "go", maxAge: staleBuildCacheAge}
+	defaultCache := gcUnit{dir: instrumentCacheDir, namePrefix: "go", maxAge: staleBuildCacheAge, maxKeep: maxBuildCaches}
 	var units []gcUnit
 	if buildCacheOverride != "" {
 		defaultCache.noMark = true
-		units = append(units, gcUnit{dir: buildCacheDir, namePrefix: "go", nameContains: "_xgo", maxAge: staleBuildCacheAge})
+		units = append(units, gcUnit{dir: buildCacheDir, namePrefix: "go", nameContains: "_xgo", maxAge: staleBuildCacheAge, maxKeep: maxBuildCaches})
 	}
 	units = append(units, defaultCache)
 	if xgoManagedInstrumentDir {
