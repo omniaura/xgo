@@ -327,17 +327,26 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 	}
 
 	logDebug("start instrumentFuncTrap: len(packages)=%d, needTrapAll=%v", len(pkgs.Packages), needTrapAll)
-	var extraPkgs []*compiler_extra.Package
-	for _, pkg := range pkgs.Packages {
+	// packages are instrumented in parallel: each one edits only its own
+	// files; the recorder is not safe for concurrent use, look it up first
+	pkgRecorders := make([]*resolve.PkgRecorder, len(pkgs.Packages))
+	for i, pkg := range pkgs.Packages {
+		if pkg.AllowInstrument {
+			pkgRecorders[i] = recorder.GetOrInit(pkg.LoadPackage.GoPackage.ImportPath)
+		}
+	}
+	pkgExtras := make([]*compiler_extra.Package, len(pkgs.Packages))
+	forEachParallel(len(pkgs.Packages), func(i int) {
+		pkg := pkgs.Packages[i]
 		if !pkg.AllowInstrument {
-			continue
+			return
 		}
 		pkgPath := pkg.LoadPackage.GoPackage.ImportPath
 		cfg := config.GetPkgConfig(pkgPath)
 		stdlib := pkg.LoadPackage.GoPackage.Standard
 		main := pkg.Main
 		initial := pkg.Initial
-		pkgRecorder := recorder.GetOrInit(pkgPath)
+		pkgRecorder := pkgRecorders[i]
 
 		var hasVarTrap bool
 		if pkgRecorder != nil && pkgRecorder.NumVars > 0 {
@@ -399,12 +408,18 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 		}
 		if len(extraFiles) > 0 {
 			md5sum := md5sumTraps(extraFiles, hasVarTrap)
-			extraPkgs = append(extraPkgs, &compiler_extra.Package{
+			pkgExtras[i] = &compiler_extra.Package{
 				Path:       pkg.LoadPackage.GoPackage.ImportPath,
 				Files:      extraFiles,
 				HasVarTrap: hasVarTrap,
 				TrapMD5Sum: md5sum,
-			})
+			}
+		}
+	})
+	var extraPkgs []*compiler_extra.Package
+	for _, extra := range pkgExtras {
+		if extra != nil {
+			extraPkgs = append(extraPkgs, extra)
 		}
 	}
 	logDebug("extraPkgs: %d", len(extraPkgs))
@@ -488,41 +503,59 @@ func md5sumTraps(files []*compiler_extra.File, hasVarTrap bool) string {
 
 func registerFuncTab(packages *edit.Packages, trimpath bool) {
 	fset := packages.Fset
-	for _, pkg := range packages.Packages {
+	// each file registers its own functions, in parallel
+	forEachParallel(len(packages.Packages), func(i int) {
+		pkg := packages.Packages[i]
 		pkgPath := pkg.LoadPackage.GoPackage.ImportPath
 		stdlib := pkg.LoadPackage.GoPackage.Standard
 		for _, file := range pkg.Files {
 			instrument_reg.RegisterFuncTab(fset, file, pkgPath, stdlib, trimpath)
 		}
-	}
+	})
 }
 
 func applyInstrumentWithEditNotes(overlayFS overlay.Overlay, packages *edit.Packages, mayHaveCover bool, xgoOverrideContent func(absFile overlay.AbsFile, content string)) (int, error) {
-	updatedFiles := 0
+	type editedFile struct {
+		pkg  *edit.Package
+		file *edit.File
+	}
+	var files []editedFile
 	for _, pkg := range packages.Packages {
 		for _, file := range pkg.Files {
-			if !file.Edit.HasEdit() {
-				continue
+			if file.Edit.HasEdit() {
+				files = append(files, editedFile{pkg: pkg, file: file})
 			}
-			// Bytes returns a new slice, used nowhere else
-			content := strutil.ToReadonlyString(file.Edit.Buffer().Bytes())
-			if mayHaveCover {
-				var err error
-				content, err = instrument_go.AddEditsNotes(file.Edit, file.File.AbsPath, strutil.ToReadonlyString(file.File.Content), content)
-				if err != nil {
-					return 0, fmt.Errorf("failed to add edits: %s %w", file.File.AbsPath, err)
-				}
-			}
-			absFile := overlay.AbsFile(file.File.AbsPath)
-			if pkg.Xgo && xgoOverrideContent != nil {
-				xgoOverrideContent(absFile, content)
-			} else {
-				overlayFS.OverrideContent(absFile, content)
-			}
-			updatedFiles++
 		}
 	}
-	return updatedFiles, nil
+	// the contents are built in parallel, and registered in order
+	contents := make([]string, len(files))
+	errs := make([]error, len(files))
+	forEachParallel(len(files), func(i int) {
+		file := files[i].file
+		// Bytes returns a new slice, used nowhere else
+		content := strutil.ToReadonlyString(file.Edit.Buffer().Bytes())
+		if mayHaveCover {
+			var err error
+			content, err = instrument_go.AddEditsNotes(file.Edit, file.File.AbsPath, strutil.ToReadonlyString(file.File.Content), content)
+			if err != nil {
+				errs[i] = fmt.Errorf("failed to add edits: %s %w", file.File.AbsPath, err)
+				return
+			}
+		}
+		contents[i] = content
+	})
+	for i, f := range files {
+		if errs[i] != nil {
+			return 0, errs[i]
+		}
+		absFile := overlay.AbsFile(f.file.File.AbsPath)
+		if f.pkg.Xgo && xgoOverrideContent != nil {
+			xgoOverrideContent(absFile, contents[i])
+		} else {
+			overlayFS.OverrideContent(absFile, contents[i])
+		}
+	}
+	return len(files), nil
 }
 
 func hasFunc(pkg *edit.Package, fn string) bool {
