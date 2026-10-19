@@ -3,6 +3,7 @@ package resolve
 import (
 	"go/ast"
 	"go/token"
+	"sync"
 
 	"github.com/xhd2015/xgo/instrument/config"
 	"github.com/xhd2015/xgo/instrument/config/config_debug"
@@ -86,7 +87,7 @@ func (c *Scope) collectVarRef(addr *ast.UnaryExpr, expr ast.Expr, originalSel *a
 	if decl == nil {
 		return false
 	}
-	if !c.tryResolveDeclType(decl) {
+	if !c.tryResolveDeclType(pkgPath, decl) {
 		return false
 	}
 
@@ -126,7 +127,7 @@ func (c *Scope) collectVarRef(addr *ast.UnaryExpr, expr ast.Expr, originalSel *a
 	} else {
 		nameStart = expr.Pos()
 	}
-	decl.VarRefs = append(decl.VarRefs, &edit.VarRef{
+	c.Global.addVarRef(decl, &edit.VarRef{
 		File:        c.File.File,
 		Addr:        addr,
 		NeedPtr:     needPtr,
@@ -137,7 +138,11 @@ func (c *Scope) collectVarRef(addr *ast.UnaryExpr, expr ast.Expr, originalSel *a
 	return true
 }
 
-func (c *Scope) tryResolveDeclType(decl *edit.Decl) bool {
+// declTypeMu guards Decl.ResolvedValueType, which the files traversed in
+// parallel share.
+var declTypeMu sync.Mutex
+
+func (c *Scope) tryResolveDeclType(pkgPath string, decl *edit.Decl) bool {
 	if decl.Type != nil {
 		return true
 	}
@@ -149,27 +154,39 @@ func (c *Scope) tryResolveDeclType(decl *edit.Decl) bool {
 	if _, ok := decl.Value.(*ast.FuncLit); ok {
 		return true
 	}
-	if decl.ResolvedValueType != nil {
-		return !types.IsUnknown(decl.ResolvedValueType)
+	declTypeMu.Lock()
+	resolved := decl.ResolvedValueType
+	declTypeMu.Unlock()
+	if resolved == nil {
+		resolved = c.resolveDeclValueType(pkgPath, decl)
+		declTypeMu.Lock()
+		decl.ResolvedValueType = resolved
+		declTypeMu.Unlock()
 	}
-	info := c.resolveInfo(decl.Value)
-	if types.IsUnknown(info) {
-		decl.ResolvedValueType = types.Unknown{}
-		return false
-	}
-	obj, ok := info.(types.Object)
-	if !ok {
-		decl.ResolvedValueType = types.Unknown{}
-		return false
-	}
-	objType := obj.Type()
-	if types.IsUnknown(objType) {
-		decl.ResolvedValueType = types.Unknown{}
-		return false
-	}
+	return !types.IsUnknown(resolved)
+}
 
-	decl.ResolvedValueType = objType
-	return true
+// resolveDeclValueType resolves the type of the value of decl within the
+// file declaring it, whose imports and package differ from those of the
+// referring file in general. The result is cached on decl for every file
+// referring to it, so it must not depend on the referring file.
+func (c *Scope) resolveDeclValueType(pkgPath string, decl *edit.Decl) types.Type {
+	declScope := c
+	if decl.File != nil && decl.File != c.File.File {
+		pkg := c.Global.Packages.GetPackage(pkgPath)
+		if pkg == nil {
+			return types.Unknown{}
+		}
+		declScope = c.newFileScope(pkg, decl.File)
+	}
+	obj, ok := declScope.resolveInfo(decl.Value).(types.Object)
+	if !ok {
+		return types.Unknown{}
+	}
+	if objType := obj.Type(); objType != nil && !types.IsUnknown(objType) {
+		return objType
+	}
+	return types.Unknown{}
 }
 
 // mayReferPkgVar reports whether resolving sel can find a package variable

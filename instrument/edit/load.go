@@ -31,6 +31,18 @@ func (c *Packages) LoadPackage(pkgPath string) (*Package, bool, error) {
 	return c.PackageByPath[pkgPath], false, nil
 }
 
+// PackageName returns the name of the package pkgPath if it is listed,
+// whether parsed or deferred, or "" otherwise.
+func (c *Packages) PackageName(pkgPath string) string {
+	if pkg, ok := c.PackageByPath[pkgPath]; ok {
+		return pkg.LoadPackage.GoPackage.Name
+	}
+	if pkg, ok := c.deferred[pkgPath]; ok {
+		return pkg.GoPackage.Name
+	}
+	return ""
+}
+
 func (c *Packages) LoadPackages(pkgPaths []string) error {
 	var missing []string
 	var deferred []*load.Package
@@ -60,7 +72,12 @@ func (c *Packages) LoadPackages(pkgPaths []string) error {
 // one `go list`, without parsing them: LoadPackage parses them when needed.
 func (c *Packages) ListPackages(pkgPaths []string) error {
 	var missing []string
+	seen := make(map[string]bool, len(pkgPaths))
 	for _, pkgPath := range pkgPaths {
+		if seen[pkgPath] {
+			continue
+		}
+		seen[pkgPath] = true
 		if _, ok := c.PackageByPath[pkgPath]; ok {
 			continue
 		}
