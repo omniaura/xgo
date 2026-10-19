@@ -365,6 +365,12 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 		stdlib := pkg.LoadPackage.GoPackage.Standard
 		main := pkg.Main
 		initial := pkg.Initial
+		if stdlib && cfg != nil {
+			// the predefined std packages are listed only to be loaded:
+			// keep them on their whitelist instead of trapping every
+			// function, which made calls like time.Time.Sub allocate
+			initial = false
+		}
 		pkgRecorder := pkgRecorders[i]
 
 		var hasVarTrap bool
