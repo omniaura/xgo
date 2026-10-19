@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -251,26 +252,26 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 		resolve.CollectDecls(pkg)
 	}
 
-	// test-only imports are not in the -deps list; list them in one go
-	// instead of one `go list` each when traverse reaches them. Only the
-	// test files of the target packages are loaded, and go list -test
-	// already listed their imports.
-	var testImports []string
+	// List every import of the files traverse visits that is not listed
+	// yet (test-only imports are not in the -deps list) in one go, instead
+	// of one `go list` each when traverse reaches them. It also names every
+	// import before traverse starts: files are traversed in parallel, and
+	// the name of an import must not depend on whether another file listed
+	// it first.
+	var fileImports []string
 	for _, pkg := range mainPkgs {
-		if targetPkgs != nil && !targetPkgs[pkg.LoadPackage.GoPackage.ImportPath] {
-			continue
-		}
-		for _, imports := range [][]string{pkg.LoadPackage.GoPackage.TestImports, pkg.LoadPackage.GoPackage.XTestImports} {
-			for _, imp := range imports {
-				if imp != "C" {
-					testImports = append(testImports, imp)
+		for _, file := range pkg.Files {
+			for _, imp := range file.File.Syntax.Imports {
+				impPath, err := strconv.Unquote(imp.Path.Value)
+				if err == nil && impPath != "C" {
+					fileImports = append(fileImports, impPath)
 				}
 			}
 		}
 	}
-	if err := pkgs.ListPackages(testImports); err != nil {
+	if err := pkgs.ListPackages(fileImports); err != nil {
 		// only a prefetch: traverse loads whatever it reaches on its own
-		logDebug("list test imports: %v", err)
+		logDebug("list imports: %v", err)
 	}
 
 	traverseBegin := time.Now()
