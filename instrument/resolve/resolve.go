@@ -108,10 +108,12 @@ func (c *Scope) doResolveInfo(expr ast.Expr) types.Info {
 				if config.DEBUG {
 					config_debug.OnResolvePackageDeclareInfo(c.Package.PkgPath(), c.File.File.File.Name, expr)
 				}
-				// resolve the declaration within the file declaring it:
-				// its imports can differ from those of the referring file
+				// resolve the declaration at the top level of the file
+				// declaring it: its imports can differ from those of the
+				// referring file, and the locals of the referring function
+				// can shadow names it uses
 				declScope := c
-				if decl.File != nil && decl.File != c.File.File {
+				if decl.File != nil {
 					declScope = c.newFileScope(c.Package.Package, decl.File)
 				}
 				if decl.Kind == edit.DeclKindType {

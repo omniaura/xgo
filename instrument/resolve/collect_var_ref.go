@@ -158,27 +158,41 @@ func (c *Scope) tryResolveDeclType(pkgPath string, decl *edit.Decl) bool {
 	resolved := decl.ResolvedValueType
 	declTypeMu.Unlock()
 	if resolved == nil {
+		// workers racing here compute the same type, see
+		// resolveDeclValueType; keep the first one
 		resolved = c.resolveDeclValueType(pkgPath, decl)
 		declTypeMu.Lock()
-		decl.ResolvedValueType = resolved
+		if decl.ResolvedValueType == nil {
+			decl.ResolvedValueType = resolved
+		}
+		resolved = decl.ResolvedValueType
 		declTypeMu.Unlock()
 	}
 	return !types.IsUnknown(resolved)
 }
 
 // resolveDeclValueType resolves the type of the value of decl within the
-// file declaring it, whose imports and package differ from those of the
-// referring file in general. The result is cached on decl for every file
-// referring to it, so it must not depend on the referring file.
+// file declaring it, whose imports, package and scopes differ from those of
+// the referring function in general. The result is cached on decl for every
+// file referring to it, so it must not depend on the referring file: the
+// value is resolved in a scope of its own, with caches of its own (those of
+// the referring file can hold resolutions in progress).
 func (c *Scope) resolveDeclValueType(pkgPath string, decl *edit.Decl) types.Type {
-	declScope := c
-	if decl.File != nil && decl.File != c.File.File {
-		pkg := c.Global.Packages.GetPackage(pkgPath)
-		if pkg == nil {
-			return types.Unknown{}
-		}
-		declScope = c.newFileScope(pkg, decl.File)
+	if decl.File == nil {
+		return types.Unknown{}
 	}
+	pkg := c.Global.Packages.GetPackage(pkgPath)
+	if pkg == nil {
+		return types.Unknown{}
+	}
+	global := &GlobalScope{
+		Packages: c.Global.Packages,
+		// resolving records nothing, but must not touch what the
+		// referring file records either
+		Recorder: &Recorder{},
+		effects:  &fileEffects{},
+	}
+	declScope := newFileScope(global, pkg, decl.File, c.PkgDepth+1)
 	obj, ok := declScope.resolveInfo(decl.Value).(types.Object)
 	if !ok {
 		return types.Unknown{}
