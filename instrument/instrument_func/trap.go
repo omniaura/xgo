@@ -68,8 +68,9 @@ func TrapFuncs(editor *goedit.Edit, pkgPath string, file *ast.File, fileIndex in
 	instrumentMode := opts.InstrumentMode
 
 	var funcInfos []*edit.FuncInfo
-	// guardedTrap helpers of this file, by guardHelperKey
+	// guardedTrap helpers and reenters of this file, by guardHelperKey
 	helpers := make(map[string]string)
+	reenters := make(map[string]string)
 	var extraFuncs []*compiler_extra.Func
 	// Visit all decls in the AST
 	for _, decl := range file.Decls {
@@ -227,15 +228,29 @@ func TrapFuncs(editor *goedit.Edit, pkgPath string, file *ast.File, fileIndex in
 		} else {
 			if recv, params, results, ok := guardVars(fset, funcDecl, recvGeneric, receiver, paramFields, resultFields); ok {
 				key := guardHelperKey(recv, params, results)
-				helper, declared := helpers[key]
+				fnRef := reenterFuncRef(funcDecl, recv, params, results)
+				helperKey := key
+				if fnRef == "" {
+					// its helper also syncs around post
+					helperKey += ";sync"
+				}
+				helper, declared := helpers[helperKey]
 				if !declared {
 					helper = fmt.Sprintf("__xgo_trap_helper_%d_%d", fileIndex, len(helpers))
-					helpers[key] = helper
+					helpers[helperKey] = helper
 				}
-				stmt, helperDecl := guardedTrap(line, fileIndex, helper, funcInfo, recv, params, results)
+				reenter, reenterDeclared := reenters[key]
+				if fnRef != "" && !reenterDeclared {
+					reenter = fmt.Sprintf("__xgo_trap_reenter_%d_%d", fileIndex, len(reenters))
+					reenters[key] = reenter
+				}
+				stmt, helperDecl, reenterDecl := guardedTrap(line, fileIndex, helper, reenter, fnRef, funcInfo, recv, params, results)
 				editor.Insert(pos, stmt)
 				if helperDecl != "" && !declared {
 					editor.Insert(funcDecl.End(), helperDecl)
+				}
+				if reenterDecl != "" && !reenterDeclared {
+					editor.Insert(funcDecl.End(), reenterDecl)
 				}
 			} else {
 				editor.Insert(pos, guardedDirectTrap(line, fileIndex, funcInfo, receiverAddr, paramAddrs, resultAddrs))
@@ -303,7 +318,7 @@ func guardVars(fset *token.FileSet, funcDecl *ast.FuncDecl, recvGeneric bool, re
 		if err := printer.Fprint(&buf, fset, typ); err != nil || strings.ContainsAny(buf.String(), "\n\r") {
 			return nil
 		}
-		return &guardVar{name: f.Name, typ: prefix + buf.String()}
+		return &guardVar{name: f.Name, typ: prefix + buf.String(), variadic: prefix != ""}
 	}
 	toVars := func(fields []*edit.Field) ([]*guardVar, bool) {
 		vars := make([]*guardVar, len(fields))
