@@ -328,7 +328,14 @@ func TestStagedSetupWaitsForSourceWriter(t *testing.T) {
 	parent := t.TempDir()
 	source := filepath.Join(parent, "source")
 	target := filepath.Join(parent, "target")
-	writer, err := lockCache(source, true, true)
+	if err := os.MkdirAll(source, 0755); err != nil {
+		t.Fatal(err)
+	}
+	sourceDir, err := sourceGorootLeaseDir(parent, source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writer, err := lockCache(sourceDir, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -337,7 +344,7 @@ func TestStagedSetupWaitsForSourceWriter(t *testing.T) {
 	done := make(chan error, 1)
 	go func() {
 		lease, err := prepareInstrumentDir(target, testSetupRecord("r", "file"), false, func(stage string) error {
-			sourceLease, err := lockCache(source, false, true)
+			sourceLease, err := lockCache(sourceDir, false, true)
 			if err != nil {
 				return err
 			}
@@ -363,5 +370,48 @@ func TestStagedSetupWaitsForSourceWriter(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("staged setup did not resume after writer exited")
+	}
+}
+
+func TestSourceGorootLeaseReadOnlyAndAliases(t *testing.T) {
+	parent := t.TempDir()
+	sourceParent := filepath.Join(parent, "readonly")
+	source := filepath.Join(sourceParent, "go")
+	if err := os.MkdirAll(source, 0755); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(parent, "alias")
+	if err := os.Symlink(source, alias); err != nil {
+		t.Skip(err)
+	}
+	if err := os.Chmod(sourceParent, 0555); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(sourceParent, 0755)
+	home := filepath.Join(parent, "home")
+	dir, err := sourceGorootLeaseDir(home, source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	aliasDir, err := sourceGorootLeaseDir(home, alias)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dir != aliasDir {
+		t.Fatal("source aliases have different leases")
+	}
+	lease, err := lockCache(dir, false, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lease.close()
+	writer, err := lockCache(aliasDir, true, false)
+	if err == nil {
+		writer.close()
+		t.Fatal("aliased writer bypassed source reader")
+	}
+	entries, err := os.ReadDir(sourceParent)
+	if err != nil || len(entries) != 1 {
+		t.Fatal("source parent was mutated", err)
 	}
 }

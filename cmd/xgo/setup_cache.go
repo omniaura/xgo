@@ -135,3 +135,18 @@ func prepareInstrumentDir(dir string, record setupRecord, reset bool, build func
 	ok = true
 	return prepareInstrumentDir(dir, record, false, build)
 }
+
+// Source toolchains can be root-owned/read-only. Keep their locks in the
+// shared xgo home and canonicalize aliases for both readers and writers.
+func sourceGorootLeaseDir(xgoHome, goroot string) (string, error) {
+	canonical, err := filepath.EvalSymlinks(goroot)
+	if err != nil {
+		return "", err
+	}
+	canonical, err = filepath.Abs(canonical)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256([]byte(canonical))
+	return filepath.Join(xgoHome, "goroot-locks", fmt.Sprintf("%x", sum)), nil
+}

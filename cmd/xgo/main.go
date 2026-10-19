@@ -514,7 +514,11 @@ func handleBuild(cmd string, args []string) error {
 				// Only cold setup reads the original tree. Keep its lease
 				// through the invocation so in-place patchers cannot race it.
 				if sourceLease == nil {
-					sourceLease, err = lockCache(goroot, false, true)
+					sourceDir, sourceErr := sourceGorootLeaseDir(xgoDir, goroot)
+					if sourceErr != nil {
+						return sourceErr
+					}
+					sourceLease, err = lockCache(sourceDir, false, true)
 					if err != nil {
 						return err
 					}
@@ -535,6 +539,12 @@ func handleBuild(cmd string, args []string) error {
 			// Development and in-place patching mutate their tree directly;
 			// serialize them for the entire invocation, including consumers.
 			leaseDir := instrumentLeaseDir(instrumentDir, goroot, instrumented, opts.patchGorootInPlace)
+			if opts.patchGorootInPlace && !instrumented {
+				leaseDir, err = sourceGorootLeaseDir(xgoDir, goroot)
+				if err != nil {
+					return err
+				}
+			}
 			instrumentLease, err = lockCache(leaseDir, !noSetup && (!instrumented || isDevelopment || opts.patchGorootInPlace), true)
 		}
 		if err != nil {
