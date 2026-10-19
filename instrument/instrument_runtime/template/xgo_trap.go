@@ -2,6 +2,9 @@ package template
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"regexp"
 	"strings"
 
@@ -28,8 +31,65 @@ func InstantiateXgoTrap(xgoTrapTemplate string, goVersion *goinfo.GoVersion) (st
 		return "", err
 	}
 
-	return xgoTrapContent, nil
+	return guardTrapEntries(xgoTrapContent)
 }
+
+// The template may come from an older xgo/runtime dependency, so install
+// the safety checks here rather than relying on its version of the template.
+func guardTrapEntries(content string) (string, error) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "xgo_trap.go", content, 0)
+	if err != nil {
+		return "", fmt.Errorf("parse xgo_trap.go: %w", err)
+	}
+	type insertion struct {
+		offset int
+		guard  string
+	}
+	var insertions []insertion
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Recv != nil || fn.Body == nil {
+			continue
+		}
+		var ret string
+		switch fn.Name.Name {
+		case "XgoTrap":
+			ret = "nil, false"
+		case "XgoTrapVar", "XgoTrapVarPtr":
+			ret = ""
+		case "XgoTrapOn":
+			ret = "false"
+		default:
+			continue
+		}
+		offset := fset.Position(fn.Body.Lbrace).Offset + 1
+		guard := "\nif !__xgo_can_trap() { return " + ret + " }\n"
+		if !strings.HasPrefix(content[offset:], guard) {
+			insertions = append(insertions, insertion{offset, guard})
+		}
+	}
+	// Insert backwards so positions still refer to the original source.
+	for i := len(insertions) - 1; i >= 0; i-- {
+		ins := insertions[i]
+		content = content[:ins.offset] + ins.guard + content[ins.offset:]
+	}
+	if !strings.Contains(content, "func __xgo_can_trap()") {
+		content += trapSafetyImpl
+	}
+	return content, nil
+}
+
+const trapSafetyImpl = `
+// __xgo_can_trap must run before reading trap state or invoking user code.
+// Runtime callbacks can run on g0 (even with m.curg set), on gsignal, or
+// while holding runtime locks. They cannot safely allocate, defer or block.
+//go:nosplit
+func __xgo_can_trap() bool {
+	gp := getg()
+	return gp == gp.m.curg && gp.m.locks == 0
+}
+`
 
 var runtimePkgClause = regexp.MustCompile(`(?m)^package runtime[ \t]*\r?\n`)
 
