@@ -1,0 +1,1 @@
+flags: --mock-rule {"pkg":"github.com/xhd2015/xgo/runtime/test/core/instrumented/initprobe","action":"exclude"}

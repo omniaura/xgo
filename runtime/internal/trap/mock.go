@@ -40,22 +40,27 @@ type varMockHolder struct {
 }
 
 func PushMockInterceptor(fn interface{}, interceptor Interceptor) func() {
+	runtime.RequireInstrumented()
 	return pushMockInterceptor(fn, interceptor)
 }
 
 func PushMockReplacer(fn interface{}, replacer interface{}) func() {
+	runtime.RequireInstrumented()
 	return pushMockReplacer(fn, replacer)
 }
 
 func PushMockReplacerByName(pkgPath string, funcName string, replacer interface{}) func() {
+	runtime.RequireInstrumented()
 	return pushMockReplacerByName(pkgPath, funcName, replacer)
 }
 
 func PushMockReplacerMethodByName(instance interface{}, method string, replacer interface{}) func() {
+	runtime.RequireInstrumented()
 	return pushMockReplacerMethodByName(instance, method, replacer)
 }
 
 func PushMockByName(pkgPath string, funcName string, interceptor Interceptor) func() {
+	runtime.RequireInstrumented()
 	recvPtr, funcInfo, _, trappingPC := getFuncByName(pkgPath, funcName)
 	if funcInfo.Kind == core.Kind_Var || funcInfo.Kind == core.Kind_VarPtr || funcInfo.Kind == core.Kind_Const {
 		if strings.HasPrefix(funcName, "*") {
@@ -79,6 +84,7 @@ func PushMockByName(pkgPath string, funcName string, interceptor Interceptor) fu
 }
 
 func PushMockMethodByName(instance interface{}, method string, interceptor Interceptor) func() {
+	runtime.RequireInstrumented()
 	recvPtr, _, _, trappingPC := getMethodByName(instance, method)
 	handler := buildMockFromInterceptor(recvPtr, interceptor)
 	return pushMockHandler(trappingPC, recvPtr, handler)

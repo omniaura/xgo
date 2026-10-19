@@ -28,10 +28,12 @@ type PreInterceptor func(ctx context.Context, fn *core.FuncInfo, args core.Objec
 type PostInterceptor func(ctx context.Context, fn *core.FuncInfo, args core.Object, results core.Object, data interface{}) error
 
 func PushInterceptor(pre PreInterceptor, post PostInterceptor) func() {
+	runtime.RequireInstrumented()
 	return pushInterceptor(pre, post)
 }
 
 func PushRecorderInterceptor(fn interface{}, preInterceptor PreInterceptor, postInterceptor PostInterceptor) func() {
+	runtime.RequireInstrumented()
 	return pushRecorderInterceptor(fn, preInterceptor, postInterceptor)
 }
 

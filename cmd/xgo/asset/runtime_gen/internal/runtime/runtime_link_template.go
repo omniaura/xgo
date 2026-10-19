@@ -74,3 +74,8 @@ func XgoInitFinished() bool {
 	//
 	return runtime.XgoInitFinished()
 }
+
+// Instrumented reports whether xgo replaced the runtime link stubs at build time.
+func Instrumented() bool {
+	return true
+}

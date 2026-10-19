@@ -71,3 +71,8 @@ func XgoInitFinished() bool {
 	logError("WARNING: failed to link runtime.XgoInitFinished(requires xgo).")
 	return false
 }
+
+// Instrumented reports whether xgo replaced the runtime link stubs at build time.
+func Instrumented() bool {
+	return false
+}
