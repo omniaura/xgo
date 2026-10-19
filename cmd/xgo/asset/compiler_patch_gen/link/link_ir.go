@@ -53,6 +53,14 @@ func LinkXgoInit(fn *ir.Func) {
 	}
 
 	fnName := fn.Sym().Name
+	if strings.HasPrefix(fnName, "__xgo_trap_reenter_") {
+		// an instrumented function whose trap returned a post calls itself
+		// again through this helper; as a wrapper it is left out of
+		// runtime.Callers and tracebacks, like the compiler's own defer
+		// wrappers, so t.Helper and the like still see the real caller
+		fn.SetWrapper(true)
+		return
+	}
 	if !strings.HasPrefix(fnName, "__xgo_init_") {
 		return
 	}
