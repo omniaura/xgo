@@ -17,36 +17,57 @@ const trapTemplate = "__xgo_post_%d, __xgo_stop_%d := __xgo_trap_%d(%s,%s,[]inte
 // copies, only the guarded branch allocates. The copies are written back
 // after the trap returns (the parameters and results the interceptor may
 // have changed are visible to the body), and synced in both directions
-// around post by helper.
+// around post.
 //
-// helper is a top-level function declared next to the instrumented one: a
-// function literal would shift the numbering of the closures in the body
-// (F.func1 becoming F.func2), and pointers passed to a function that does
-// not keep them do not move the variables to the heap. The returned helper
-// declaration is a single line, so it does not shift line numbers either.
+// The copying lives in helper, a top-level function shared by the
+// functions of a file whose receiver, parameters and results have the same
+// types (see guardHelperKey): spelled out in every function, it made each
+// one several times larger, in the binary and in the build cache, and kept
+// small functions from being inlined. The trap itself is still called from
+// the instrumented function, because the runtime identifies the function
+// by its caller's PC. Called with neither post nor copies, helper copies
+// the variables and returns the copies and the trap's arguments; with only
+// the copies, it writes them back; with post, it syncs the copies around
+// it. A function literal would shift the numbering of the closures in the
+// body (F.func1 becoming F.func2), and pointers passed to a function that
+// does not keep them do not move the variables to the heap.
 //
-// vars lists the receiver (if any), parameters and results, in that order.
+// helperDecl is the declaration of helper, a single line so it does not
+// shift line numbers; the caller inserts it once per helper.
 func guardedTrap(line int, fileIndex int, helper string, funcInfo string, recv *guardVar, params []*guardVar, results []*guardVar) (stmt string, helperDecl string) {
-	var vars []*guardVar
-	if recv != nil {
-		vars = append(vars, recv)
+	vars, nIn := guardHelperVars(recv, params, results)
+	if len(vars) == 0 {
+		return fmt.Sprintf("if __xgo_trap_on_%d(&%s) {", fileIndex, trapOnVar(funcInfo)) +
+			fmt.Sprintf("__xgo_post_%d, __xgo_stop_%d := __xgo_trap_%d(%s,nil,[]interface{}{},[]interface{}{});", line, line, fileIndex, funcInfo) +
+			fmt.Sprintf("if __xgo_post_%d!=nil { defer __xgo_post_%d() };if __xgo_stop_%d { return; };};", line, line, line), ""
 	}
-	vars = append(vars, params...)
-	nIn := len(vars)
-	vars = append(vars, results...)
 
-	names := make([]string, len(vars))
-	copies := make([]string, len(vars))
+	addrs := make([]string, len(vars))
 	for i, v := range vars {
-		names[i] = v.name
-		copies[i] = fmt.Sprintf("__xgo_c_%d_%d", line, i)
+		addrs[i] = "&" + v.name
 	}
-	addrs := func(c []string) string {
-		a := make([]string, len(c))
-		for i, name := range c {
-			a[i] = "&" + name
-		}
-		return strings.Join(a, ",")
+	vs := strings.Join(addrs, ",")
+	l := func(name string) string { return fmt.Sprintf("__xgo_%s_%d", name, line) }
+	var b strings.Builder
+	fmt.Fprintf(&b, "if __xgo_trap_on_%d(&%s) {", fileIndex, trapOnVar(funcInfo))
+	fmt.Fprintf(&b, "%s, %s, %s, %s := %s(nil,nil,%s);", l("c"), l("r"), l("a"), l("s"), helper, vs)
+	fmt.Fprintf(&b, "%s, %s := __xgo_trap_%d(%s,%s,%s,%s);", l("post"), l("stop"), fileIndex, funcInfo, l("r"), l("a"), l("s"))
+	fmt.Fprintf(&b, "%s(nil,%s,%s);", helper, l("c"), vs)
+	fmt.Fprintf(&b, "if %s!=nil { defer %s(%s,%s,%s) };", l("post"), helper, l("post"), l("c"), vs)
+	fmt.Fprintf(&b, "if %s { return; };", l("stop"))
+	b.WriteString("};")
+
+	fields := make([]string, len(vars))
+	hParams := make([]string, len(vars))
+	hVars := make([]string, len(vars))
+	hCopies := make([]string, len(vars))
+	hAddrs := make([]string, len(vars))
+	for i, v := range vars {
+		fields[i] = fmt.Sprintf("c%d %s", i, v.typ)
+		hParams[i] = fmt.Sprintf("__xgo_v%d *%s", i, v.typ)
+		hVars[i] = fmt.Sprintf("*__xgo_v%d", i)
+		hCopies[i] = fmt.Sprintf("__xgo_c.c%d", i)
+		hAddrs[i] = fmt.Sprintf("&__xgo_c.c%d", i)
 	}
 	assign := func(dst []string, src []string) string {
 		if len(dst) == 0 {
@@ -54,46 +75,54 @@ func guardedTrap(line int, fileIndex int, helper string, funcInfo string, recv *
 		}
 		return strings.Join(dst, ",") + "=" + strings.Join(src, ",") + ";"
 	}
-
 	recvAddr := "nil"
-	paramCopies := copies[:nIn]
+	paramAddrs := hAddrs[:nIn]
 	if recv != nil {
-		recvAddr = "&" + copies[0]
-		paramCopies = copies[1:nIn]
+		recvAddr = hAddrs[0]
+		paramAddrs = hAddrs[1:nIn]
+	}
+	// the trap's argument slices are arrays in the copies, so that calling
+	// the trap allocates once
+	fields = append(fields, fmt.Sprintf("a [%d]interface{}", len(paramAddrs)), fmt.Sprintf("r [%d]interface{}", len(vars)-nIn))
+	copiesType := "*struct{" + strings.Join(fields, ";") + "}"
+	var h strings.Builder
+	fmt.Fprintf(&h, ";func %s(__xgo_post func(),__xgo_c %s,%s) (%s,interface{},[]interface{},[]interface{}) {", helper, copiesType, strings.Join(hParams, ","), copiesType)
+	fmt.Fprintf(&h, "if __xgo_post!=nil {%s__xgo_post();%sreturn nil,nil,nil,nil};", assign(hCopies, hVars), assign(hVars[nIn:], hCopies[nIn:]))
+	fmt.Fprintf(&h, "if __xgo_c!=nil {%sreturn nil,nil,nil,nil};", assign(hVars, hCopies))
+	fmt.Fprintf(&h, "__xgo_c=new(%s);%s", copiesType[1:], assign(hCopies, hVars))
+	fmt.Fprintf(&h, "__xgo_c.a=[%d]interface{}{%s};__xgo_c.r=[%d]interface{}{%s};", len(paramAddrs), strings.Join(paramAddrs, ","), len(vars)-nIn, strings.Join(hAddrs[nIn:], ","))
+	fmt.Fprintf(&h, "return __xgo_c,%s,__xgo_c.a[:],__xgo_c.r[:]}", recvAddr)
+	return b.String(), h.String()
+}
+
+// guardHelperKey identifies the helper of guardedTrap: functions whose
+// receiver, parameters and results have the same types share it. It is
+// empty when the function needs no helper.
+func guardHelperKey(recv *guardVar, params []*guardVar, results []*guardVar) string {
+	vars, nIn := guardHelperVars(recv, params, results)
+	if len(vars) == 0 {
+		return ""
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "if __xgo_trap_on_%d(&%s) {", fileIndex, trapOnVar(funcInfo))
-	if len(vars) > 0 {
-		fmt.Fprintf(&b, "%s:=%s;", strings.Join(copies, ","), strings.Join(names, ","))
+	fmt.Fprintf(&b, "%t;%d", recv != nil, nIn)
+	for _, v := range vars {
+		b.WriteString(";")
+		b.WriteString(v.typ)
 	}
-	fmt.Fprintf(&b, "__xgo_post_%d, __xgo_stop_%d := __xgo_trap_%d(%s,%s,[]interface{}{%s},[]interface{}{%s});", line, line, fileIndex, funcInfo, recvAddr, addrs(paramCopies), addrs(copies[nIn:]))
-	b.WriteString(assign(names, copies))
-	if len(vars) == 0 {
-		fmt.Fprintf(&b, "if __xgo_post_%d!=nil { defer __xgo_post_%d() };", line, line)
-	} else {
-		pairs := make([]string, 0, 2*len(vars))
-		for i := range vars {
-			pairs = append(pairs, "&"+names[i], "&"+copies[i])
-		}
-		fmt.Fprintf(&b, "if __xgo_post_%d!=nil { defer %s(__xgo_post_%d,%s) };", line, helper, line, strings.Join(pairs, ","))
-	}
-	fmt.Fprintf(&b, "if __xgo_stop_%d { return; };", line)
-	b.WriteString("};")
-	if len(vars) == 0 {
-		return b.String(), ""
-	}
+	return b.String()
+}
 
-	hParams := make([]string, 0, 2*len(vars))
-	hVars := make([]string, len(vars))
-	hCopies := make([]string, len(vars))
-	for i, v := range vars {
-		hVars[i] = fmt.Sprintf("*__xgo_v%d", i)
-		hCopies[i] = fmt.Sprintf("*__xgo_c%d", i)
-		hParams = append(hParams, fmt.Sprintf("__xgo_v%d,__xgo_c%d *%s", i, i, v.typ))
+// guardHelperVars lists the receiver (if any), parameters and results, in
+// that order, and how many of them are inputs.
+func guardHelperVars(recv *guardVar, params []*guardVar, results []*guardVar) ([]*guardVar, int) {
+	var vars []*guardVar
+	if recv != nil {
+		vars = append(vars, recv)
 	}
-	var h strings.Builder
-	fmt.Fprintf(&h, ";func %s(post func(),%s) {%spost();%s}", helper, strings.Join(hParams, ","), assign(hCopies, hVars), assign(hVars[nIn:], hCopies[nIn:]))
-	return b.String(), h.String()
+	vars = append(vars, params...)
+	nIn := len(vars)
+	vars = append(vars, results...)
+	return vars, nIn
 }
 
 // guardedDirectTrap is trapTemplate behind the __xgo_trap_on_<fileIndex>()
