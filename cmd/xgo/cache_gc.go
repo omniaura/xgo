@@ -18,6 +18,8 @@ import (
 const (
 	gcMarkFile     = ".xgo-last-used"
 	gcStampFile    = ".xgo-gc.txt"
+	staleSetupAge  = time.Hour
+	gcSetupPrefix  = ".xgo-setup-"
 	gcTombPrefix   = ".xgo-gc-removing-"
 	gcMarkInterval = 1 * time.Hour
 	gcInterval     = 24 * time.Hour
@@ -66,9 +68,32 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 		}
 		recordGC(parent, now)
 		for _, e := range entries {
+			if e.IsDir() && strings.HasPrefix(e.Name(), gcSetupPrefix) {
+				stage := filepath.Join(parent, e.Name())
+				info, err := e.Info()
+				if err != nil || now.Sub(info.ModTime()) < staleSetupAge {
+					continue
+				}
+				lease, err := lockCache(stage, true, false)
+				if err == nil {
+					// Recheck after acquiring the lease; active stages retain
+					// an exclusive lease through publication or cleanup.
+					info, err := os.Stat(stage)
+					removed := err == nil && now.Sub(info.ModTime()) >= staleSetupAge && os.RemoveAll(stage) == nil
+					lease.close()
+					if removed {
+						os.Remove(cacheLockPath(stage))
+					}
+				}
+				continue
+			}
 			if e.IsDir() && strings.HasPrefix(e.Name(), gcTombPrefix) {
-				// left by an interrupted removal
-				os.RemoveAll(filepath.Join(parent, e.Name()))
+				original := filepath.Join(parent, strings.TrimPrefix(e.Name(), gcTombPrefix))
+				lease, err := lockCache(original, true, false)
+				if err == nil {
+					os.RemoveAll(filepath.Join(parent, e.Name()))
+					lease.close()
+				}
 				continue
 			}
 			if !e.IsDir() || !strings.HasPrefix(e.Name(), u.namePrefix) || !strings.Contains(e.Name(), u.nameContains) {
@@ -81,19 +106,20 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 			if !u.isStale(dir, now) {
 				continue
 			}
-			// Another run may start using dir right now. Move it out of the
-			// way first, so no run can find it while it is half removed,
-			// then check its mark again and restore it if it was just used.
-			tomb := filepath.Join(parent, gcTombPrefix+e.Name())
-			if os.Rename(dir, tomb) != nil {
+			// A live invocation holds a shared lease until its Go child exits.
+			// Recheck staleness under the exclusive lease before renaming.
+			lease, err := lockCache(dir, true, false)
+			if err != nil {
 				continue
 			}
-			if t, ok := markTime(tomb); ok && now.Sub(t) < u.maxAge {
-				os.Rename(tomb, dir)
-				continue
+			if u.isStale(dir, now) {
+				tomb := filepath.Join(parent, gcTombPrefix+e.Name())
+				if os.Rename(dir, tomb) == nil {
+					logDebug("gc: remove %s", dir)
+					os.RemoveAll(tomb)
+				}
 			}
-			logDebug("gc: remove %s", dir)
-			os.RemoveAll(tomb)
+			lease.close()
 		}
 	}
 }
