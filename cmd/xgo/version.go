@@ -6,9 +6,9 @@ import "fmt"
 // which also tags the release; `go run ./script/release bump-core`
 // moves REVISION and NUMBER together with the core ones below.
 // They are no longer stamped on every commit.
-const VERSION = "1.3.8"
-const REVISION = "b718e587da7643cfc85a6b9577eb7e7dfc5a9b51+1"
-const NUMBER = 696
+const VERSION = "1.4.0"
+const REVISION = "0c8b4c0fd61a7304e2fb75440587bd5c2bac343c+1"
+const NUMBER = 697
 
 // Rationale: xgo consists of these modules:
 //
