@@ -9,21 +9,15 @@ import (
 )
 
 type options struct {
-	flagA       bool
-	projectDir  string
-	output      string
-	flagV       bool
-	flagX       bool
-	flagC       bool
-	flagRun     string
-	xgoSrc      string
-	debugTarget string
-	vscode      string
-	withGoroot  string
-	dumpIR      string
-	dumpAST     string
-
-	logCompile bool
+	flagA      bool
+	projectDir string
+	output     string
+	flagV      bool
+	flagX      bool
+	flagC      bool
+	flagRun    string
+	xgoSrc     string
+	withGoroot string
 
 	logDebug *string
 	// --debug-compile, --debug-compile=x
@@ -49,14 +43,12 @@ type options struct {
 	// (additive to the real process main module). Empty = real main only.
 	mockRuleIncludeAsMainModule string
 	// dev only
-	debugWithDlv bool
-	xgoHome      string
+	xgoHome string
 
 	// TODO: make these options available only at develop
 	// deprecated
-	syncXgoOnly   bool
-	setupDev      bool
-	buildCompiler bool
+	syncXgoOnly bool
+	setupDev    bool
 
 	mod string
 	// recognize go flags as is
@@ -89,8 +81,6 @@ type options struct {
 	stackTrace string
 	// --strace-dir
 	stackTraceDir string
-	// --strace-snapshot-main-module-default
-	straceSnapshotMainModuleDefault string
 
 	// --delete
 	deleteFlag bool
@@ -135,8 +125,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 	var flagRun string
 	var projectDir string
 	var output string
-	var debugTarget string
-	var vscode string
 
 	var noInstrument bool
 	var resetInstrument bool
@@ -146,19 +134,14 @@ func parseOptions(cmd string, args []string) (*options, error) {
 	var mockRules []string
 	var mockRuleIncludeAsMainModule string
 
-	var debugWithDlv bool
 	var xgoHome string
 
 	var xgoSrc string
 	var syncXgoOnly bool
 	var setupDev bool
-	var buildCompiler bool
 
 	var withGoroot string
-	var dumpIR string
-	var dumpAST string
 
-	var logCompile bool
 	var logDebug *string
 	var debugCompile *string
 	var debug *string
@@ -172,7 +155,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 	var tags string
 	var stackTrace string
 	var stackTraceDir string
-	var straceSnapshotMainModuleDefault string
 	var trapStdlib bool
 	var trapAll string
 	var trap []string
@@ -212,14 +194,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 			Value: &output,
 		},
 		{
-			Flags: []string{"--debug-target"},
-			Value: &debugTarget,
-		},
-		{
-			Flags: []string{"--vscode"},
-			Value: &vscode,
-		},
-		{
 			Flags: []string{"--xgo-src"},
 			Value: &xgoSrc,
 		},
@@ -240,14 +214,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 		{
 			Flags: []string{"--mock-rule-include-as-main-module"},
 			Value: &mockRuleIncludeAsMainModule,
-		},
-		{
-			Flags: []string{"--dump-ir"},
-			Value: &dumpIR,
-		},
-		{
-			Flags: []string{"--dump-ast"},
-			Value: &dumpAST,
 		},
 		{
 			Flags: []string{"-run", "--run"},
@@ -412,10 +378,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 			flagV = true
 			continue
 		}
-		if arg == "--log-compile" {
-			logCompile = true
-			continue
-		}
 		if arg == "--sync-xgo-only" {
 			syncXgoOnly = true
 			continue
@@ -424,10 +386,7 @@ func parseOptions(cmd string, args []string) (*options, error) {
 			setupDev = true
 			continue
 		}
-		if V1_0_0 && arg == "--build-compiler" {
-			buildCompiler = true
-			continue
-		}
+
 		if arg == "--no-build-output" {
 			noBuildOutput = true
 			continue
@@ -491,11 +450,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 			stackTrace = argVal
 			continue
 		}
-		stackTraceMainModuleDefaultFlag, val := flag.TrySingleFlag([]string{"--strace-snapshot-main-module-default"}, arg)
-		if stackTraceMainModuleDefaultFlag != "" {
-			straceSnapshotMainModuleDefault = val
-			continue
-		}
 
 		// supported flag: --trap-stdlib, --trap-stdlib=false, --trap-stdlib=true
 		trapStdlibFlag, trapStdlibVal := flag.TrySingleFlag([]string{"--trap-stdlib"}, arg)
@@ -518,10 +472,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 			continue
 		}
 
-		if isDevelopment && arg == "--debug-with-dlv" {
-			debugWithDlv = true
-			continue
-		}
 		var found bool
 		for _, flagVal := range flagValues {
 			if flagVal.Single {
@@ -572,21 +522,16 @@ func parseOptions(cmd string, args []string) (*options, error) {
 	}
 
 	return &options{
-		flagA:       flagA,
-		flagV:       flagV,
-		flagX:       flagX,
-		flagC:       flagC,
-		flagRun:     flagRun,
-		projectDir:  projectDir,
-		output:      output,
-		xgoSrc:      xgoSrc,
-		debugTarget: debugTarget,
-		vscode:      vscode,
-		withGoroot:  withGoroot,
-		dumpIR:      dumpIR,
-		dumpAST:     dumpAST,
+		flagA:      flagA,
+		flagV:      flagV,
+		flagX:      flagX,
+		flagC:      flagC,
+		flagRun:    flagRun,
+		projectDir: projectDir,
+		output:     output,
+		xgoSrc:     xgoSrc,
+		withGoroot: withGoroot,
 
-		logCompile:   logCompile,
 		logDebug:     logDebug,
 		debugCompile: debugCompile,
 		debug:        debug,
@@ -601,25 +546,22 @@ func parseOptions(cmd string, args []string) (*options, error) {
 		// Effective list: flag replaces env (whole string); empty flag falls back to env.
 		mockRuleIncludeAsMainModule: firstNonEmpty(mockRuleIncludeAsMainModule, os.Getenv("XGO_MOCK_RULE_INCLUDE_AS_MAIN_MODULE")),
 
-		debugWithDlv: debugWithDlv,
-		xgoHome:      xgoHome,
+		xgoHome: xgoHome,
 
-		syncXgoOnly:   syncXgoOnly,
-		setupDev:      setupDev,
-		buildCompiler: buildCompiler,
+		syncXgoOnly: syncXgoOnly,
+		setupDev:    setupDev,
 		// default false
 
-		mod:                             mod,
-		gcflags:                         gcflags,
-		overlay:                         overlay,
-		modfile:                         modfile,
-		tags:                            tags,
-		stackTrace:                      stackTrace,
-		stackTraceDir:                   stackTraceDir,
-		straceSnapshotMainModuleDefault: straceSnapshotMainModuleDefault,
-		trapStdlib:                      trapStdlib,
-		trapAll:                         trapAll,
-		trap:                            trap,
+		mod:           mod,
+		gcflags:       gcflags,
+		overlay:       overlay,
+		modfile:       modfile,
+		tags:          tags,
+		stackTrace:    stackTrace,
+		stackTraceDir: stackTraceDir,
+		trapStdlib:    trapStdlib,
+		trapAll:       trapAll,
+		trap:          trap,
 
 		unified: unified,
 

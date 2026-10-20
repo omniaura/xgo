@@ -7,7 +7,6 @@ import (
 )
 
 const XGO_PREFIX = "__xgo_"
-const LEGACY_PREFIX = "runtime_link_"
 
 type Link struct {
 	From string
@@ -64,10 +63,10 @@ func LinkXgoInit(fn *ir.Func) {
 	if !strings.HasPrefix(fnName, "__xgo_init_") {
 		return
 	}
-	linkStmts(fn.Body, fnName == "__xgo_init_legacy_v1_1_0")
+	linkStmts(fn.Body)
 }
 
-func linkStmts(stmts ir.Nodes, legacy bool) {
+func linkStmts(stmts ir.Nodes) {
 	for _, node := range stmts {
 		assign, ok := node.(*ir.AssignStmt)
 		if !ok {
@@ -81,18 +80,10 @@ func linkStmts(stmts ir.Nodes, legacy bool) {
 			continue
 		}
 		symName := xName.Sym().Name
-		var link string
-		if !legacy {
-			if !strings.HasPrefix(symName, XGO_PREFIX) {
-				continue
-			}
-			link = findLink(symName[len(XGO_PREFIX):])
-		} else {
-			if !strings.HasPrefix(symName, LEGACY_PREFIX) {
-				continue
-			}
-			link = symName[len(LEGACY_PREFIX):]
+		if !strings.HasPrefix(symName, XGO_PREFIX) {
+			continue
 		}
+		link := findLink(symName[len(XGO_PREFIX):])
 		if link == "" {
 			continue
 		}

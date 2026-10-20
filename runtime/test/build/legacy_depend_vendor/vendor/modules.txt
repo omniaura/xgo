@@ -1,0 +1,9 @@
+# github.com/xhd2015/xgo/runtime v1.0.52
+## explicit; go 1.14
+github.com/xhd2015/xgo/runtime/core
+github.com/xhd2015/xgo/runtime/functab
+github.com/xhd2015/xgo/runtime/mock
+github.com/xhd2015/xgo/runtime/trap
+# golang.org/x/example/hello v0.0.0-20250326195304-398e112173f4
+## explicit; go 1.19
+golang.org/x/example/hello/reverse

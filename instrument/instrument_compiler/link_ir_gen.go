@@ -1,6 +1,7 @@
 package instrument_compiler
 
-// gen: go run ./script/generate runtime-def
+// RuntimeExtraDef declares the GOROOT/src/runtime/xgo_trap.go functions the
+// compiler may link to (see mkbuiltin).
 const RuntimeExtraDef = `
 // xgo
 func XgoTrap(info interface{}, recvPtr interface{}, args []interface{}, results []interface{}) (func(), bool)
@@ -9,7 +10,6 @@ func XgoTrapVar(info interface{}, varAddr interface{}, res interface{})
 func XgoTrapVarPtr(info interface{}, varAddr interface{}, res interface{})
 func XgoRegister(fn interface{})
 
-// these are for legacy xgo/runtime v1.1.0
 func XgoSetTrap(trap func(info unsafe.Pointer, recvPtr interface{}, args []interface{}, results []interface{}) (func(), bool))
 func XgoSetTrapSkip(skip bool)
 func XgoSetVarTrap(trap func(info unsafe.Pointer, varAddr interface{}, res interface{}))

@@ -15,11 +15,6 @@ const (
 	RUNTIME_TRAP_PKG             = "github.com/omniaura/xgo/runtime/trap"
 )
 
-// legacy
-const (
-// Deprecated: we can remove once xgo/runtime v1.1.0 no longer used
-)
-
 const (
 	RUNTIME_LINK_TEMPLATE_FILE = "runtime_link_template.go"
 	RUNTIME_LINK_FILE          = "runtime_link.go" // xgo/runtime/internal/runtime/runtime_link.go
@@ -38,12 +33,6 @@ const (
 const (
 	XGO_REAL_NOW   = "XgoRealNow"
 	XGO_REAL_SLEEP = "XgoRealSleep"
-)
-
-const (
-	// see https://github.com/omniaura/xgo/blob/branch-xgo-v1.0/runtime/core/version.go
-	// the corresponding commit is 4123ef9cd711daea863cd3cf319989a581debaad
-	LATEST_LEGACY_RUNTIME_NUMBER = 324
 )
 
 var RUNTIME_LINK_TEMPLATE_PATH = []string{"internal", "runtime", RUNTIME_LINK_TEMPLATE_FILE}

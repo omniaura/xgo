@@ -21,7 +21,6 @@ import (
 	"github.com/omniaura/xgo/instrument/config"
 	"github.com/omniaura/xgo/instrument/constants"
 	"github.com/omniaura/xgo/instrument/instrument_go/instrument_gc"
-	"github.com/omniaura/xgo/instrument/instrument_xgo_runtime"
 	"github.com/omniaura/xgo/instrument/overlay"
 	cmd_support "github.com/omniaura/xgo/support/cmd"
 	debug_support "github.com/omniaura/xgo/support/debug"
@@ -41,10 +40,6 @@ import (
 //   -disable-runtime-link  disable runtime link
 
 var closeDebug func()
-
-// since xgo V1_0.1.0, xgo does not instrument the compiler anymore
-
-const V1_0_0 = false
 
 func main() {
 	// instrumenting keeps the syntax of every main module package alive
@@ -87,10 +82,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}
-		return
-	}
-	if cmd == "exec_tool" {
-		exec_tool.Main(args)
 		return
 	}
 	if cmd == "test-explorer" || cmd == "explorer" || cmd == "e" {
@@ -202,7 +193,6 @@ func handleBuild(cmd string, args []string) error {
 	flagX := opts.flagX
 	flagC := opts.flagC
 	flagRun := opts.flagRun
-	logCompile := opts.logCompile
 	logDebugOption := opts.logDebug
 	debugCompile := opts.debugCompile
 	debug := opts.debug
@@ -212,24 +202,17 @@ func handleBuild(cmd string, args []string) error {
 	resetInstrument := opts.resetInstrument
 	noSetup := opts.noSetup
 
-	debugWithDlv := opts.debugWithDlv
 	xgoHome := opts.xgoHome
 	syncXgoOnly := opts.syncXgoOnly
 	setupDev := opts.setupDev
-	buildCompiler := opts.buildCompiler
-	debugTarget := opts.debugTarget
-	vscode := opts.vscode
 	mod := opts.mod
 	gcflags := opts.gcflags
 	overlayFile := opts.overlay
 	modfile := opts.modfile
 	tags := opts.tags
 	withGoroot := opts.withGoroot
-	dumpIR := opts.dumpIR
-	dumpAST := opts.dumpAST
 	stackTrace := opts.stackTrace
 	stackTraceDir := opts.stackTraceDir
-	straceSnapshotMainModuleDefault := opts.straceSnapshotMainModuleDefault
 	trapStdlib := opts.trapStdlib
 	trapAll := opts.trapAll
 	trapPkgs := opts.trap
@@ -322,27 +305,6 @@ func handleBuild(cmd string, args []string) error {
 		return err
 	}
 
-	var vscodeDebugFile string
-	var vscodeDebugFileSuffix string
-	if !noInstrument && debugTarget != "" {
-		var err error
-		vscodeDebugFile, vscodeDebugFileSuffix, err = getVscodeDebugFile(sessionTmpDir, vscode)
-		if err != nil {
-			return err
-		}
-	}
-
-	var tmpIRFile string
-	var tmpASTFile string
-	if !noInstrument {
-		if dumpIR != "" {
-			tmpIRFile = filepath.Join(sessionTmpDir, "dump-ir")
-		}
-		if dumpAST != "" {
-			tmpASTFile = filepath.Join(sessionTmpDir, "dump-ast")
-		}
-	}
-
 	// build the exec tool
 	goVersion, err := checkGoVersion(goroot, !noInstrument)
 	if err != nil {
@@ -433,19 +395,14 @@ func handleBuild(cmd string, args []string) error {
 		return nil
 	}
 
-	exeSuffix := osinfo.EXE_SUFFIX
 	// NOTE: on Windows, go build -o xxx will always yield xxx.exe
-	compileLog := filepath.Join(logDir, "compile.log")
-	compilerBin := filepath.Join(instrumentDir, "compile"+exeSuffix)
-	compilerBuildID := filepath.Join(instrumentDir, "compile.buildid.txt")
 	instrumentGoroot := filepath.Join(instrumentDir, goVersionName)
 	if opts.patchGorootInPlace {
 		instrumentGoroot = goroot
 	}
-	packageDataDir := filepath.Join(instrumentDir, "pkgdata")
 
 	includeAsMainModules := parseModuleList(opts.mockRuleIncludeAsMainModule)
-	optionsFromFile, optionsFromFileContent, err := mergeOptionFiles(sessionTmpDir, opts.optionsFromFile, opts.mockRules, includeAsMainModules)
+	_, optionsFromFileContent, err := mergeOptionFiles(sessionTmpDir, opts.optionsFromFile, opts.mockRules, includeAsMainModules)
 	if err != nil {
 		return err
 	}
@@ -500,7 +457,7 @@ func handleBuild(cmd string, args []string) error {
 		defer func() { sourceLease.close() }()
 		var instrumentLease *cacheLock
 		if !noSetup && !instrumented && !opts.patchGorootInPlace && !isDevelopment {
-			instrumentLease, err = prepareInstrumentDir(instrumentDir, instrumentSetupRecord(getCoreRevision(), goVersionName, true), resetInstrument || buildCompiler, func(stage string) error {
+			instrumentLease, err = prepareInstrumentDir(instrumentDir, instrumentSetupRecord(getCoreRevision(), goVersionName, true), resetInstrument, func(stage string) error {
 				// Only cold setup reads the original tree. Keep its lease
 				// through the invocation so in-place patchers cannot race it.
 				if sourceLease == nil {
@@ -543,7 +500,7 @@ func handleBuild(cmd string, args []string) error {
 		defer instrumentLease.close()
 
 		if !noSetup && (!instrumented && isDevelopment || opts.patchGorootInPlace) {
-			if err := ensureDirs(binDir, logDir, instrumentDir, packageDataDir); err != nil {
+			if err := ensureDirs(binDir, logDir, instrumentDir); err != nil {
 				return err
 			}
 			coreRevisionChanged, err = checkRevisionChanged(revisionFile, getCoreRevision())
@@ -556,7 +513,7 @@ func handleBuild(cmd string, args []string) error {
 					return err
 				}
 			}
-			if err := patchRuntime(goroot, instrumentGoroot, realXgoSrc, goVersion, resetInstrument || buildCompiler || coreRevisionChanged || gorootErr != nil || opts.patchGorootInPlace, opts.skipRebuildCompilerAndGo); err != nil {
+			if err := patchRuntime(goroot, instrumentGoroot, realXgoSrc, goVersion, resetInstrument || coreRevisionChanged || gorootErr != nil || opts.patchGorootInPlace, opts.skipRebuildCompilerAndGo); err != nil {
 				return err
 			}
 			if err := os.WriteFile(revisionFile, []byte(getCoreRevision()), 0644); err != nil {
@@ -603,35 +560,13 @@ func handleBuild(cmd string, args []string) error {
 		return nil
 	}
 
-	var compilerChanged bool
-	var toolExecFlag string
-	if V1_0_0 {
-		if !noInstrument {
-			logDebug("build instrument tools: %s", instrumentGoroot)
-			xgoBin := os.Args[0]
-			compilerChanged, toolExecFlag, err = buildInstrumentTool(instrumentGoroot, realXgoSrc, compilerBin, compilerBuildID, "", xgoBin, debugTarget, logCompile, noSetup, debugWithDlv)
-			if err != nil {
-				return err
-			}
-			logDebug("compiler changed: %v", compilerChanged)
-			logDebug("tool exec flags: %v", toolExecFlag)
-		}
-	}
 	close(setupDone)
 
-	if V1_0_0 && buildCompiler {
-		fmt.Printf("%s\n", compilerBin)
-		return nil
-	}
 	if trapStdlib {
 		trapPkgs = append(trapPkgs, config.PREDEFINED_STD_PKGS...)
 	}
 	logDebug("trap stdlib: %v", trapStdlib)
 
-	// before invoking exec_tool, tail follow its log
-	if logCompile {
-		go tailLog(compileLog)
-	}
 	var debugCompilePkg string
 	var debugCompileLogFile string
 
@@ -707,20 +642,6 @@ func handleBuild(cmd string, args []string) error {
 			callerOverlay = overlay.ParseGoOverlay(goOverlay, overlayPathOpts)
 			callerOverlay.ApplyFileRedirects(overlayFS)
 		}
-		// TODO: remove this check once most clients are updated
-		needUpgrade, coreVersion, err := instrument_xgo_runtime.CheckRuntimeLegacyVersion(instrumentGoroot, projectDir, overlayFS, mod, modfile, overlayFile, goVersion)
-		if err != nil {
-			return fmt.Errorf("checking version %s: %w", constants.RUNTIME_CORE_PKG, err)
-		}
-		logDebug("need upgrade: %v, core version: %s", needUpgrade, coreVersion)
-
-		if needUpgrade {
-			fmt.Fprintf(os.Stderr, `WARNING: xgo v%s cannot work with deprecated xgo/runtime v%s.
-xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upgrade via:
-  go get %s@latest
-`, VERSION, coreVersion, CORE_VERSION, constants.RUNTIME_MODULE)
-		}
-
 		projectRoot := getProjectRoot(projectDir, subPaths)
 		var xgoRuntimeModuleDir string
 
@@ -738,15 +659,13 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		// set when instrumentUserCode should add import _ "…/runtime/trace"
 		// to the packages of the command
 		var traceImports *importResult
-		if enableStackTrace || needUpgrade || needLocalRuntime {
+		if enableStackTrace || needLocalRuntime {
 			// check if xgo/runtime ready
-			impResult, impRuntimeErr := importRuntimeDepGenOverlay(cmdTest, instrumentGoroot, instrumentGo, goVersion, modfile, realXgoSrc, projectDir, projectRoot, localXgoGenDir, mainModule, mod, resetInstrument || flagA, needUpgrade || needLocalRuntime, remainArgs, pkgPatterns != nil)
+			impResult, impRuntimeErr := importRuntimeDepGenOverlay(cmdTest, instrumentGoroot, instrumentGo, goVersion, modfile, realXgoSrc, projectDir, projectRoot, localXgoGenDir, mainModule, mod, resetInstrument || flagA, needLocalRuntime, remainArgs, pkgPatterns != nil)
 			if impRuntimeErr != nil {
 				// can be silently ignored
 				if enableStackTrace {
 					fmt.Fprintf(os.Stderr, "WARNING: --strace requires: import _ %q\n   failed to auto import %s: %v\n", constants.RUNTIME_TRACE_PKG, constants.RUNTIME_TRACE_PKG, impRuntimeErr)
-				} else if needUpgrade {
-					fmt.Fprintf(os.Stderr, "WARNING: auto upgrade fails: %v\n", impRuntimeErr)
 				} else if needLocalRuntime {
 					// Go 1.25+: loading runtime locally failed, fall back to overlay
 					// (may fail if runtime is in GOMODCACHE)
@@ -818,7 +737,7 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		if len(instrumentIncludeAsMain) == 0 {
 			instrumentIncludeAsMain = opts.MockRuleIncludeAsMainModule
 		}
-		instrumentUserCodeResult, err = instrumentUserCode(instrumentGoroot, projectDir, projectRoot, goVersion, realXgoSrc, modForLoad, modfileForLoad, mainModule, instrumentIncludeAsMain, xgoRuntimeModuleDir, mayHaveCover, overlayFS, overlayFile, cmdTest, opts.FilterRules, trapPkgs, trapAll, collectTestTrace, collectTestTraceDir, xgoRaceSafe, goFlag, needUpgrade, trimpath, pkgPatterns, traceImports != nil)
+		instrumentUserCodeResult, err = instrumentUserCode(instrumentGoroot, projectDir, projectRoot, goVersion, realXgoSrc, modForLoad, modfileForLoad, mainModule, instrumentIncludeAsMain, xgoRuntimeModuleDir, mayHaveCover, overlayFS, overlayFile, cmdTest, opts.FilterRules, trapPkgs, trapAll, collectTestTrace, collectTestTraceDir, xgoRaceSafe, goFlag, trimpath, pkgPatterns, traceImports != nil)
 		if err != nil {
 			return err
 		}
@@ -900,14 +819,11 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 			buildCmdArgs = []string{"build"}
 		}
 
-		if toolExecFlag != "" {
-			buildCmdArgs = append(buildCmdArgs, toolExecFlag)
-		}
 		// A fresh core revision already has an isolated build-cache namespace.
 		// Forcing -a on its first test run prevents Go from saving the pre-link
 		// test-cache key. Later runs then relink every cached test indefinitely.
-		// Keep explicit -a and the legacy compiler-change rebuild behavior.
-		if flagA || compilerChanged || (coreRevisionChanged && !cmdTest) {
+		// Keep explicit -a.
+		if flagA || (coreRevisionChanged && !cmdTest) {
 			buildCmdArgs = append(buildCmdArgs, "-a")
 		}
 		if flagV {
@@ -1041,61 +957,6 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		}
 	}
 
-	if !noInstrument && V1_0_0 {
-		execCmdEnv = append(execCmdEnv, "XGO_COMPILER_BIN="+compilerBin)
-		execCmdEnv = append(execCmdEnv, exec_tool.XGO_COMPILE_PKG_DATA_DIR+"="+packageDataDir)
-		// xgo versions
-		execCmdEnv = append(execCmdEnv, "XGO_TOOLCHAIN_VERSION="+CORE_VERSION)
-		execCmdEnv = append(execCmdEnv, "XGO_TOOLCHAIN_REVISION="+CORE_REVISION)
-		execCmdEnv = append(execCmdEnv, "XGO_TOOLCHAIN_VERSION_NUMBER="+strconv.FormatInt(CORE_NUMBER, 10))
-
-		// IR
-		execCmdEnv = append(execCmdEnv, "XGO_DEBUG_DUMP_IR="+dumpIR)
-		execCmdEnv = append(execCmdEnv, "XGO_DEBUG_DUMP_IR_FILE="+tmpIRFile)
-
-		// AST
-		execCmdEnv = append(execCmdEnv, "XGO_DEBUG_DUMP_AST="+dumpAST)
-		execCmdEnv = append(execCmdEnv, "XGO_DEBUG_DUMP_AST_FILE="+tmpASTFile)
-
-		// vscode debug
-		var xgoDebugVscode string
-		if vscodeDebugFile != "" {
-			xgoDebugVscode = vscodeDebugFile + vscodeDebugFileSuffix
-		}
-		execCmdEnv = append(execCmdEnv, exec_tool.XGO_DEBUG_VSCODE+"="+xgoDebugVscode)
-
-		// debug compile package
-		execCmdEnv = append(execCmdEnv, exec_tool.XGO_DEBUG_COMPILE_PKG+"="+debugCompilePkg)
-		execCmdEnv = append(execCmdEnv, exec_tool.XGO_DEBUG_COMPILE_LOG_FILE+"="+debugCompileLogFile)
-
-		// stack trace
-		if stackTrace != "" {
-			execCmdEnv = append(execCmdEnv, exec_tool.XGO_STACK_TRACE+"="+stackTrace)
-		}
-		if stackTraceDir != "" {
-			execCmdEnv = append(execCmdEnv, exec_tool.XGO_STACK_TRACE_DIR+"="+stackTraceDir)
-		}
-		if enableStackTrace && straceSnapshotMainModuleDefault != "" {
-			execCmdEnv = append(execCmdEnv, exec_tool.XGO_STRACE_SNAPSHOT_MAIN_MODULE_DEFAULT+"="+straceSnapshotMainModuleDefault)
-		}
-
-		// compiler options (make abs)
-		var absOptionsFromFile string
-		if optionsFromFile != "" {
-			absOptionsFromFile, err = filepath.Abs(optionsFromFile)
-			if err != nil {
-				return err
-			}
-		}
-		execCmdEnv = append(execCmdEnv, exec_tool.XGO_COMPILER_OPTIONS_FILE+"="+absOptionsFromFile)
-
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		execCmdEnv = append(execCmdEnv, exec_tool.XGO_SRC_WD+"="+wd)
-	}
-
 	if config.EnabledLogDebug() {
 		// filter env
 		var logEnv []string
@@ -1146,30 +1007,6 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		}
 	}
 
-	// if dump IR is not nil, output to stdout
-	if tmpIRFile != "" {
-		// ast file not exists
-		err := checkedCopyToStdout(tmpIRFile, "--dump-ir not effective, use -a to trigger recompile or check if you package path matches")
-		if err != nil {
-			return err
-		}
-	}
-	if tmpASTFile != "" {
-		// ast file not exists
-		err := checkedCopyToStdout(tmpASTFile, "--dump-ast not effective, use -a to trigger recompile or check if you package path matches")
-		if err != nil {
-			return err
-		}
-	}
-	if (vscode == "stdout" || strings.HasPrefix(vscode, "stdout?")) && vscodeDebugFile != "" {
-		err := copyToStdout(vscodeDebugFile)
-		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("vscode debug not effective, use -a to trigger recompile")
-			}
-			return err
-		}
-	}
 	return nil
 }
 
@@ -1208,18 +1045,6 @@ func getPathMappings(instrumentGoroot string, projectRoot string) []overlay.Path
 		}
 	}
 	return pathMappings
-}
-
-func checkedCopyToStdout(file string, msg string) error {
-	err := copyToStdout(file)
-	if err != nil {
-		// ir file not exists
-		if errors.Is(err, os.ErrNotExist) {
-			return errors.New(msg)
-		}
-		return err
-	}
-	return nil
 }
 
 func checkGoVersion(goroot string, needCheckVersion bool) (*goinfo.GoVersion, error) {
@@ -1378,7 +1203,7 @@ func checkGoroot(dir string, goroot string) (string, error) {
 	return "", err
 }
 
-func ensureDirs(binDir string, logDir string, instrumentDir string, packageDataDir string) error {
+func ensureDirs(binDir string, logDir string, instrumentDir string) error {
 	err := os.MkdirAll(binDir, 0755)
 	if err != nil {
 		return fmt.Errorf("create ~/.xgo/bin: %w", err)
@@ -1390,13 +1215,6 @@ func ensureDirs(binDir string, logDir string, instrumentDir string, packageDataD
 	err = os.MkdirAll(instrumentDir, 0755)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", filepath.Base(instrumentDir), err)
-	}
-	if V1_0_0 {
-		// only needed for older xgo
-		err = os.MkdirAll(packageDataDir, 0755)
-		if err != nil {
-			return fmt.Errorf("create %s: %w", filepath.Base(packageDataDir), err)
-		}
 	}
 	return nil
 }

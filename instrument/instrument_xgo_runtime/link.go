@@ -19,7 +19,6 @@ import (
 
 var ErrLinkFileNotFound = errors.New("xgo: link file not found")
 var ErrLinkFileNotRequired = errors.New("xgo: link file not required")
-var ErrRuntimeVersionDeprecated = errors.New("runtime version deprecated")
 
 type LinkOptions struct {
 	Fset                *token.FileSet
@@ -97,7 +96,6 @@ func LinkXgoRuntime(goroot string, projectDir string, xgoRuntimeModuleDir string
 	var foundTrap bool
 	var foundFunctabPkg bool
 	var traceFile *edit.File
-	var runtimeCoreVersion string
 
 	// find version first
 	var corePkg *edit.Package
@@ -124,16 +122,7 @@ func LinkXgoRuntime(goroot string, projectDir string, xgoRuntimeModuleDir string
 	if versionFile != nil {
 		content := versionFile.File.Content
 		absFile := overlay.AbsFile(versionFile.File.AbsPath)
-		var err error
-		runtimeCoreVersion, err = ParseCoreVersion(strutil.ToReadonlyString(content))
-		if err != nil {
-			return nil, err
-		}
-		if isDeprecatedCoreVersion(runtimeCoreVersion) {
-			return nil, fmt.Errorf("%w: %s", ErrRuntimeVersionDeprecated, runtimeCoreVersion)
-		}
 		versionContent := ReplaceActualXgoVersion(strutil.ToReadonlyString(content), xgoVersion, xgoRevision, xgoNumber)
-		versionContent = checkBypassVersionCheck(versionContent, runtimeCoreVersion)
 		overrideContent(absFile, versionContent)
 	}
 

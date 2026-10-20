@@ -15,11 +15,8 @@ import (
 type GenernateType = gen_defs.GenernateType
 
 const (
-	GenernateType_DotAll              GenernateType = "./..."
-	GenernateType_CompilerPatch       GenernateType = "compiler-patch"
-	GenernateType_CompilerHelperCode  GenernateType = "compiler-helper-code"
-	GenernateType_CompilerPatternCode GenernateType = "compiler-pattern-code"
-	GenernateType_RuntimeDef          GenernateType = "runtime-def"
+	GenernateType_DotAll        GenernateType = "./..."
+	GenernateType_CompilerPatch GenernateType = "compiler-patch"
 )
 
 var allGenerateTypes = []GenernateType{

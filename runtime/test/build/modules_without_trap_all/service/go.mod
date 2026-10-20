@@ -12,3 +12,5 @@ require github.com/omniaura/xgo/runtime/test/build/modules_without_trap_all/sub_
 replace github.com/omniaura/xgo/runtime/test/build/modules_without_trap_all/sub_a => ../sub_a
 
 replace github.com/omniaura/xgo/runtime/test/build/modules_without_trap_all/sub_b => ../sub_b
+
+replace github.com/omniaura/xgo/runtime => ../../../..

@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -55,7 +54,7 @@ type instrumentResult struct {
 // goroot is critical for stdlib
 // includeAsMainModules: extra module paths treated as main for mock/trap (option B:
 // reclassify packages already on the load graph; do not bulk-load module/...).
-func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, triedUpgrade bool, trimpath bool, pkgPatterns []string, addTraceImports bool) (*instrumentResult, error) {
+func instrumentUserCode(goroot string, projectDir string, projectRoot string, goVersion *goinfo.GoVersion, xgoSrc string, mod string, modfile string, mainModule string, includeAsMainModules []string, xgoRuntimeModuleDir string, mayHaveCover bool, overlayFS overlay.Overlay, overlayFile string, includeTest bool, rules []Rule, trapPkgs []string, trapAll string, collectTestTrace bool, collectTestTraceDir string, xgoRaceSafe bool, goFlag bool, trimpath bool, pkgPatterns []string, addTraceImports bool) (*instrumentResult, error) {
 	logDebug("instrumentUserSpace: mod=%s, modfile=%s, xgoRuntimeModuleDir=%s, includeTest=%v, collectTestTrace=%v, includeAsMainModules=%v, overlayFile=%s", mod, modfile, xgoRuntimeModuleDir, includeTest, collectTestTrace, includeAsMainModules, overlayFile)
 	if mod == "" {
 		// check vendor dir
@@ -189,15 +188,6 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
   go get %s@latest
   import _ %q
 	`, constants.RUNTIME_INTERNAL_TRAP_PKG, constants.RUNTIME_INTERNAL_TRAP_PKG)
-			}
-			return nil, nil
-		}
-		if errors.Is(err, instrument_xgo_runtime.ErrRuntimeVersionDeprecated) {
-			if !goFlag {
-				if triedUpgrade {
-					return nil, fmt.Errorf("xgo v%s auto upgrade failed, you can fix this by:\n  go get %s@latest", VERSION, constants.RUNTIME_MODULE)
-				}
-				return nil, fmt.Errorf("xgo v%s cannot work with deprecated xgo/runtime: %w, upgrade with:\n  go get %s@latest", VERSION, err, constants.RUNTIME_MODULE)
 			}
 			return nil, nil
 		}
