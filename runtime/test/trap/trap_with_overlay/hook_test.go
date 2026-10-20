@@ -1,5 +1,4 @@
 //go:build ignore
-// +build ignore
 
 package trap_with_overlay
 

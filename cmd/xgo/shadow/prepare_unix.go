@@ -2,7 +2,6 @@
 // for go > 1.18  unix is enough
 //
 //go:build darwin || linux || unix
-// +build darwin linux unix
 
 package main
 

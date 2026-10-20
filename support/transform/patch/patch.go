@@ -13,24 +13,6 @@ import (
 	"github.com/xhd2015/xgo/support/transform/patch/unpatch"
 )
 
-// see https://github.com/xhd2015/xgo/issues/169#issuecomment-2241407305
-func Patch(old string, patch string) (string, error) {
-	old, err := unpatch.Unpatch(old)
-	if err != nil {
-		return "", err
-	}
-	srcAST, srcFset, err := goparse.ParseFileCode("old.go", []byte(old))
-	if err != nil {
-		return "", err
-	}
-
-	patchCodeAST, patchFset, err := goparse.ParseFileCode("patch.go", []byte(patch))
-	if err != nil {
-		return "", err
-	}
-	return patchAST(old, srcAST, srcFset, patch, patchCodeAST, patchFset)
-}
-
 func PatchFile(srcFile string, patchFile string) (string, error) {
 	srcCode, err := fileutil.ReadFile(srcFile)
 	if err != nil {

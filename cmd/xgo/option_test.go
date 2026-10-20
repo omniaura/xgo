@@ -2,8 +2,6 @@ package main
 
 import (
 	"testing"
-
-	"github.com/xhd2015/xgo/support/goinfo"
 )
 
 func TestReleaseXgoHomeIsNotForwardedToTestBinary(t *testing.T) {
@@ -16,117 +14,22 @@ func TestReleaseXgoHomeIsNotForwardedToTestBinary(t *testing.T) {
 	}
 }
 
-func TestParseUseFilePatches(t *testing.T) {
-	pbTrue := ptrBool(true)
-	pbFalse := ptrBool(false)
-
-	tests := []struct {
-		name    string
-		args    []string
-		want    *bool
-		wantErr bool
-	}{
-		{name: "not set", args: []string{"build", "./..."}, want: nil},
-		{name: "bare flag", args: []string{"build", "--use-file-patches", "./..."}, want: pbTrue},
-		{name: "explicit true", args: []string{"build", "--use-file-patches=true", "./..."}, want: pbTrue},
-		{name: "explicit false", args: []string{"build", "--use-file-patches=false", "./..."}, want: pbFalse},
-		{name: "invalid value", args: []string{"build", "--use-file-patches=bad", "./..."}, wantErr: true},
+func TestUseFilePatchesFlagIsAcceptedForCompatibility(t *testing.T) {
+	for _, args := range [][]string{
+		{"--use-file-patches", "./..."},
+		{"--use-file-patches=true", "./..."},
+	} {
+		opts, err := parseOptions("build", args)
+		if err != nil {
+			t.Fatalf("%v: %v", args, err)
+		}
+		if len(opts.remainArgs) != 1 || opts.remainArgs[0] != "./..." {
+			t.Fatalf("%v: flag must be consumed by xgo: %+v", args, opts.remainArgs)
+		}
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			opts, err := parseOptions(tt.args[0], tt.args[1:])
-			if tt.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if tt.want == nil {
-				if opts.useFilePatches != nil {
-					t.Fatalf("expected nil, got %v", *opts.useFilePatches)
-				}
-				return
-			}
-			if opts.useFilePatches == nil {
-				t.Fatal("expected non-nil, got nil")
-			}
-			if *opts.useFilePatches != *tt.want {
-				t.Fatalf("expected %v, got %v", *tt.want, *opts.useFilePatches)
-			}
-		})
+	for _, arg := range []string{"--use-file-patches=false", "--use-file-patches=bad"} {
+		if _, err := parseOptions("build", []string{arg, "./..."}); err == nil {
+			t.Fatalf("%s: expected error", arg)
+		}
 	}
 }
-
-func TestResolveUseFilePatches(t *testing.T) {
-	go124 := &goinfo.GoVersion{Major: 1, Minor: 24}
-	go125 := &goinfo.GoVersion{Major: 1, Minor: 25}
-	go126 := &goinfo.GoVersion{Major: 1, Minor: 26}
-	go127 := &goinfo.GoVersion{Major: 1, Minor: 27}
-	go123 := &goinfo.GoVersion{Major: 1, Minor: 23}
-	go217 := &goinfo.GoVersion{Major: 1, Minor: 17}
-
-	pbTrue := ptrBool(true)
-	pbFalse := ptrBool(false)
-
-	tests := []struct {
-		name        string
-		explicit    *bool
-		goVersion   *goinfo.GoVersion
-		want        bool
-		wantWarning bool
-		wantErr     bool
-	}{
-		// nil explicit — version-based defaults
-		{name: "go1.25 default", goVersion: go125, want: true},
-		{name: "go1.26 default", goVersion: go126, want: true},
-		{name: "go1.27 default", goVersion: go127, want: true},
-		{name: "go1.24 default", goVersion: go124, want: false},
-		{name: "go1.23 default", goVersion: go123, want: false},
-		{name: "go1.17 default", goVersion: go217, want: false},
-		{name: "nil version default", want: false},
-
-		// explicit true — go1.24+ allowed
-		{name: "go1.25 explicit true", explicit: pbTrue, goVersion: go125, want: true},
-		{name: "go1.26 explicit true", explicit: pbTrue, goVersion: go126, want: true},
-		{name: "go1.24 explicit true", explicit: pbTrue, goVersion: go124, want: true},
-		{name: "go1.23 explicit true", explicit: pbTrue, goVersion: go123, wantErr: true},
-		{name: "nil version explicit true", explicit: pbTrue, wantErr: true},
-
-		// explicit false — go1.24–go1.26 allow switching to legacy instrument_go
-		{name: "go1.25 explicit false", explicit: pbFalse, goVersion: go125, want: false},
-		{name: "go1.24 explicit false", explicit: pbFalse, goVersion: go124, want: false},
-		{name: "go1.26 explicit false", explicit: pbFalse, goVersion: go126, want: false},
-		{name: "go1.23 explicit false", explicit: pbFalse, goVersion: go123, want: false},
-		{name: "go1.17 explicit false", explicit: pbFalse, goVersion: go217, want: false},
-		{name: "go1.27 explicit false", explicit: pbFalse, goVersion: go127, wantErr: true},
-		{name: "nil version explicit false", explicit: pbFalse, want: false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, warning, err := resolveUseFilePatches(tt.explicit, tt.goVersion)
-			if tt.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got != tt.want {
-				t.Fatalf("expected %v, got %v", tt.want, got)
-			}
-			if tt.wantWarning && warning == "" {
-				t.Fatal("expected warning, got none")
-			}
-			if !tt.wantWarning && warning != "" {
-				t.Fatalf("expected no warning, got: %s", warning)
-			}
-		})
-	}
-}
-
-func ptrBool(b bool) *bool { return &b }

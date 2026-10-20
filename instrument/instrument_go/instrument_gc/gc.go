@@ -1,8 +1,8 @@
 package instrument_gc
 
 import (
-	"fmt"
 	"path/filepath"
+
 	"github.com/xhd2015/xgo/instrument/patch"
 	"github.com/xhd2015/xgo/support/goinfo"
 )
@@ -67,20 +67,8 @@ const pipeoutput = `if dlvDebug {
 `
 
 func InstrumentGc(goroot string, goVersion *goinfo.GoVersion) error {
-	// go1.22: src/cmd/go/internal/work/shell.go
-	// go1.21: src/cmd/go/internal/work/exec.go
-	if goVersion.Major != 1 {
-		return fmt.Errorf("go version %s is not supported", goVersion.String())
-	}
-	var shellGo string
-	var fnAnchor string
-	if goVersion.Minor >= 22 {
-		shellGo = filepath.Join(goroot, "src", "cmd", "go", "internal", "work", "shell.go")
-		fnAnchor = "\nfunc (sh *Shell) runOut(dir string"
-	} else {
-		shellGo = filepath.Join(goroot, "src", "cmd", "go", "internal", "work", "exec.go")
-		fnAnchor = `func (b *Builder) runOut(a *Action, dir string,`
-	}
+	shellGo := filepath.Join(goroot, "src", "cmd", "go", "internal", "work", "shell.go")
+	const fnAnchor = "\nfunc (sh *Shell) runOut(dir string"
 
 	err := patch.EditFile(shellGo, func(content string) (string, error) {
 		content = patch.UpdateContent(content,

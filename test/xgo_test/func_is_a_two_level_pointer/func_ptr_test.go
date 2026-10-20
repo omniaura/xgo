@@ -1,5 +1,4 @@
 //go:build this_is_how_bouke_monkey_works
-// +build this_is_how_bouke_monkey_works
 
 // see: https://bou.ke/blog/monkey-patching-in-go/
 

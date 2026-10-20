@@ -278,7 +278,7 @@ The `/*<old:...>*/` sub-comment stores the original text so the system can resto
 
 ## `__config__.json`
 
-Each patch directory (e.g. `patches/go1.25/`) may have a `__config__.json` for directory copy and generate instructions:
+Each patch directory (e.g. `patches/go1.27/`) may have a `__config__.json` for directory copy and generate instructions:
 
 ```json
 {
@@ -329,7 +329,7 @@ Each patch directory (e.g. `patches/go1.25/`) may have a `__config__.json` for d
 1. **Identify the target** — find the GOROOT source file to modify and the exact location (struct, function, or text to match).
 
 2. **Create the patch file** — mirror the GOROOT path under `patches/<go-version>/src/` with a `.xgo.patch` suffix.  
-   Example: to patch `src/runtime/runtime2.go`, create `patches/go1.25/src/runtime/runtime2.go.xgo.patch`.
+   Example: to patch `src/runtime/runtime2.go`, create `patches/go1.27/src/runtime/runtime2.go.xgo.patch`.
 
 3. **Write the patch block** — use positioning commands to navigate, then editing commands to modify:
    ```
@@ -348,7 +348,7 @@ Each patch directory (e.g. `patches/go1.25/`) may have a `__config__.json` for d
 
 5. **For new Go versions** — copy the previous version's patch directory and adjust selectors as needed:
    ```bash
-   cp -r patches/go1.25 patches/go1.26
+   cp -r patches/go1.28 patches/go1.29
    ```
 
 ## Related

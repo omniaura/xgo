@@ -15,10 +15,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
-	"strings"
 	"testing"
-
-	"github.com/xhd2015/xgo/support/goinfo"
 )
 
 func F() {
@@ -62,24 +59,9 @@ func TestFuncNames(t *testing.T) {
 	version := runtime.Version()
 	t.Logf("version: %s", version)
 
-	goVersion, err := goinfo.ParseGoVersionNumber(strings.TrimPrefix(version, "go"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Nested closure naming changed across Go versions:
-	// - go1.17–1.20: TestFuncNames.func2
-	// - go1.21–1.26: TestFuncNames.TestFuncNames.func1.func2 (inlining elongated names)
-	// - go1.27+:     TestFuncNames.func1.func1 (compiler uses stable names regardless of inlining;
-	//                see go1.27 release notes "simpler names for function literals")
-	c3Name := "github.com/xhd2015/xgo/test/xgo_test/func_names.TestFuncNames.TestFuncNames.func1.func2"
-	if goVersion.Major == 1 {
-		if goVersion.Minor <= 20 {
-			c3Name = "github.com/xhd2015/xgo/test/xgo_test/func_names.TestFuncNames.func2"
-		} else if goVersion.Minor >= 27 {
-			c3Name = "github.com/xhd2015/xgo/test/xgo_test/func_names.TestFuncNames.func1.func1"
-		}
-	}
+	// go1.27+ names function literals stably regardless of inlining
+	// (go1.27 release notes, "simpler names for function literals")
+	c3Name := "github.com/xhd2015/xgo/test/xgo_test/func_names.TestFuncNames.func1.func1"
 
 	var s S
 	var i I = s

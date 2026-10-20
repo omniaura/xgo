@@ -52,7 +52,7 @@ xgo help
 对于CI, 如github workflow, 参考[doc/INSTALLATION.md](./doc/INSTALLATION.md).
 
 # 使用须知
-`xgo` 需要`go1.17`及以上的版本。
+`xgo` 仅支持最新的 Go：`go1.27`（以及 `go1.28` 开发版工具链）。
 
 对OS和Arch没有限制, `xgo`支持所有`go`支持的OS和Arch。
 

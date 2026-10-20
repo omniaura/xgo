@@ -1,6 +1,3 @@
-//go:build go1.20
-// +build go1.20
-
 package func_names
 
 type GI[T any] interface {

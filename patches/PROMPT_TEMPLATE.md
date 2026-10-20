@@ -2,7 +2,7 @@
 
 Use this template when bumping xgo to the next stable Go release.
 
-**Current status (as of go1.27rc2 experiment):** xgo supports `go1.17` ~ `go1.27` (preview). File-based patches live under `patches/go1.24+`. CI: `go1-27.yml` / `go1-27-fast.yml` install **go1.27rc2** via go.dev/dl (stable not out yet). Re-verify against stable **go1.27.0** when released; next target after that is **go1.28**.
+**Current status:** xgo supports only `go1.27`, plus `go1.28` development toolchains. File-based patches live under `patches/go1.27` and `patches/go1.28`; older Go versions are no longer supported.
 
 Check whether the next version is available:
 
@@ -85,7 +85,7 @@ A new Go minor usually requires repo-wide version bumps. Checklist (go1.26 did a
 | Area | Files / action |
 |------|----------------|
 | Version constant | `support/goinfo/constants.go` — add `GO_VERSION_XX` |
-| Supported range | `cmd/xgo/main.go` — `go1.17 ~ go1.XX` |
+| Supported range | `cmd/xgo/main.go` — `go1.27 ~ go1.XX` |
 | Compiler adapter | `patch/legacy/adapter_go1.XX.go` (`//go:build go1.XX && !go1.XX+1`) |
 | Prior adapter bounds | tighten `//go:build` on previous adapters (e.g. `go1.25 && !go1.27`) |
 | Noder version map | `instrument/instrument_compiler/patch_noders.go` — extend upper bound |

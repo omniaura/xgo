@@ -13,7 +13,6 @@ import (
 	"github.com/xhd2015/xgo/support/cmd"
 	"github.com/xhd2015/xgo/support/filecopy"
 	"github.com/xhd2015/xgo/support/git"
-	"github.com/xhd2015/xgo/support/goinfo"
 	"github.com/xhd2015/xgo/support/osinfo"
 )
 
@@ -92,22 +91,7 @@ func buildRelease(releaseDirName string, installLocal bool, localName string, de
 	if installLocal && len(osArches) != 1 {
 		return fmt.Errorf("--install-local requires only one target")
 	}
-	goVersionStr, err := goinfo.GetGoVersionOutput("go")
-	if err != nil {
-		return err
-	}
-	goVersion, err := goinfo.ParseGoVersion(goVersionStr)
-	if err != nil {
-		return fmt.Errorf("parsing go version: %s %w", goVersionStr, err)
-	}
-	var extraBuildFlags []string
-	// requires at least go1.18 to support -trimpath
-	// see: https://github.com/golang/go/issues/50402
-	if goVersion.Major == 1 && goVersion.Minor < 18 {
-		return fmt.Errorf("build-release relies on go1.18 or later to use 'go build -trimpath' option,current: %s", goVersionStr)
-	} else {
-		extraBuildFlags = append(extraBuildFlags, "-trimpath")
-	}
+	extraBuildFlags := []string{"-trimpath"}
 
 	projectRoot, err := git.ShowTopLevel("")
 	if err != nil {

@@ -76,7 +76,7 @@ Do not combine it with `actions/setup-go`'s own cache: it would save
 `GOCACHE` without xgo's directories.
 
 # Requirement
-`xgo` requires at least `go1.17` to compile.
+`xgo` supports only the latest Go: `go1.27` (and `go1.28` development toolchains).
 
 There is no specific limitation on OS and Architecture. 
 

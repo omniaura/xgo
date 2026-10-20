@@ -18,13 +18,7 @@ func InstantiateXgoTrap(xgoTrapTemplate string, goVersion *goinfo.GoVersion) (st
 	if err != nil {
 		return "", fmt.Errorf("remove build ignore: %w", err)
 	}
-	// type _panic has a major upgrade from go1.21 to go1.22
-	// go1.21 and before use pc, go1.22 and after use retpc
-	retpc := "retpc"
-	if goVersion.Major == 1 && goVersion.Minor <= 21 {
-		retpc = "pc"
-	}
-	xgoTrapContent = strings.ReplaceAll(xgoTrapContent, "__RETPC__", retpc)
+	xgoTrapContent = strings.ReplaceAll(xgoTrapContent, "__RETPC__", "retpc")
 	xgoTrapContent = AppendGetFuncNameImpl(goVersion, xgoTrapContent)
 	xgoTrapContent, err = AppendTrapSkipImpl(goVersion, xgoTrapContent)
 	if err != nil {
@@ -98,8 +92,7 @@ var runtimePkgClause = regexp.MustCompile(`(?m)^package runtime[ \t]*\r?\n`)
 // template comes from the xgo/runtime version of the project being built,
 // which can predate them, while the instrumented code always links
 // __xgo_trap_on_ to runtime.XgoTrapOn. Such a runtime never sets the skip,
-// so its calls keep going through the trap. The runtime's atomic package
-// moved in go1.23.
+// so its calls keep going through the trap.
 func AppendTrapSkipImpl(goVersion *goinfo.GoVersion, content string) (string, error) {
 	if strings.Contains(content, trapOnDecl) {
 		return content, nil
@@ -109,10 +102,7 @@ func AppendTrapSkipImpl(goVersion *goinfo.GoVersion, content string) (string, er
 	if strings.Contains(content, "func XgoTrapOn(") {
 		return "", fmt.Errorf("xgo_trap.go: XgoTrapOn defined without %q", trapOnDecl)
 	}
-	atomicPkg := "internal/runtime/atomic"
-	if goVersion.Major == 1 && goVersion.Minor <= 22 {
-		atomicPkg = "runtime/internal/atomic"
-	}
+	const atomicPkg = "internal/runtime/atomic"
 	loc := runtimePkgClause.FindStringIndex(content)
 	if loc == nil {
 		return "", fmt.Errorf("xgo_trap.go: package clause not found")

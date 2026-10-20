@@ -5,9 +5,6 @@ package transform
 import (
 	"go/ast"
 	"go/token"
-	"path/filepath"
-
-	"github.com/xhd2015/xgo/support/goparse"
 )
 
 type File struct {
@@ -17,29 +14,8 @@ type File struct {
 	Fset    *token.FileSet
 }
 
-func Parse(file string) (*File, error) {
-	absFile, err := filepath.Abs(file)
-	if err != nil {
-		return nil, err
-	}
-	code, ast, fset, err := goparse.Parse(absFile)
-	if err != nil {
-		return nil, err
-	}
-	return &File{
-		Code:    code,
-		Ast:     ast,
-		AbsFile: absFile,
-		Fset:    fset,
-	}, nil
-}
-
 func (c *File) GetTypeDecl(name string) *ast.TypeSpec {
 	return GetTypeDecl(c.Ast.Decls, name)
-}
-
-func (c *File) GetMethodDecl(typeName string, name string) *ast.FuncDecl {
-	return c.getDecl(typeName, name)
 }
 
 func (c *File) GetFuncDecl(name string) *ast.FuncDecl {
@@ -71,16 +47,6 @@ func (c *File) getDecl(typeName string, name string) *ast.FuncDecl {
 		}
 	}
 	return nil
-}
-
-func (c *File) GetCode(node ast.Node) []byte {
-	return c.GetCodeSlice(node.Pos(), node.End())
-}
-
-func (c *File) GetCodeSlice(start token.Pos, end token.Pos) []byte {
-	i := c.Fset.Position(start).Offset
-	j := c.Fset.Position(end).Offset
-	return c.Code[i:j]
 }
 
 func GetTypeDecl(decls []ast.Decl, name string) *ast.TypeSpec {

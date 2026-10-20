@@ -1,3 +1,3 @@
 module github.com/xhd2015/xgo/patch
 
-go 1.14
+go 1.27.0

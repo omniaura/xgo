@@ -166,7 +166,7 @@ func importRuntimeDepGenOverlay(test bool, goroot string, goBinary string, goVer
 		// When building xgo/runtime itself, skip blank import injection.
 		// The runtime module already compiles all its packages; injecting
 		// import _ "runtime/trace" creates a cycle: core → trace → internal/trap → core.
-		// See patches/go1.25/issues/RUNTIME_LIB_SELF_REQUIRE.md
+		// See doc/issues/1.runtime-lib-self-require-caused-go-mod-tidy-problem/ISSUE.md
 		if deferTraceImports {
 			// saves listing the packages here: instrumentation loads them
 			res.traceImportsDeferred = true
@@ -431,20 +431,17 @@ func loadDependency(goroot string, goBinary string, goVersion *goinfo.GoVersion,
 
 	// When building xgo/runtime itself, don't add self-require.
 	// require+replace here causes a module to require itself,
-	// which Go 1.25 rejects. See patches/go1.25/issues/RUNTIME_LIB_SELF_REQUIRE.md
+	// which Go 1.25 rejects. See doc/issues/1.runtime-lib-self-require-caused-go-mod-tidy-problem/ISSUE.md
 	if mainModule != constants.RUNTIME_MODULE {
 		logDebug("require %s v%s, replaced: %s", constants.RUNTIME_MODULE, VERSION, tmpRuntime)
 		modEditArgs := []string{"mod", "edit",
 			fmt.Sprintf("-require=%s@v%s", constants.RUNTIME_MODULE, VERSION),
 			fmt.Sprintf("-replace=%s=%s", constants.RUNTIME_MODULE, tmpRuntime),
 		}
-		// In Go 1.26+, the generated modfile must match the complete running Go
-		// version. Dropping the patch component makes 1.26 older than dependencies
-		// which declare 1.26.0 and leaves the generated modfile untidy.
-		if goVersion.Minor >= 26 {
-			modEditArgs = append(modEditArgs, "-go="+formatGoDirectiveVersion(goVersion))
-		}
-		modEditArgs = append(modEditArgs, tmpGoMod)
+		// The generated modfile must match the complete running Go version.
+		// Dropping the patch component makes 1.27 older than dependencies
+		// which declare 1.27.0 and leaves the generated modfile untidy.
+		modEditArgs = append(modEditArgs, "-go="+formatGoDirectiveVersion(goVersion), tmpGoMod)
 		err = cmd.Env([]string{
 			"GOROOT=" + goroot,
 		}).Run(goBinary, modEditArgs...)
@@ -807,7 +804,7 @@ func formatGoDirectiveVersion(goVersion *goinfo.GoVersion) string {
 // embeddedRuntimeNumber returns the NUMBER of the runtime xgo embeds.
 func embeddedRuntimeNumber() (int, error) {
 	// you need to run `go run ./script/generate` to sync runtime and cmd/xgo/runtime_gen
-	embedPath := concatEmbedPath(asset.RuntimeGen, joinEmbedPath([]string{"core", "version.go"}))
+	embedPath := asset.RuntimeGen + "/core/version.go"
 	embedVersion, err := asset.RuntimeGenFS.ReadFile(embedPath)
 	if err != nil {
 		return 0, err

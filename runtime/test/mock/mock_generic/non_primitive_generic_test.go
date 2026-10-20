@@ -1,6 +1,3 @@
-//go:build go1.18
-// +build go1.18
-
 package mock_generic
 
 // see bug https://github.com/xhd2015/xgo/issues/211

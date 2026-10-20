@@ -1,5 +1,4 @@
 //go:build ignore
-// +build ignore
 
 package check_trace_flag
 

@@ -1,5 +1,4 @@
-//go:build go1.25 && test_driver_is_xgo
-// +build go1.25,test_driver_is_xgo
+//go:build test_driver_is_xgo
 
 package func_names
 

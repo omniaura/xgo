@@ -16,8 +16,9 @@ func TestCheckGoVersion(t *testing.T) {
 		version string
 		wantErr bool
 	}{
-		{"go1.16.15", true},
-		{"go1.17.13", false},
+		{"go1.17.13", true},
+		{"go1.26.9", true},
+		{"go1.27.0", false},
 		{"go1.27.2", false},
 		{"go1.28rc1", false},
 		{"go1.28-devel_dfc6f7db", false},
