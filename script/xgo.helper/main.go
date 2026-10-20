@@ -7,10 +7,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/xhd2015/xgo/instrument/build"
-	"github.com/xhd2015/xgo/instrument/instrument_go/instrument_gc"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/build"
+	"github.com/omniaura/xgo/instrument/instrument_go/instrument_gc"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 const help = `

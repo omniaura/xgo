@@ -17,14 +17,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/pathsum"
-	"github.com/xhd2015/xgo/cmd/xgo/test-explorer/icov"
-	"github.com/xhd2015/xgo/cmd/xgo/trace/render/stack_model"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/netutil"
-	"github.com/xhd2015/xgo/support/session"
+	"github.com/omniaura/xgo/cmd/xgo/pathsum"
+	"github.com/omniaura/xgo/cmd/xgo/test-explorer/icov"
+	"github.com/omniaura/xgo/cmd/xgo/trace/render/stack_model"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/netutil"
+	"github.com/omniaura/xgo/support/session"
 )
 
 type StartSessionRequest struct {
@@ -445,7 +445,7 @@ func readTrace(traceDir string, baseCaseName string, subPath []string) []*CallRe
 	if err != nil {
 		return []*CallRecord{
 			{
-				Pkg:   "github.com/xhd2015/xgo/cmd/xgo/test-explorer",
+				Pkg:   "github.com/omniaura/xgo/cmd/xgo/test-explorer",
 				Func:  "readTraceFromFile",
 				Error: err.Error(),
 			},
@@ -626,9 +626,9 @@ var failRegex = regexp.MustCompile(`^FAIL\s+([^\s]+)\s+.*$`)
 // -json will not output json if build failed
 // $ go test -json ./script/build-release
 // TODO: parse std error
-// stderr: # github.com/xhd2015/xgo/script/build-release [github.com/xhd2015/xgo/script/build-release.test]
+// stderr: # github.com/omniaura/xgo/script/build-release [github.com/omniaura/xgo/script/build-release.test]
 // stderr: script/build-release/fixup_test.go:10:17: undefined: getGitDir
-// stdout: FAIL    github.com/xhd2015/xgo/script/build-release [build failed]
+// stdout: FAIL    github.com/omniaura/xgo/script/build-release [build failed]
 func (c *jsonTestEventBuilder) parse(line []byte) (*TestEvent, error) {
 	// fmt.Printf("line: %s\n", string(data))
 	if bytes.HasPrefix(line, []byte{'{'}) {

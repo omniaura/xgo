@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/instrument/load"
-	"github.com/xhd2015/xgo/instrument/overlay"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/load"
+	"github.com/omniaura/xgo/instrument/overlay"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 func CheckRuntimeLegacyVersion(goroot string, projectDir string, overlayFS overlay.Overlay, mod string, modfile string, overlayFile string, goVersion *goinfo.GoVersion) (bool, string, error) {

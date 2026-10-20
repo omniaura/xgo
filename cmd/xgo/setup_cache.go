@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 const setupManifest = ".xgo-complete.json"

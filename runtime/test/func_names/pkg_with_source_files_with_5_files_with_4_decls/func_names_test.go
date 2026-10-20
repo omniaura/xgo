@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	_ "github.com/xhd2015/xgo/runtime/trap"
+	_ "github.com/omniaura/xgo/runtime/trap"
 )
 
 // testFileStubIndex is the file index that xgo's overlay assigns to this

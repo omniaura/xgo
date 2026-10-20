@@ -2,7 +2,7 @@ package trace
 
 // trace v2's core functionality are all implemented in trap package
 import (
-	"github.com/xhd2015/xgo/runtime/internal/trap"
+	"github.com/omniaura/xgo/runtime/internal/trap"
 )
 
 // Record setup a recorder for v, with pre-hook and post-hook

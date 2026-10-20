@@ -19,7 +19,7 @@ import (
 	"go-micro.dev/v4/server"
     "go-micro.dev/v4/metadata"
 
-	"github.com/xhd2015/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace"
 )
 
 const X_XGO_TRACE_FILE = "X-Xgo-Trace-File"

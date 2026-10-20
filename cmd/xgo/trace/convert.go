@@ -3,7 +3,7 @@ package trace
 import (
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/trace/render/stack_model"
+	"github.com/omniaura/xgo/cmd/xgo/trace/render/stack_model"
 )
 
 func convert(root *RootExport) *stack_model.Stack {

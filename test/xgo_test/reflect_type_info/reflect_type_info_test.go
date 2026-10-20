@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/xhd2015/xgo/test/xgo_test/reflect_type_info/sub"
+	"github.com/omniaura/xgo/test/xgo_test/reflect_type_info/sub"
 )
 
 // go run ./cmd/xgo test -run TestReflectTypePkgPathDifferentOnExportedness -v ./test/xgo_test/reflect_type_info
@@ -23,7 +23,7 @@ func TestReflectTypePkgPathDifferentOnExportedness(t *testing.T) {
 		t.Fatalf("expect svType.PkgPath() to be %s, actual: %s", expectPkgPath, svType.PkgPath())
 	}
 
-	expectExpPkg := "github.com/xhd2015/xgo/test/xgo_test/reflect_type_info"
+	expectExpPkg := "github.com/omniaura/xgo/test/xgo_test/reflect_type_info"
 	exportedPkgPath := reflect.TypeOf(Struct_{}).PkgPath()
 	if exportedPkgPath != expectExpPkg {
 		t.Fatalf("expect TypeOf(Struct_{}).PkgPath() to be %s, actual: %s", expectExpPkg, exportedPkgPath)

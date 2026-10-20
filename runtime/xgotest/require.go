@@ -4,8 +4,8 @@ package xgotest
 import (
 	"os"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
 )
 
 // TestingT is the subset of testing.TB used by Require.

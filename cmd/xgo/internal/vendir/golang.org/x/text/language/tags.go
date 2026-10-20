@@ -4,7 +4,7 @@
 
 package language
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language/compact"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language/compact"
 
 // TODO: Various sets of commonly use tags and regions.
 

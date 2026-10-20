@@ -1,7 +1,7 @@
 package git
 
 import (
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
 )
 
 func FindMergeInfo(dir string, ref string, base string) (*model.MergeInfo, error) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace"
 )
 
 type Service struct {

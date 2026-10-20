@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/xhd2015/xgo/cmd/xgo/coverage"
+	"github.com/omniaura/xgo/cmd/xgo/coverage"
 )
 
 func main() {

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/trace"
-	"github.com/xhd2015/xgo/runtime/trace/stack_model"
+	"github.com/omniaura/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace/stack_model"
 )
 
 func hello(s string) string {

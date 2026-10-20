@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/trace/render/stack_model"
+	"github.com/omniaura/xgo/cmd/xgo/trace/render/stack_model"
 )
 
 const allowPkgName = false

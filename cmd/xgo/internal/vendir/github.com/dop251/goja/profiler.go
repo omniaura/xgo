@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/google/pprof/profile"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/google/pprof/profile"
 )
 
 const profInterval = 10 * time.Millisecond

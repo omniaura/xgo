@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/xhd2015/xgo/script/lib"
+	"github.com/omniaura/xgo/script/lib"
 )
 
 func main() {

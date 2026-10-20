@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/xhd2015/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace"
 )
 
 func init() {

@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/test/build/util"
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/runtime/test/build/util"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 func TestWithinModuleShouldNonOverlayFirstShouldSuccess(t *testing.T) {

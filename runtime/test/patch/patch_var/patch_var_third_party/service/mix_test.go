@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_var/patch_var_third_party/third/mix"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_var/patch_var_third_party/third/sub"
-	"github.com/xhd2015/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_var/patch_var_third_party/third/mix"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_var/patch_var_third_party/third/sub"
+	"github.com/omniaura/xgo/runtime/trace"
 )
 
 func TestPatchMapWithFuncShouldError(t *testing.T) {

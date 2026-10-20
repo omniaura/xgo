@@ -5,10 +5,10 @@ import (
 	"go/token"
 	"sync"
 
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/instrument/config/config_debug"
-	"github.com/xhd2015/xgo/instrument/edit"
-	"github.com/xhd2015/xgo/instrument/resolve/types"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/instrument/config/config_debug"
+	"github.com/omniaura/xgo/instrument/edit"
+	"github.com/omniaura/xgo/instrument/resolve/types"
 )
 
 // a or &a

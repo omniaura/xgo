@@ -8,13 +8,13 @@ import (
 	"testing"
 
 	"example.com/xgo-initprobe"
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/trap"
-	"github.com/xhd2015/xgo/runtime/xgotest"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/xgotest"
 )
 
-const pkgPath = "github.com/xhd2015/xgo/runtime/test/core/instrumented"
+const pkgPath = "github.com/omniaura/xgo/runtime/test/core/instrumented"
 
 func value() int { return 1 }
 

@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/xhd2015/xgo/runtime/test/mock/mock_var/mock_var_generic_issue_357/mypackage/myclient"
-	"github.com/xhd2015/xgo/runtime/test/mock/mock_var/mock_var_generic_issue_357/tasker"
+	"github.com/omniaura/xgo/runtime/test/mock/mock_var/mock_var_generic_issue_357/mypackage/myclient"
+	"github.com/omniaura/xgo/runtime/test/mock/mock_var/mock_var_generic_issue_357/tasker"
 )
 
 var MyTasker = tasker.Tasker[myclient.Client]{

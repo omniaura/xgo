@@ -37,6 +37,6 @@ Example of Test Explorer:
     xgo test-explorer                            alias for xgo tool test-explorer
     xgo tool test-explorer                       canonical command to open test-explorer
 
-See https://github.com/xhd2015/xgo for documentation.
+See https://github.com/omniaura/xgo for documentation.
 
 `

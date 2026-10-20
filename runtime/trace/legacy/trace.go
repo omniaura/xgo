@@ -13,10 +13,10 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/flags"
-	"github.com/xhd2015/xgo/runtime/internal/legacy"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/flags"
+	"github.com/omniaura/xgo/runtime/internal/legacy"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 // hold goroutine stacks, keyed by goroutine ptr

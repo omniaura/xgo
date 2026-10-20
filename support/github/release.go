@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/httputil"
+	"github.com/omniaura/xgo/support/httputil"
 )
 
 func GetLatestReleaseTag(ctx context.Context, latestURL string) (string, error) {
 	// example location:
-	//   https://github.com/xhd2015/xgo/releases/tag/v1.0.31
+	//   https://github.com/omniaura/xgo/releases/tag/v1.0.31
 	location, err := httputil.Get302Location(ctx, latestURL)
 	if err != nil {
 		return "", err

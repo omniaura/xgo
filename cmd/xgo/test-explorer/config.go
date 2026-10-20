@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/testconfig"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/testconfig"
 )
 
 // TestConfig is the explorer view of shared test.config.json.

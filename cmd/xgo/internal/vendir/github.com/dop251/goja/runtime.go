@@ -16,12 +16,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/collate"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/collate"
 
-	js_ast "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ast"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/parser"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+	js_ast "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ast"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/parser"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 )
 
 const (

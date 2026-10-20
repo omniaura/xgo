@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"html"
 
-	"github.com/xhd2015/xgo/cmd/xgo/trace/render/stack_model"
+	"github.com/omniaura/xgo/cmd/xgo/trace/render/stack_model"
 )
 
 func renderItem(h func(string), stack *stack_model.StackEntry, traceIDMapping map[*stack_model.StackEntry]int64) {

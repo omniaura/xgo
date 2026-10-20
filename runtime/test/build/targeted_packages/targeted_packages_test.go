@@ -28,8 +28,8 @@ func TestSinglePackageMocksDepsAndTestOnlyImports(t *testing.T) {
 		}
 	}
 	write("go.mod", "module example.com/targeted\n\ngo 1.18\n\n"+
-		"require github.com/xhd2015/xgo/runtime v0.0.0\n\n"+
-		"replace github.com/xhd2015/xgo/runtime => "+filepath.ToSlash(filepath.Join(root, "runtime"))+"\n")
+		"require github.com/omniaura/xgo/runtime v0.0.0\n\n"+
+		"replace github.com/omniaura/xgo/runtime => "+filepath.ToSlash(filepath.Join(root, "runtime"))+"\n")
 	write("dep/dep.go", "package dep\n\nfunc Compute() int { return 1 }\n")
 	write("helperdep/helperdep.go", "package helperdep\n\nfunc Seed() string { return \"seed\" }\n")
 	write("testutil/testutil.go", "package testutil\n\nimport \"example.com/targeted/helperdep\"\n\n"+
@@ -45,7 +45,7 @@ import (
 	"testing"
 
 	"example.com/targeted/consumer"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func TestConsumer(t *testing.T) {
@@ -64,7 +64,7 @@ import (
 
 	"example.com/targeted/dep"
 	"example.com/targeted/testutil"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func TestMocks(t *testing.T) {
@@ -118,7 +118,7 @@ func findXgoRepoRoot(t *testing.T) string {
 	}
 	for {
 		data, err := os.ReadFile(filepath.Join(dir, "go.mod"))
-		if err == nil && bytes.HasPrefix(bytes.TrimSpace(data), []byte("module github.com/xhd2015/xgo\n")) {
+		if err == nil && bytes.HasPrefix(bytes.TrimSpace(data), []byte("module github.com/omniaura/xgo\n")) {
 			return dir
 		}
 		parent := filepath.Dir(dir)

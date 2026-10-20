@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // run example:

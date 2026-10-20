@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // go run ./cmd/xgo test --project-dir runtime -run TestMockTimeNow -v ./test/mock_stdlib
@@ -76,7 +76,7 @@ func TestMockHTTPCustomClient(t *testing.T) {
 // === RUN   TestMockTimeSleep
 // --- PASS: TestMockTimeSleep (0.00s)
 // PASS
-// ok      github.com/xhd2015/xgo/runtime/test/mock_stdlib 0.725s
+// ok      github.com/omniaura/xgo/runtime/test/mock_stdlib 0.725s
 func TestMockTimeSleep(t *testing.T) {
 	begin := time.Now()
 	sleepDur := 1 * time.Second

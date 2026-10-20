@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/filecopy"
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/filecopy"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 func copyCompilerInstrument(rootDir string, genName string) error {
@@ -37,9 +37,9 @@ func copyCompilerExtra(rootDir string, genName string) error {
 	return prependGeneratePrelude(genDir, genName, func(path, relPath string, content []byte) []byte {
 		if relPath == "register.go" {
 			// replace
-			// "github.com/xhd2015/xgo/instrument/constants"
+			// "github.com/omniaura/xgo/instrument/constants"
 			// "cmd/compile/internal/xgo_rewrite_internal/patch/instrument/constants"
-			content = bytes.ReplaceAll(content, []byte(`"github.com/xhd2015/xgo/instrument/constants"`), []byte(`"cmd/compile/internal/xgo_rewrite_internal/patch/instrument/constants"`))
+			content = bytes.ReplaceAll(content, []byte(`"github.com/omniaura/xgo/instrument/constants"`), []byte(`"cmd/compile/internal/xgo_rewrite_internal/patch/instrument/constants"`))
 		}
 		return content
 	})

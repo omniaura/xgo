@@ -3,8 +3,8 @@ package instrument_gc
 import (
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 const XGO_HELPER_DEBUG_PKG = "XGO_HELPER_DEBUG_PKG"

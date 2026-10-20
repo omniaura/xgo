@@ -153,7 +153,7 @@ const (
 type XgoFuncInfo struct {
 	Kind XgoKind
 	// full name, format: {pkgPath}.{receiver}.{funcName}
-	// example:  github.com/xhd2015/xgo/runtime/core.(*SomeType).SomeFunc
+	// example:  github.com/omniaura/xgo/runtime/core.(*SomeType).SomeFunc
 	FullName string
 	Pkg      string
 	// identity name within a package, for ptr-method, it's something like `(*SomeType).SomeFunc`

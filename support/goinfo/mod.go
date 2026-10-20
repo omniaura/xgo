@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 var ErrGoModNotFound = errors.New("go.mod not found")

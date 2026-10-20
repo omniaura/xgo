@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // go run ./script/run-test -tags=dev --include go1.24.2 --debug-xgo ./runtime/test/mock/mock_var/mock_var_no_type_issue_361

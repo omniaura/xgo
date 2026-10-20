@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"example.com/dep"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // Caller -overlay synthesizes vendor_dep/go.mod. Instrumentation discovery must

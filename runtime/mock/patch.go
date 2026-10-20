@@ -1,7 +1,7 @@
 package mock
 
 import (
-	"github.com/xhd2015/xgo/runtime/internal/trap"
+	"github.com/omniaura/xgo/runtime/internal/trap"
 )
 
 // Patch replaces `fn` with `replacer` in current goroutine.

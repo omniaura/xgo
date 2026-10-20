@@ -6,15 +6,15 @@ import (
 	"go/token"
 	"os"
 
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/instrument/edit"
-	"github.com/xhd2015/xgo/instrument/instrument_func"
-	"github.com/xhd2015/xgo/instrument/load"
-	"github.com/xhd2015/xgo/instrument/overlay"
-	"github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/edit"
+	"github.com/omniaura/xgo/instrument/instrument_func"
+	"github.com/omniaura/xgo/instrument/load"
+	"github.com/omniaura/xgo/instrument/overlay"
+	"github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 var ErrLinkFileNotFound = errors.New("xgo: link file not found")

@@ -3,7 +3,7 @@ package revision
 import (
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/support/git"
+	"github.com/omniaura/xgo/support/git"
 )
 
 func IncrementXgoVersion(rootDir string, amend bool, autoIncrementNumber bool) error {

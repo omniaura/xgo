@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/tag"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/tag"
 )
 
 // findIndex tries to find the given tag in idx and returns a standardized error

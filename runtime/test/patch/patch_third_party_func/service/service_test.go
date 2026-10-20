@@ -3,11 +3,11 @@ package service
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_third_party_func/third"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_third_party_func/third/embed_other_struct"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_third_party_func/third/intf"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_third_party_func/third/struct_field"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_third_party_func/third"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_third_party_func/third/embed_other_struct"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_third_party_func/third/intf"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_third_party_func/third/struct_field"
 )
 
 func TestGreet(t *testing.T) {

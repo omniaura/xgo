@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/trace/render"
-	"github.com/xhd2015/xgo/cmd/xgo/trace/render/stack_model"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/netutil"
+	"github.com/omniaura/xgo/cmd/xgo/trace/render"
+	"github.com/omniaura/xgo/cmd/xgo/trace/render/stack_model"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/netutil"
 )
 
 const help = `
@@ -32,7 +32,7 @@ Examples:
     xgo test -run TestSomething --strace ./   generate trace file
     xgo tool trace TestSomething.json         visualize a generated trace
 
-See https://github.com/xhd2015/xgo for documentation.
+See https://github.com/omniaura/xgo for documentation.
 
 `
 

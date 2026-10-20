@@ -30,6 +30,6 @@ Examples:
   go-tool-debug-compile                 start a debugger
   go-tool-debug-compile --run-only      run the compiler and print cost
 
-See https://github.com/xhd2015/xgo for documentation.
+See https://github.com/omniaura/xgo for documentation.
 
 `

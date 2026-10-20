@@ -1,8 +1,8 @@
 package instrument_xgo_runtime
 
 import (
-	"github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func checkBypassVersionCheck(versionCode string, runtimeVersion string) string {

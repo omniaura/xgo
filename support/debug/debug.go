@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 func FormatDlvPrompt(port int) string {

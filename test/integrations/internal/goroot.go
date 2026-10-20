@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/gitgoroot"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/gitgoroot"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func FindRepoRoot() string {

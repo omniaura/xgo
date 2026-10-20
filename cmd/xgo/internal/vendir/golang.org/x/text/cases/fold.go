@@ -4,7 +4,7 @@
 
 package cases
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
 
 type caseFolder struct{ transform.NopResetter }
 

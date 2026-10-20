@@ -15,7 +15,7 @@ package patch
 import (
     "testing"
 
-    "github.com/xhd2015/xgo/runtime/mock"
+    "github.com/omniaura/xgo/runtime/mock"
 )
 
 var a int = 123
@@ -41,13 +41,13 @@ package patch_const
 import (
     "testing"
     
-    "github.com/xhd2015/xgo/runtime/mock"
+    "github.com/omniaura/xgo/runtime/mock"
 )
 
 const N = 50
 
 func TestPatchConst(t *testing.T) {
-    mock.PatchByName("github.com/xhd2015/xgo/runtime/test/patch_const", "N", func() int {
+    mock.PatchByName("github.com/omniaura/xgo/runtime/test/patch_const", "N", func() int {
         return 5
     })
     b := N*4

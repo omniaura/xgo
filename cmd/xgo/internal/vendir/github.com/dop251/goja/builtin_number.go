@@ -4,7 +4,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ftoa"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ftoa"
 )
 
 func (r *Runtime) toNumber(v Value) Value {

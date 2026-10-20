@@ -8,9 +8,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 func TestInitGoroutineRunsUnmocked(t *testing.T) {
@@ -214,8 +214,8 @@ func TestClosureNamesUnchanged(t *testing.T) {
 		fn   func() string
 		want string
 	}{
-		{a, "github.com/xhd2015/xgo/runtime/test/trap/trap_guard.Handlers.func1"},
-		{b, "github.com/xhd2015/xgo/runtime/test/trap/trap_guard.Handlers.func2"},
+		{a, "github.com/omniaura/xgo/runtime/test/trap/trap_guard.Handlers.func1"},
+		{b, "github.com/omniaura/xgo/runtime/test/trap/trap_guard.Handlers.func2"},
 	} {
 		if got := runtime.FuncForPC(reflect.ValueOf(c.fn).Pointer()).Name(); got != c.want {
 			t.Errorf("closure name: %s, want %s", got, c.want)

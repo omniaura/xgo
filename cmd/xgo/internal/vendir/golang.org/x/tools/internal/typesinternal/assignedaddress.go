@@ -9,8 +9,8 @@ import (
 	"go/token"
 	"go/types"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/edge"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/inspector"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/edge"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/inspector"
 )
 
 // IsAssignedOrAddressTaken reports whether the expression cur denotes a

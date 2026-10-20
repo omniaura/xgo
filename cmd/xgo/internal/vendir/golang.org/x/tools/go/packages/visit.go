@@ -9,7 +9,7 @@ import (
 	"iter"
 	"os"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/moremaps"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/moremaps"
 )
 
 // Visit visits all the packages in the import graph whose roots are

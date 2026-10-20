@@ -9,14 +9,14 @@ func Hello(p string) {
 
 	m := Mass(1)
 
-	// github.com/xhd2015/xgo/runtime/pkg.Mass.Print
+	// github.com/omniaura/xgo/runtime/pkg.Mass.Print
 	m.Print("g")
 
 	person := &Person{Name: "test"}
-	// github.com/xhd2015/xgo/runtime/pkg.(*Person).Greet
+	// github.com/omniaura/xgo/runtime/pkg.(*Person).Greet
 	person.Greet("runtime")
 
-	// github.com/xhd2015/xgo/runtime/pkg.Hello.func1
+	// github.com/omniaura/xgo/runtime/pkg.Hello.func1
 	func() {
 		fmt.Printf("I'm from unnamed closure\n")
 	}()

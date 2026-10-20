@@ -5,7 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/xhd2015/xgo/support/edit/goedit"
+	"github.com/omniaura/xgo/support/edit/goedit"
 )
 
 // NOTE: new func is always inserted after a position

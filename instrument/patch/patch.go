@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 func EditFile(file string, callback func(content string) (string, error)) (err error) {

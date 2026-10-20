@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
-const corePkg = "github.com/xhd2015/xgo/runtime/test/core"
+const corePkg = "github.com/omniaura/xgo/runtime/test/core"
 
 func TestCheckVersion(t *testing.T) {
 	t.Skip("constant patching is prohibited since xgo v1.1.0")

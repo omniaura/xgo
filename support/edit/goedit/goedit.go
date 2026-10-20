@@ -3,8 +3,8 @@ package goedit
 import (
 	"go/token"
 
-	"github.com/xhd2015/xgo/support/edit"
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/support/edit"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 type Edit struct {

@@ -1,3 +1,3 @@
-module github.com/xhd2015/xgo/runtime/test/build/dep_named_unlike_path
+module github.com/omniaura/xgo/runtime/test/build/dep_named_unlike_path
 
 go 1.18

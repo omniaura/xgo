@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 type AbsFile string

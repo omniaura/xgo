@@ -3,7 +3,7 @@ package git
 import (
 	"fmt"
 
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 // check if head is ref's ancestor,  can be found following head's first parent

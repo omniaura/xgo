@@ -14,20 +14,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/exec_tool"
-	"github.com/xhd2015/xgo/cmd/xgo/pathsum"
-	test_explorer "github.com/xhd2015/xgo/cmd/xgo/test-explorer"
-	"github.com/xhd2015/xgo/instrument/build"
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/instrument/instrument_go/instrument_gc"
-	"github.com/xhd2015/xgo/instrument/instrument_xgo_runtime"
-	"github.com/xhd2015/xgo/instrument/overlay"
-	cmd_support "github.com/xhd2015/xgo/support/cmd"
-	debug_support "github.com/xhd2015/xgo/support/debug"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/netutil"
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/cmd/xgo/exec_tool"
+	"github.com/omniaura/xgo/cmd/xgo/pathsum"
+	test_explorer "github.com/omniaura/xgo/cmd/xgo/test-explorer"
+	"github.com/omniaura/xgo/instrument/build"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/instrument_go/instrument_gc"
+	"github.com/omniaura/xgo/instrument/instrument_xgo_runtime"
+	"github.com/omniaura/xgo/instrument/overlay"
+	cmd_support "github.com/omniaura/xgo/support/cmd"
+	debug_support "github.com/omniaura/xgo/support/debug"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/netutil"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 // usage:
@@ -799,7 +799,7 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		// TODO: enhance this to be extract -coverpkg pkg1,pkg2,...
 		var mayHaveCover bool
 		// example:
-		//    -cover -coverpkg github.com/xhd2015/xgo/... -coverprofile cover.out
+		//    -cover -coverpkg github.com/omniaura/xgo/... -coverprofile cover.out
 		for _, arg := range args {
 			if strings.HasPrefix(arg, "-cover") {
 				mayHaveCover = true

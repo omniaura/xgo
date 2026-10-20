@@ -7,7 +7,7 @@ package norm
 import (
 	"unicode/utf8"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
 )
 
 // Reset implements the Reset method of the transform.Transformer interface.

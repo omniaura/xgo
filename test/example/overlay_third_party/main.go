@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/support/git"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/git"
+	"github.com/omniaura/xgo/support/goinfo"
 	"golang.org/x/example/hello/reverse"
 )
 

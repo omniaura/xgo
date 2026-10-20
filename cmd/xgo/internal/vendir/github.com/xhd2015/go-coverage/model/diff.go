@@ -1,6 +1,6 @@
 package model
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/vscode"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/vscode"
 
 type FileDetail struct {
 	// if none of following fields set, this file is unchanged.

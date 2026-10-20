@@ -3,7 +3,7 @@ package external_overlay_instrument
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // Caller -overlay replaces subject.go; xgo must instrument that replacement so

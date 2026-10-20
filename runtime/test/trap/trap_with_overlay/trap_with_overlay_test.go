@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/functab"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 func TestTrapWithOverlay(t *testing.T) {
-	funcInfo := functab.GetFuncByPkg("github.com/xhd2015/xgo/runtime/test/trap_with_overlay", "A")
+	funcInfo := functab.GetFuncByPkg("github.com/omniaura/xgo/runtime/test/trap_with_overlay", "A")
 	if funcInfo == nil {
 		t.Fatalf("cannot get function A")
 	}

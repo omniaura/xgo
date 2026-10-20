@@ -3,8 +3,8 @@ package service
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_var/patch_var_third_party/third"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_var/patch_var_third_party/third"
 )
 
 var svcLiteral = third.GreetService{}

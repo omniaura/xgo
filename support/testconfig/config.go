@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 // DefaultFileName is the conventional project-root config file name.

@@ -61,25 +61,25 @@ func TestFuncNames(t *testing.T) {
 
 	// go1.27+ names function literals stably regardless of inlining
 	// (go1.27 release notes, "simpler names for function literals")
-	c3Name := "github.com/xhd2015/xgo/test/xgo_test/func_names.TestFuncNames.func1.func1"
+	c3Name := "github.com/omniaura/xgo/test/xgo_test/func_names.TestFuncNames.func1.func1"
 
 	var s S
 	var i I = s
 	var e E = s
 	var tests = []*testCase{
-		{F, "github.com/xhd2015/xgo/test/xgo_test/func_names.F"},
+		{F, "github.com/omniaura/xgo/test/xgo_test/func_names.F"},
 		{c, expectTopLevelFunc},                                                     // closure
-		{c2, "github.com/xhd2015/xgo/test/xgo_test/func_names.TestFuncNames.func1"}, // closure
+		{c2, "github.com/omniaura/xgo/test/xgo_test/func_names.TestFuncNames.func1"}, // closure
 		{c3, c3Name}, // closure
-		{s.F, "github.com/xhd2015/xgo/test/xgo_test/func_names.S.F-fm"}, // -fm suffix
-		{S.F, "github.com/xhd2015/xgo/test/xgo_test/func_names.S.F"},
-		{i.F, "github.com/xhd2015/xgo/test/xgo_test/func_names.I.F-fm"}, // -fm suffix
-		{I.F, "github.com/xhd2015/xgo/test/xgo_test/func_names.I.F"},
+		{s.F, "github.com/omniaura/xgo/test/xgo_test/func_names.S.F-fm"}, // -fm suffix
+		{S.F, "github.com/omniaura/xgo/test/xgo_test/func_names.S.F"},
+		{i.F, "github.com/omniaura/xgo/test/xgo_test/func_names.I.F-fm"}, // -fm suffix
+		{I.F, "github.com/omniaura/xgo/test/xgo_test/func_names.I.F"},
 		// {Embed.I, ""}, // cannot reference Embed.I: undefined (type Embed has no field or method I)
-		{E.F, "github.com/xhd2015/xgo/test/xgo_test/func_names.E.F"},
-		{E.G, "github.com/xhd2015/xgo/test/xgo_test/func_names.E.G"},
-		{e.F, "github.com/xhd2015/xgo/test/xgo_test/func_names.E.F-fm"},
-		{e.G, "github.com/xhd2015/xgo/test/xgo_test/func_names.E.G-fm"},
+		{E.F, "github.com/omniaura/xgo/test/xgo_test/func_names.E.F"},
+		{E.G, "github.com/omniaura/xgo/test/xgo_test/func_names.E.G"},
+		{e.F, "github.com/omniaura/xgo/test/xgo_test/func_names.E.F-fm"},
+		{e.G, "github.com/omniaura/xgo/test/xgo_test/func_names.E.G-fm"},
 	}
 	if getGenericTests != nil {
 		tests = append(tests, getGenericTests()...)

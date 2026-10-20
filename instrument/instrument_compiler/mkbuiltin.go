@@ -5,9 +5,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/instrument/build"
-	"github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/build"
+	"github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 var CompilerRuntimeDefFile = patch.FilePath{"src", "cmd", "compile", "internal", "typecheck", "_builtin", "runtime.go"}

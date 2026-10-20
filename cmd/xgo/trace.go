@@ -9,15 +9,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/asset"
-	"github.com/xhd2015/xgo/instrument/constants"
-	instrument_embed "github.com/xhd2015/xgo/instrument/embed"
-	"github.com/xhd2015/xgo/instrument/overlay"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/filecopy"
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/goparse"
+	"github.com/omniaura/xgo/cmd/xgo/asset"
+	"github.com/omniaura/xgo/instrument/constants"
+	instrument_embed "github.com/omniaura/xgo/instrument/embed"
+	"github.com/omniaura/xgo/instrument/overlay"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/filecopy"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/goparse"
 )
 
 type importResult struct {
@@ -69,7 +69,7 @@ func getVendorDir(projectRoot string) (string, error) {
 }
 
 // importRuntimeDepGenOverlay detect if the target package already
-// has github.com/xhd2015/xgo/runtime as dependency,
+// has github.com/omniaura/xgo/runtime as dependency,
 // if not, dynamically modify the go.mod to include that,
 // and add a blank import in the main package
 // after the dependency is added, the -mod flag will be forced setting to -mod=mod
@@ -208,8 +208,8 @@ func checkNeedLoadDep(goroot string, goBinary string, projectRoot string, vendor
 		effectiveMod = "vendor"
 	}
 	// -e: suppress error
-	//  if github.com/xhd2015/xgo/runtime does not exists,
-	//  err: "module github.com/xhd2015/xgo/runtime: not a known dependency"
+	//  if github.com/omniaura/xgo/runtime does not exists,
+	//  err: "module github.com/omniaura/xgo/runtime: not a known dependency"
 	listArgs := []string{"list", "-m", "-json", "-mod=" + effectiveMod, "-e"}
 	if modfile != "" {
 		listArgs = append(listArgs, "-modfile", modfile)
@@ -217,7 +217,7 @@ func checkNeedLoadDep(goroot string, goBinary string, projectRoot string, vendor
 	listArgs = append(listArgs, constants.RUNTIME_MODULE)
 
 	logDebug("go %v", listArgs)
-	// go list -m -json -mod=$effective_mod -modfile $modfile -e github.com/xhd2015/xgo
+	// go list -m -json -mod=$effective_mod -modfile $modfile -e github.com/omniaura/xgo
 	output, err := cmd.Dir(projectRoot).Env([]string{
 		"GOROOT=" + goroot,
 	}).Output(goBinary, listArgs...)

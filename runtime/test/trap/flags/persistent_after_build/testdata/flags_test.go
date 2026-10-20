@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/trap/flags"
+	"github.com/omniaura/xgo/runtime/trap/flags"
 )
 
 // go run -tags dev ./cmd/xgo test -v --project-dir runtime/test/trap/flags/persistent_after_build/testdata --strace --strace-dir /tmp ./

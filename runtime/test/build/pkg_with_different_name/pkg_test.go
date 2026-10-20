@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/rwynn/gtm/v2"
-	"github.com/xhd2015/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

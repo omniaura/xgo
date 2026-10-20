@@ -1,5 +1,7 @@
-module github.com/xhd2015/xgo/cmd/xgo/test-explorer/testdata/mock_rules
+module github.com/omniaura/xgo/cmd/xgo/test-explorer/testdata/mock_rules
 
 go 1.14
 
-require github.com/xhd2015/xgo/runtime v1.0.43
+require github.com/omniaura/xgo/runtime v1.1.0
+
+replace github.com/omniaura/xgo/runtime => ../../../../../runtime

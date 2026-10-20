@@ -5,10 +5,10 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/xhd2015/xgo/instrument/load"
-	"github.com/xhd2015/xgo/instrument/resolve/types"
-	"github.com/xhd2015/xgo/support/edit/goedit"
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/instrument/load"
+	"github.com/omniaura/xgo/instrument/resolve/types"
+	"github.com/omniaura/xgo/support/edit/goedit"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 type DeclKind int

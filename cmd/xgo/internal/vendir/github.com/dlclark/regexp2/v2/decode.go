@@ -3,7 +3,7 @@ package regexp2
 import (
 	"unicode/utf8"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2/helpers"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2/helpers"
 )
 
 // decodedInput is the engine's rune view of a string. When the pattern cannot

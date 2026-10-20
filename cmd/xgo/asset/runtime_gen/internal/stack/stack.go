@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/core"
 )
 
 // Stack is a per-goroutine call tree. All tree mutations and export snapshots

@@ -5,8 +5,8 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/instrument/edit"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/edit"
 )
 
 // collect interface types for registration

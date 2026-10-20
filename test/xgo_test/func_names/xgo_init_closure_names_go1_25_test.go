@@ -25,7 +25,7 @@ import (
 // These are NOT init closures — the init shift comes from the
 // synthetic func init() blocks, not from these variable closures.
 func TestXgoInitClosureNames(t *testing.T) {
-	pkgPrefix := "github.com/xhd2015/xgo/test/xgo_test/func_names"
+	pkgPrefix := "github.com/omniaura/xgo/test/xgo_test/func_names"
 	assertName(t, c, pkgPrefix+".init.func5")
 }
 

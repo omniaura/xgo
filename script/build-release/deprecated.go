@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 func switchRelease(targetDir string) error {

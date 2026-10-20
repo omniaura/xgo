@@ -1,4 +1,4 @@
-module github.com/xhd2015/xgo/internal/src
+module github.com/omniaura/xgo/internal/src
 
 go 1.27.0
 
@@ -14,11 +14,11 @@ require (
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/xhd2015/go-coverage v1.0.47 // indirect
 	github.com/xhd2015/go-inspect v0.0.85 // indirect
-	github.com/xhd2015/xgo v1.0.51-0.20241102105517-b55990d76807 // indirect
+	github.com/omniaura/xgo v1.0.51-0.20241102105517-b55990d76807 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/tools v0.52.0 // indirect
 )
 
-replace github.com/xhd2015/xgo => ../../../..
+replace github.com/omniaura/xgo => ../../../..

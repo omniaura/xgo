@@ -7,8 +7,8 @@ import (
 
 func TestCheckGoModContent_Clean(t *testing.T) {
 	cases := []string{
-		"module github.com/xhd2015/xgo\n\ngo 1.18\n",
-		"module github.com/xhd2015/xgo/runtime\n\ngo 1.14\n",
+		"module github.com/omniaura/xgo\n\ngo 1.18\n",
+		"module github.com/omniaura/xgo/runtime\n\ngo 1.14\n",
 		"module foo\n\n",
 		"module foo\ngo 1.21\n",
 		"module foo\ngo 1.21\ntoolchain go1.22.0\n",
@@ -23,7 +23,7 @@ func TestCheckGoModContent_Clean(t *testing.T) {
 }
 
 func TestCheckGoModContent_Dirty_Require_SingleLine(t *testing.T) {
-	content := "module github.com/xhd2015/xgo\n\ngo 1.18\n\nrequire github.com/foo/bar v1.0.0\n"
+	content := "module github.com/omniaura/xgo\n\ngo 1.18\n\nrequire github.com/foo/bar v1.0.0\n"
 	err := checkGoModContent("go.mod", content)
 	if err == nil {
 		t.Fatal("expected error for require directive")
@@ -34,7 +34,7 @@ func TestCheckGoModContent_Dirty_Require_SingleLine(t *testing.T) {
 }
 
 func TestCheckGoModContent_Dirty_Require_Block(t *testing.T) {
-	content := `module github.com/xhd2015/xgo
+	content := `module github.com/omniaura/xgo
 
 go 1.18
 
@@ -52,7 +52,7 @@ require (
 }
 
 func TestCheckGoModContent_Dirty_Replace(t *testing.T) {
-	content := `module github.com/xhd2015/xgo
+	content := `module github.com/omniaura/xgo
 
 go 1.18
 
@@ -68,7 +68,7 @@ replace github.com/foo/bar => ../bar
 }
 
 func TestCheckGoModContent_Dirty_Exclude(t *testing.T) {
-	content := `module github.com/xhd2015/xgo
+	content := `module github.com/omniaura/xgo
 
 go 1.18
 
@@ -84,7 +84,7 @@ exclude github.com/foo/bar v1.0.0
 }
 
 func TestCheckGoModContent_Dirty_Retract(t *testing.T) {
-	content := `module github.com/xhd2015/xgo
+	content := `module github.com/omniaura/xgo
 
 go 1.18
 

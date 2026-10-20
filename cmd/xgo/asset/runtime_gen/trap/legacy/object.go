@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/xhd2015/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/core"
 )
 
 // TODO: implement JSON.marshal on func,chan types

@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/instrument/build"
-	"github.com/xhd2015/xgo/instrument/instrument_go/instrument_gc"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/git"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/instrument/build"
+	"github.com/omniaura/xgo/instrument/instrument_go/instrument_gc"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/git"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 // the test driver for xgo
@@ -32,7 +32,7 @@ import (
 //	go run ./script/run-test/ -count=1 --include go1.27.2
 //	go run ./script/run-test/ --include go1.27.2 -run TestHelloWorld -v
 //	go run ./script/run-test/ -count=1 --include go1.27.2 --include go1.28rc1
-//  go run ./script/run-test/ -cover -coverpkg github.com/xhd2015/xgo/runtime/... -coverprofile covers/cover.out --include go1.27.2
+//  go run ./script/run-test/ -cover -coverpkg github.com/omniaura/xgo/runtime/... -coverprofile covers/cover.out --include go1.27.2
 
 // specific test:
 //   go run ./script/run-test --include go1.27.2 --log-debug ./runtime/test/patch

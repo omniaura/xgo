@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/instrument/overlay"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/overlay"
 )
 
 func TestApplyBlankImportThroughOverlayInjectsIntoCallerReplacement(t *testing.T) {

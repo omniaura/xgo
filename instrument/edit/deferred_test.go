@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/xhd2015/xgo/instrument/load"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/load"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func writeDeferredTestPkg(t *testing.T, dir string, name string) *load.Package {

@@ -1,7 +1,7 @@
 package git
 
 import (
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git/worktree"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git/worktree"
 )
 
 func AcquireTempWorkTree(dir string, ref string) (tmpDir string, remove func() error, err error) {

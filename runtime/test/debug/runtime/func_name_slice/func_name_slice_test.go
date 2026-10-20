@@ -34,7 +34,7 @@ func TestFuncNameSlice(t *testing.T) {
 
 	// t.Logf("pc=0x%x", x.pc)
 
-	expectFuncName := "github.com/xhd2015/xgo/test/xgo_test/func_name_slice.F"
+	expectFuncName := "github.com/omniaura/xgo/test/xgo_test/func_name_slice.F"
 	funcName := __xgo_link_get_pc_name(x.pc)
 
 	if funcName != expectFuncName {
@@ -47,7 +47,7 @@ func TestFuncNameSlice(t *testing.T) {
 	}
 
 	pkgPath := funcName[:idx]
-	expectPkgPath := "github.com/xhd2015/xgo/test/xgo_test/func_name_slice"
+	expectPkgPath := "github.com/omniaura/xgo/test/xgo_test/func_name_slice"
 	if pkgPath != expectPkgPath {
 		t.Fatalf("expect pkg: %s, actual: %s", expectPkgPath, pkgPath)
 	}

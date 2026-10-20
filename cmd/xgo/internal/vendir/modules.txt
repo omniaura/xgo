@@ -63,16 +63,16 @@ github.com/xhd2015/lines-annotation/model/filter
 github.com/xhd2015/lines-annotation/model/lang
 github.com/xhd2015/lines-annotation/path
 github.com/xhd2015/lines-annotation/path/filter
-# github.com/xhd2015/xgo v1.0.51-0.20241102105517-b55990d76807 => ../../../..
+# github.com/omniaura/xgo v1.0.51-0.20241102105517-b55990d76807 => ../../../..
 ## explicit; go 1.18
-github.com/xhd2015/xgo/support/cmd
-github.com/xhd2015/xgo/support/coverage
-github.com/xhd2015/xgo/support/filecopy
-github.com/xhd2015/xgo/support/fileutil
-github.com/xhd2015/xgo/support/goinfo
-github.com/xhd2015/xgo/support/osinfo
-github.com/xhd2015/xgo/support/pattern
-github.com/xhd2015/xgo/support/strutil
+github.com/omniaura/xgo/support/cmd
+github.com/omniaura/xgo/support/coverage
+github.com/omniaura/xgo/support/filecopy
+github.com/omniaura/xgo/support/fileutil
+github.com/omniaura/xgo/support/goinfo
+github.com/omniaura/xgo/support/osinfo
+github.com/omniaura/xgo/support/pattern
+github.com/omniaura/xgo/support/strutil
 # golang.org/x/mod v0.42.0
 ## explicit; go 1.26.0
 golang.org/x/mod/semver
@@ -111,4 +111,4 @@ golang.org/x/tools/internal/pkgbits
 golang.org/x/tools/internal/stdlib
 golang.org/x/tools/internal/typesinternal
 golang.org/x/tools/internal/versions
-# github.com/xhd2015/xgo => ../../../..
+# github.com/omniaura/xgo => ../../../..

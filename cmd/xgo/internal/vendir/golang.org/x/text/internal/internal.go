@@ -9,7 +9,7 @@ package internal // import "golang.org/x/text/internal"
 import (
 	"sort"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
 )
 
 // SortTags sorts tags in place.

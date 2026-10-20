@@ -27,33 +27,33 @@ func TestMerge(t *testing.T) {
 		{
 			name: "single",
 			covs: []string{`mode: set
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 0`},
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 0`},
 			want: `mode: set
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 0`,
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 0`,
 		},
 		{
 			name: "single_compact",
 			covs: []string{`mode: set
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 1
-github.com/xhd2015/xgo/runtime/core/func1.go:44.41,45.22 1 0
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 4`},
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 1
+github.com/omniaura/xgo/runtime/core/func1.go:44.41,45.22 1 0
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 4`},
 			want: `mode: set
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 5
-github.com/xhd2015/xgo/runtime/core/func1.go:44.41,45.22 1 0`,
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 5
+github.com/omniaura/xgo/runtime/core/func1.go:44.41,45.22 1 0`,
 		},
 		{
 			name: "multiple_compact",
 			covs: []string{`mode: set
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 1
-github.com/xhd2015/xgo/runtime/core/func1.go:44.41,45.22 1 0
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 4`,
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 1
+github.com/omniaura/xgo/runtime/core/func1.go:44.41,45.22 1 0
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 4`,
 				`mode: set
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 0
-github.com/xhd2015/xgo/runtime/core/func1.go:44.41,45.22 1 1
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 8`},
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 0
+github.com/omniaura/xgo/runtime/core/func1.go:44.41,45.22 1 1
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 8`},
 			want: `mode: set
-github.com/xhd2015/xgo/runtime/core/func.go:44.41,45.22 1 13
-github.com/xhd2015/xgo/runtime/core/func1.go:44.41,45.22 1 1`,
+github.com/omniaura/xgo/runtime/core/func.go:44.41,45.22 1 13
+github.com/omniaura/xgo/runtime/core/func1.go:44.41,45.22 1 1`,
 		},
 	}
 	for _, tt := range tests {

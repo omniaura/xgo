@@ -1,7 +1,7 @@
 // Package initprobe checks linkage without importing mock or trap.
 package initprobe
 
-import "github.com/xhd2015/xgo/runtime/core"
+import "github.com/omniaura/xgo/runtime/core"
 
 var Instrumented = core.Instrumented()
 

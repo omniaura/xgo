@@ -10,8 +10,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2/helpers"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2/syntax"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2/helpers"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2/syntax"
 )
 
 type Runner struct {

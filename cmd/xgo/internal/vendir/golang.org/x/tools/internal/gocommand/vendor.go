@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/mod/semver"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/mod/semver"
 )
 
 // ModuleJSON holds information about a module.

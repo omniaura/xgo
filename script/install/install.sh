@@ -29,7 +29,7 @@ case $(uname -ms) in
 esac
 
 #for pre-release like:
-#   https://github.com/xhd2015/xgo/releases/download/v1.1.0-alpha/xgo1.1.0-linux-amd64.tar.gz
+#   https://github.com/omniaura/xgo/releases/download/v1.1.0-alpha/xgo1.1.0-linux-amd64.tar.gz
 
 if [[ "$INSTALL_TAG" != "" ]];then
     install_version=$INSTALL_VERSION
@@ -37,9 +37,9 @@ if [[ "$INSTALL_TAG" != "" ]];then
         install_version=$INSTALL_TAG
     fi
     file="xgo${install_version}-${target}.tar.gz"
-    uri="https://github.com/xhd2015/xgo/releases/download/${INSTALL_TAG}/${file}"
+    uri="https://github.com/omniaura/xgo/releases/download/${INSTALL_TAG}/${file}"
 else
-    latestURL="https://github.com/xhd2015/xgo/releases/latest"
+    latestURL="https://github.com/omniaura/xgo/releases/latest"
     headers=$(curl "$latestURL" -so /dev/null -D -)
     if [[ "$headers" != *302* ]];then
         error "expect 302 from $latestURL"

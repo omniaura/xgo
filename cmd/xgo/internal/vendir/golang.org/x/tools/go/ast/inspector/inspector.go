@@ -47,7 +47,7 @@ package inspector
 import (
 	"go/ast"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/edge"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/edge"
 )
 
 // An Inspector provides methods for inspecting

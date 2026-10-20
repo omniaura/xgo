@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/script/build-release/revision"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/filecopy"
-	"github.com/xhd2015/xgo/support/git"
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/script/build-release/revision"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/filecopy"
+	"github.com/omniaura/xgo/support/git"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 // usage:

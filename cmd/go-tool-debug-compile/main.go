@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/exec_tool"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/debug"
-	"github.com/xhd2015/xgo/support/flag"
-	"github.com/xhd2015/xgo/support/netutil"
+	"github.com/omniaura/xgo/cmd/xgo/exec_tool"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/debug"
+	"github.com/omniaura/xgo/support/flag"
+	"github.com/omniaura/xgo/support/netutil"
 )
 
 // usage:

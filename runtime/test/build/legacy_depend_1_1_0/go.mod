@@ -1,5 +1,5 @@
-module github.com/xhd2015/xgo/runtime/test/build/legacy_depend_1_1_0
+module github.com/omniaura/xgo/runtime/test/build/legacy_depend_1_1_0
 
 go 1.18
 
-require github.com/xhd2015/xgo/runtime v1.1.0
+require github.com/omniaura/xgo/runtime v1.1.0

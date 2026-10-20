@@ -12,12 +12,12 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/constants"
-	"github.com/xhd2015/xgo/runtime/internal/flags"
-	xgo_runtime "github.com/xhd2015/xgo/runtime/internal/runtime"
-	"github.com/xhd2015/xgo/runtime/internal/stack"
-	"github.com/xhd2015/xgo/runtime/trace/stack_model"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/constants"
+	"github.com/omniaura/xgo/runtime/internal/flags"
+	xgo_runtime "github.com/omniaura/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/internal/stack"
+	"github.com/omniaura/xgo/runtime/trace/stack_model"
 )
 
 // skip 2: <user func> -> runtime.XgoTrap -> trap

@@ -2,7 +2,7 @@
 // const traces = {}
 
 // trace example:
-///   {"FuncInfo":{"Pkg":"github.com/xhd2015/xgo","IdentityName":"TestHelloWorld","Name":"TestHelloWorld","RecvType":"","RecvPtr":false,"Generic":false,"RecvName":"","ArgNames":["t"],"ResNames":[],"FirstArgCtx":false,"LastResultErr":false},"Begin":0,"End":0,"Args":{"t":{}},"Results":{},"Children":null}
+///   {"FuncInfo":{"Pkg":"github.com/omniaura/xgo","IdentityName":"TestHelloWorld","Name":"TestHelloWorld","RecvType":"","RecvPtr":false,"Generic":false,"RecvName":"","ArgNames":["t"],"ResNames":[],"FirstArgCtx":false,"LastResultErr":false},"Begin":0,"End":0,"Args":{"t":{}},"Results":{},"Children":null}
 
 
 function getHeadID(id) {

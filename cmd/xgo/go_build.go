@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/instrument/build"
+	"github.com/omniaura/xgo/instrument/build"
 )
 
 // Deprecated: since xgo v1.1.0, xgo does not instrument the compiler anymore

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 // This test verifies if xgo can detect legacy runtime version
@@ -17,7 +17,7 @@ import (
 //  xgo test -v ./...
 // WARNING: xgo v1.1.0 cannot work with deprecated xgo/runtime v1.0.52.
 // xgo will try best to compile with newer xgo/runtime v1.1.0, it's recommended to upgrade via:
-//   go get github.com/xhd2015/xgo/runtime@latest
+//   go get github.com/omniaura/xgo/runtime@latest
 // === RUN   TestMockPatch
 // --- PASS: TestMockPatch (0.00s)
 // === RUN   TestMockInterceptor
@@ -25,7 +25,7 @@ import (
 // === RUN   TestTrap
 // --- PASS: TestTrap (0.00s)
 // PASS
-// ok      github.com/xhd2015/xgo/testdata/legacy_depend   0.340s
+// ok      github.com/omniaura/xgo/testdata/legacy_depend   0.340s
 
 func TestMockPatch(t *testing.T) {
 	g1 := greet("world")

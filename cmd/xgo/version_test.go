@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/instrument/instrument_xgo_runtime"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/instrument_xgo_runtime"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 // the embedded runtime carries CORE_VERSION, and xgo swaps runtimes older

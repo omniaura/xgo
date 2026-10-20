@@ -52,7 +52,7 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/gcimporter"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/gcimporter"
 )
 
 // Find returns the name of an object (.o) or archive (.a) file

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xhd2015/xgo/cmd/xgo/exec_tool"
+	"github.com/omniaura/xgo/cmd/xgo/exec_tool"
 )
 
 // usage:

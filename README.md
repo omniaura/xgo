@@ -1,11 +1,11 @@
 
 # xgo
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/xhd2015/xgo.svg)](https://pkg.go.dev/github.com/xhd2015/xgo)
-[![Go Report Card](https://goreportcard.com/badge/github.com/xhd2015/xgo)](https://goreportcard.com/report/github.com/xhd2015/xgo)
+[![Go Reference](https://pkg.go.dev/badge/github.com/omniaura/xgo.svg)](https://pkg.go.dev/github.com/omniaura/xgo)
+[![Go Report Card](https://goreportcard.com/badge/github.com/omniaura/xgo)](https://goreportcard.com/report/github.com/omniaura/xgo)
 [![Slack Widget](https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=red)](https://join.slack.com/t/golang-xgo/shared_invite/zt-2ixe161jb-3XYTDn37U1ZHZJSgnQi6sg)
 [![Go Coverage](https://img.shields.io/badge/Coverage-82.6%25-brightgreen)](https://github.com/xhd2015/xgo/actions)
-[![CI](https://github.com/xhd2015/xgo/workflows/Go/badge.svg)](https://github.com/xhd2015/xgo/actions)
+[![CI](https://github.com/omniaura/xgo/workflows/Go/badge.svg)](https://github.com/xhd2015/xgo/actions)
 [![Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
 **English | [简体中文](./README_zh_cn.md)**
@@ -25,15 +25,15 @@ As for the monkey patching part, `xgo` works as a preprocessor for `go run`,`go 
 
 See [Quick Start](#quick-start) and [Documentation](./doc) for more details.
 
-[![Xgo Test Explorer](https://github.com/xhd2015/xgo/assets/14964938/53de1de1-85a6-41b0-9300-c4979ba0096c)](https://youtu.be/L8oPhgqtdGg)
+[![Xgo Test Explorer](https://github.com/omniaura/xgo/assets/14964938/53de1de1-85a6-41b0-9300-c4979ba0096c)](https://youtu.be/L8oPhgqtdGg)
 
-![Xgo Test Explorer](https://github.com/xhd2015/xgo/assets/14964938/2666f0c9-3a9f-45e0-a1e2-20e1bf401fa1)
+![Xgo Test Explorer](https://github.com/omniaura/xgo/assets/14964938/2666f0c9-3a9f-45e0-a1e2-20e1bf401fa1)
 
 > *By the way, I promise you this is an interesting project.*
 
 # Installation
 ```sh
-go install github.com/xhd2015/xgo/cmd/xgo@latest
+go install github.com/omniaura/xgo/cmd/xgo@latest
 ```
 
 Verify the installation:
@@ -111,7 +111,7 @@ package demo_test
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func MyFunc() string {
@@ -128,9 +128,9 @@ func TestFuncMock(t *testing.T) {
 	}
 }
 ```
-4. Get the `github.com/xhd2015/xgo/runtime` dependency:
+4. Get the `github.com/omniaura/xgo/runtime` dependency:
 ```sh
-go get github.com/xhd2015/xgo/runtime
+go get github.com/omniaura/xgo/runtime
 ```
 5. Test the code:
 ```sh
@@ -205,7 +205,7 @@ package patch_test
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func greet(s string) string {
@@ -232,7 +232,7 @@ package patch
 import (
     "testing"
 
-    "github.com/xhd2015/xgo/runtime/mock"
+    "github.com/omniaura/xgo/runtime/mock"
 )
 
 var a int = 123
@@ -362,7 +362,7 @@ By default, Trace will write traces to a temp directory under current working di
 
 Besides the `--strace` flag, xgo allows you to define which span should be collected, using `trace.Trace()`:
 ```go
-import "github.com/xhd2015/xgo/runtime/trace"
+import "github.com/omniaura/xgo/runtime/trace"
 
 func TestTrace(t *testing.T) {
     A()
@@ -385,7 +385,7 @@ import (
     "context"
     "fmt"
 
-    "github.com/xhd2015/xgo/runtime/trace"
+    "github.com/omniaura/xgo/runtime/trace"
 )
 
 func main() {
@@ -442,8 +442,8 @@ import (
     "context"
     "fmt"
 
-    "github.com/xhd2015/xgo/runtime/core"
-    "github.com/xhd2015/xgo/runtime/trap"
+    "github.com/omniaura/xgo/runtime/core"
+    "github.com/omniaura/xgo/runtime/trap"
 )
 
 func init() {
@@ -523,7 +523,7 @@ $ xgo e
 Server listen at http://localhost:7070
 ```
 
-<img width="1792" alt="test-explorer" src="https://github.com/xhd2015/xgo/assets/14964938/f8689a2d-b422-4101-acef-0aa41ad7e246">
+<img width="1792" alt="test-explorer" src="https://github.com/omniaura/xgo/assets/14964938/f8689a2d-b422-4101-acef-0aa41ad7e246">
 
 P.S.: `xgo e` is an alias for `xgo tool test-explorer`.
 

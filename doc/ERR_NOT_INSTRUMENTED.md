@@ -13,7 +13,7 @@ say whether a particular target function can be patched.
 For tests that should skip gracefully in editors:
 
 ```go
-import "github.com/xhd2015/xgo/runtime/xgotest"
+import "github.com/omniaura/xgo/runtime/xgotest"
 
 func TestPatch(t *testing.T) {
     xgotest.Require(t) // before any patching

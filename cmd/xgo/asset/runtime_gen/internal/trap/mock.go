@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/functab"
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
 )
 
 // ErrNotInstrumented is the error returned when a function or variable
@@ -27,8 +27,8 @@ import (
 //	MyInt(SomeVar).String() // good
 //	SomeVar.String() // bad: xgo cannot determine if it is a pointer receiver
 //
-// check https://github.com/xhd2015/xgo/tree/master/doc/ERR_NOT_INSTRUMENTED.md for more details
-var ErrNotInstrumented = errors.New("not instrumented by xgo, see https://github.com/xhd2015/xgo/tree/master/doc/ERR_NOT_INSTRUMENTED.md ")
+// check https://github.com/omniaura/xgo/tree/master/doc/ERR_NOT_INSTRUMENTED.md for more details
+var ErrNotInstrumented = errors.New("not instrumented by xgo, see https://github.com/omniaura/xgo/tree/master/doc/ERR_NOT_INSTRUMENTED.md ")
 
 type mockHolder struct {
 	wantRecvPtr interface{}

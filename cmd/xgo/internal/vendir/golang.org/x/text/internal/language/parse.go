@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/tag"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/tag"
 )
 
 // isAlpha returns true if the byte is not a digit.

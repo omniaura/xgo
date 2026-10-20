@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/pathsum"
+	"github.com/omniaura/xgo/cmd/xgo/pathsum"
 )
 
 // xgo keeps one instrumented GOROOT per Go toolchain and one instrumented

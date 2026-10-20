@@ -7,9 +7,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	xgo_runtime "github.com/xhd2015/xgo/runtime/internal/runtime"
-	"github.com/xhd2015/xgo/runtime/internal/stack"
+	"github.com/omniaura/xgo/runtime/core"
+	xgo_runtime "github.com/omniaura/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/internal/stack"
 )
 
 func trapVar(infoPtr unsafe.Pointer, varAddr interface{}, res interface{}) {

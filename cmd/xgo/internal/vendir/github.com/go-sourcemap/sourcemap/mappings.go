@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/go-sourcemap/sourcemap/internal/base64vlq"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/go-sourcemap/sourcemap/internal/base64vlq"
 )
 
 type fn func(m *mappings) (fn, error)

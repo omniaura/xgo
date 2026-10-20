@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/test/build/unified/shared"
+	"github.com/omniaura/xgo/runtime/test/build/unified/shared"
 )
 
 func init() {

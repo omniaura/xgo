@@ -3,7 +3,7 @@ package legacy
 import (
 	"sync"
 
-	"github.com/xhd2015/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/core"
 )
 
 var ignoreMap sync.Map // funcinfo -> bool

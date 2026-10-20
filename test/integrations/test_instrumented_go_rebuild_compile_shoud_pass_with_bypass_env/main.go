@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xhd2015/xgo/test/integrations/internal"
+	"github.com/omniaura/xgo/test/integrations/internal"
 )
 
 // Minimal repro for: src.NoXPos_xgo_get undefined (or GOTOOLCHAIN version mismatch)

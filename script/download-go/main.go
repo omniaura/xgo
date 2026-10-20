@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/downloadgo"
+	"github.com/omniaura/xgo/support/downloadgo"
 )
 
 // usage: list, download go1.20.0

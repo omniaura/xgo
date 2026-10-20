@@ -3,7 +3,7 @@ package op_new_make
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 var A = make(map[string]int)

@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xhd2015/xgo/script/build-release/revision"
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/script/build-release/revision"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 // fixup src dir to prepare for release build

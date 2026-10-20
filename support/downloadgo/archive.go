@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	cmd_exec "github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/osinfo"
+	cmd_exec "github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 func getArchiveSuffix(goos string) string {

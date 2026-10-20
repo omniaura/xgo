@@ -1,3 +1,3 @@
-module github.com/xhd2015/xgo/runtime/test/build/concurrent_runs
+module github.com/omniaura/xgo/runtime/test/build/concurrent_runs
 
 go 1.18

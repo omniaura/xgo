@@ -40,8 +40,8 @@ func TestConcurrentRunsInOneProject(t *testing.T) {
 		}
 	}
 	write("go.mod", "module example.com/conc\n\ngo 1.18\n\n"+
-		"require github.com/xhd2015/xgo/runtime v0.0.0\n\n"+
-		"replace github.com/xhd2015/xgo/runtime => "+filepath.ToSlash(filepath.Join(root, "runtime"))+"\n")
+		"require github.com/omniaura/xgo/runtime v0.0.0\n\n"+
+		"replace github.com/omniaura/xgo/runtime => "+filepath.ToSlash(filepath.Join(root, "runtime"))+"\n")
 	pkgs := []string{"a", "b"}
 	for _, p := range pkgs {
 		write(p+"/"+p+".go", "package "+p+"\n\nfunc F() int { return 1 }\n")
@@ -52,7 +52,7 @@ func TestConcurrentRunsInOneProject(t *testing.T) {
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 var limit = 3
@@ -110,7 +110,7 @@ func findXgoRepoRoot(t *testing.T) string {
 	}
 	for {
 		data, err := os.ReadFile(filepath.Join(dir, "go.mod"))
-		if err == nil && bytes.HasPrefix(bytes.TrimSpace(data), []byte("module github.com/xhd2015/xgo\n")) {
+		if err == nil && bytes.HasPrefix(bytes.TrimSpace(data), []byte("module github.com/omniaura/xgo\n")) {
 			return dir
 		}
 		parent := filepath.Dir(dir)

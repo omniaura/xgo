@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/trace/render/stack_model"
+	"github.com/omniaura/xgo/cmd/xgo/trace/render/stack_model"
 )
 
 func ReadStacks(file string) ([]*stack_model.Stack, bool, error) {

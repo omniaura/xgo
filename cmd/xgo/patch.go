@@ -11,14 +11,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/asset"
-	embedutil "github.com/xhd2015/xgo/instrument/embed"
-	"github.com/xhd2015/xgo/instrument/instrument_compiler"
-	"github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/filecopy"
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/cmd/xgo/asset"
+	embedutil "github.com/omniaura/xgo/instrument/embed"
+	"github.com/omniaura/xgo/instrument/instrument_compiler"
+	"github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/filecopy"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 // patchRuntime applies the file-based patches for goVersion to goroot.

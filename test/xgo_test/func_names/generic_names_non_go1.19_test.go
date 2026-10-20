@@ -20,11 +20,11 @@ func init() {
 	var gi GI[int] = &gs
 	getGenericTests = func() []*testCase {
 		return []*testCase{
-			{GF[int], "github.com/xhd2015/xgo/test/xgo_test/func_names.GF[...]"},
-			{(*GS[int]).F, "github.com/xhd2015/xgo/test/xgo_test/func_names.(*GS[...]).F"},
-			{gs.F, "github.com/xhd2015/xgo/test/xgo_test/func_names.(*GS[...]).F-fm"},
-			{GI[int].F, "github.com/xhd2015/xgo/test/xgo_test/func_names.GI[...].F"},
-			{gi.F, "github.com/xhd2015/xgo/test/xgo_test/func_names.GI[...].F-fm"},
+			{GF[int], "github.com/omniaura/xgo/test/xgo_test/func_names.GF[...]"},
+			{(*GS[int]).F, "github.com/omniaura/xgo/test/xgo_test/func_names.(*GS[...]).F"},
+			{gs.F, "github.com/omniaura/xgo/test/xgo_test/func_names.(*GS[...]).F-fm"},
+			{GI[int].F, "github.com/omniaura/xgo/test/xgo_test/func_names.GI[...].F"},
+			{gi.F, "github.com/omniaura/xgo/test/xgo_test/func_names.GI[...].F-fm"},
 		}
 	}
 }

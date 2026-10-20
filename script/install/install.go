@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/xhd2015/xgo/script/install/upgrade"
+	"github.com/omniaura/xgo/script/install/upgrade"
 )
 
 func main() {

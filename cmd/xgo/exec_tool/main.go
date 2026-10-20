@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	cmd_exec "github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/debug"
-	"github.com/xhd2015/xgo/support/goinfo"
+	cmd_exec "github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/debug"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 // invoking examples:
@@ -220,8 +220,8 @@ func handleCompile(cmd string, opts *options, args []string) error {
 		// detect if we are running in debug mod
 		var cmdPrefix string
 		goMod, _ := goinfo.GetModPath(srcWD)
-		if goMod == "" || goMod != "github.com/xhd2015/xgo" {
-			cmdPrefix = "go install github.com/xhd2015/xgo/cmd/go-tool-debug-compile@latest\n  go-tool-debug-compile"
+		if goMod == "" || goMod != "github.com/omniaura/xgo" {
+			cmdPrefix = "go install github.com/omniaura/xgo/cmd/go-tool-debug-compile@latest\n  go-tool-debug-compile"
 		} else {
 			cmdPrefix = "go run ./cmd/go-tool-debug-compile"
 		}

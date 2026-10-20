@@ -3,7 +3,7 @@ package tls
 import (
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
 )
 
 func init() {

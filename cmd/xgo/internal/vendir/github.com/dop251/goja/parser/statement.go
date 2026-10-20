@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ast"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/go-sourcemap/sourcemap"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ast"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/go-sourcemap/sourcemap"
 )
 
 func (self *_parser) parseBlockStatement() *ast.BlockStatement {

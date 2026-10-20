@@ -1,3 +1,3 @@
-module github.com/xhd2015/xgo/runtime
+module github.com/omniaura/xgo/runtime
 
 go 1.14

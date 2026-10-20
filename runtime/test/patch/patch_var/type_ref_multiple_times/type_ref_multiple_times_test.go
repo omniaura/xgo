@@ -3,8 +3,8 @@ package type_ref_multiple_times
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_var/type_ref_multiple_times/types"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_var/type_ref_multiple_times/types"
 )
 
 var testMap = map[types.Key]types.Value{

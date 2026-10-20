@@ -3,7 +3,7 @@ package patch_var_type_resolve
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 var a = 10

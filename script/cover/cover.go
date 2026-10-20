@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/coverage"
+	"github.com/omniaura/xgo/support/coverage"
 )
 
 func main() {
@@ -66,7 +66,7 @@ func mergeCover(files []string, outFile string) error {
 	}
 	res := coverage.Merge(covs...)
 	res = coverage.Filter(res, func(line *coverage.CovLine) bool {
-		if strings.HasPrefix(line.Prefix, "github.com/xhd2015/xgo/runtime/test") {
+		if strings.HasPrefix(line.Prefix, "github.com/omniaura/xgo/runtime/test") {
 			return false
 		}
 		return true

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/instrument/load"
-	"github.com/xhd2015/xgo/instrument/overlay"
+	"github.com/omniaura/xgo/instrument/load"
+	"github.com/omniaura/xgo/instrument/overlay"
 )
 
 // usage:

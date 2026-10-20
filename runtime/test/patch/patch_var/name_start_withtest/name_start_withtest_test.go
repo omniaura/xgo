@@ -3,7 +3,7 @@ package name_start_withtest
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 type Test struct {

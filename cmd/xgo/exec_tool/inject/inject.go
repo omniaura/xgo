@@ -6,7 +6,7 @@ import (
 	"go/token"
 	"os"
 
-	"github.com/xhd2015/xgo/support/edit/goedit"
+	"github.com/omniaura/xgo/support/edit/goedit"
 )
 
 // InjectRuntimeTrap parses the given file as golang AST,

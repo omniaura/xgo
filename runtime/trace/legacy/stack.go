@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/core"
 )
 
 // default size to shrink 16K

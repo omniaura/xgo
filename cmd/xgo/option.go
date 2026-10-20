@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/flag"
+	"github.com/omniaura/xgo/support/flag"
 )
 
 type options struct {

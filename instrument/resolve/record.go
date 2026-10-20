@@ -3,9 +3,9 @@ package resolve
 import (
 	"go/ast"
 
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/instrument/resolve/types"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/resolve/types"
 )
 
 func (c *Scope) recordTrap(sel *ast.SelectorExpr) bool {

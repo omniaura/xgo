@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 )
 
 type sparseArrayItem struct {

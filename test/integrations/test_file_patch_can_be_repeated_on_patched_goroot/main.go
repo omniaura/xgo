@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xhd2015/xgo/test/integrations/internal"
+	"github.com/omniaura/xgo/test/integrations/internal"
 )
 
 func main() {

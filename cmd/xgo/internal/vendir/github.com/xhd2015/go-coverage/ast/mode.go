@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/packages"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/packages"
 
 
 

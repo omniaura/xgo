@@ -15,7 +15,7 @@ func main() {
 	xgoBin, cleanup := ensureXgo(repoRoot)
 	defer cleanup()
 
-	proofSrc := "package proof\r\n\r\nimport _ \"github.com/xhd2015/xgo/runtime/trap\"\r\n\r\nvar help = `\r\nUsage:\r\n  -func match\r\n`\r\n\r\nfunc GetHelp() string {\r\n\treturn help\r\n}\r\n"
+	proofSrc := "package proof\r\n\r\nimport _ \"github.com/omniaura/xgo/runtime/trap\"\r\n\r\nvar help = `\r\nUsage:\r\n  -func match\r\n`\r\n\r\nfunc GetHelp() string {\r\n\treturn help\r\n}\r\n"
 	proofTestSrc := "package proof\r\n\r\nimport (\r\n\t\"testing\"\r\n)\r\n\r\nfunc TestGetHelp(t *testing.T) {\r\n\tresult := GetHelp()\r\n\t_ = result\r\n}\r\n"
 
 	if !strings.Contains(proofSrc, "\r") {
@@ -31,7 +31,7 @@ func main() {
 	// Keep dir for inspection
 	fmt.Printf("test dir: %s\n", tmpDir)
 
-	goModContent := fmt.Sprintf("module test\n\ngo 1.21\n\nrequire github.com/xhd2015/xgo/runtime v0.0.0\n\nreplace github.com/xhd2015/xgo/runtime => %s/runtime\n", repoRoot)
+	goModContent := fmt.Sprintf("module test\n\ngo 1.21\n\nrequire github.com/omniaura/xgo/runtime v0.0.0\n\nreplace github.com/omniaura/xgo/runtime => %s/runtime\n", repoRoot)
 	os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goModContent), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "proof.go"), []byte(proofSrc), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "proof_test.go"), []byte(proofTestSrc), 0644)

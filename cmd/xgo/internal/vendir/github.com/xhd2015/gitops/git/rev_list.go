@@ -3,8 +3,8 @@ package git
 import (
 	"fmt"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 // RevListAll git rev-list --all --since=date --format=...

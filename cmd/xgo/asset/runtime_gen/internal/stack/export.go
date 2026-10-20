@@ -3,10 +3,10 @@ package stack
 import (
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/flags"
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
-	"github.com/xhd2015/xgo/runtime/trace/stack_model"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/flags"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/trace/stack_model"
 )
 
 func Export(stack *Stack, offsetNS int64) *stack_model.Stack {

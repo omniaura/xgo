@@ -9,8 +9,8 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/legacy"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/legacy"
 )
 
 var ErrAbort error = errors.New("abort trap interceptor")

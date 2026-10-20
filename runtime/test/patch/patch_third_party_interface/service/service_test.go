@@ -3,8 +3,8 @@ package service
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_third_party_interface/third"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_third_party_interface/third"
 )
 
 func TestInterfaceMethodShouldNotPanic(t *testing.T) {

@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/instrument/overlay"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/instrument/overlay"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 type LoadOptions struct {

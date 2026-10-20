@@ -13,7 +13,7 @@ package compact
 import (
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
 )
 
 // Tag represents a BCP 47 language tag. It is used to specify an instance of a

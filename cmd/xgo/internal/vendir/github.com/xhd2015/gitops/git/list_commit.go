@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-inspect/sh"
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-inspect/sh"
+	"github.com/omniaura/xgo/support/cmd"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
 )
 
 // git pretty format doc link: https://git-scm.com/docs/pretty-formats

@@ -58,10 +58,10 @@ slices.SortFunc[go.shape.[]encoding/json.reflectWithString,go.shape.struct { enc
 type:.eq.encoding/json.reflectWithString
 type:.eq.struct { encoding/json.ptr interface {}; encoding/json.len int }
 type:.eq.go.shape.struct { encoding/json.v reflect.Value; encoding/json.ks string }
-github.com/xhd2015/xgo/runtime/pkg.Hello
-github.com/xhd2015/xgo/runtime/pkg.Mass.Print
-github.com/xhd2015/xgo/runtime/pkg.(*Person).Greet
-github.com/xhd2015/xgo/runtime/pkg.Hello.func1
+github.com/omniaura/xgo/runtime/pkg.Hello
+github.com/omniaura/xgo/runtime/pkg.Mass.Print
+github.com/omniaura/xgo/runtime/pkg.(*Person).Greet
+github.com/omniaura/xgo/runtime/pkg.Hello.func1
 main.init.0
 main.main
 main.testArgs

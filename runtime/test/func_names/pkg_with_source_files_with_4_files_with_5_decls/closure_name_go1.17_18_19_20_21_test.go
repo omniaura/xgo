@@ -3,4 +3,4 @@
 
 package pkg_with_source_files_with_4_files_with_5_decls
 
-const expectTopLevelClosure = "github.com/xhd2015/xgo/runtime/test/func_names/pkg_with_source_files_with_4_files_with_5_decls.glob..func9"
+const expectTopLevelClosure = "github.com/omniaura/xgo/runtime/test/func_names/pkg_with_source_files_with_4_files_with_5_decls.glob..func9"

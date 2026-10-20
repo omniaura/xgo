@@ -10,11 +10,11 @@ import (
 
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/coverage/serve"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/netutil"
+	"github.com/omniaura/xgo/cmd/xgo/coverage/serve"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/netutil"
 )
 
 func handleServe(cmd string, args []string) error {

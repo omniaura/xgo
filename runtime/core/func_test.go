@@ -19,18 +19,18 @@ func TestParseFuncName(t *testing.T) {
 		{"fmt.Printf", "fmt", "", false, "", "", "Printf"},
 		{"os.File.Read", "os", "File", false, "", "", "Read"},
 		{"os.(*File).Read", "os", "File", true, "", "", "Read"},
-		{"github.com/xhd2015/xgo.(*File).Read", "github.com/xhd2015/xgo", "File", true, "", "", "Read"},
-		{"github.com/xhd2015/xgo.1.(*File).Read", "github.com/xhd2015/xgo.1", "File", true, "", "", "Read"},     // pkg path with dot
-		{"github.com/xhd2015/xgo.(*File[int]).Read", "github.com/xhd2015/xgo", "File", true, "int", "", "Read"}, // generic
-		{"github.com/xhd2015/xgo.(*File[int]).Read[string]", "github.com/xhd2015/xgo", "File", true, "int", "string", "Read"},
-		{"github.com/xhd2015/xgo.Watch", "github.com/xhd2015/xgo", "", false, "", "", "Watch"},
-		{"github.com/xhd2015/xgo.Watch[int]", "github.com/xhd2015/xgo", "", false, "", "int", "Watch"},
+		{"github.com/omniaura/xgo.(*File).Read", "github.com/omniaura/xgo", "File", true, "", "", "Read"},
+		{"github.com/omniaura/xgo.1.(*File).Read", "github.com/omniaura/xgo.1", "File", true, "", "", "Read"},     // pkg path with dot
+		{"github.com/omniaura/xgo.(*File[int]).Read", "github.com/omniaura/xgo", "File", true, "int", "", "Read"}, // generic
+		{"github.com/omniaura/xgo.(*File[int]).Read[string]", "github.com/omniaura/xgo", "File", true, "int", "string", "Read"},
+		{"github.com/omniaura/xgo.Watch", "github.com/omniaura/xgo", "", false, "", "", "Watch"},
+		{"github.com/omniaura/xgo.Watch[int]", "github.com/omniaura/xgo", "", false, "", "int", "Watch"},
 		{
-			"github.com/xhd2015/xgo/runtime/test/debug.GenericSt[github.com/xhd2015/xgo/runtime/test/debug.Inner].GetData",
-			"github.com/xhd2015/xgo/runtime/test/debug",
+			"github.com/omniaura/xgo/runtime/test/debug.GenericSt[github.com/omniaura/xgo/runtime/test/debug.Inner].GetData",
+			"github.com/omniaura/xgo/runtime/test/debug",
 			"GenericSt",
 			false,
-			"github.com/xhd2015/xgo/runtime/test/debug.Inner",
+			"github.com/omniaura/xgo/runtime/test/debug.Inner",
 			"",
 			"GetData",
 		},

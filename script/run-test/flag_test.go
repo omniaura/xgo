@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func TestAppendShortIfFast(t *testing.T) {
