@@ -253,7 +253,10 @@ func linkRuntimeTemplates(goroot string, overlayFS overlay.Overlay, internalRunt
 
 	// override file under GOROOT
 	// by always use the one bind with runtime ensures the trap file's
-	// API always matches the one that's expected by xgo/runtime
+	// API always matches the one that's expected by xgo/runtime.
+	// The template is written for every Go version xgo supports
+	// (goinfo.MIN_SUPPORTED_MINOR ~ MAX_SUPPORTED_MINOR), so it is not adapted
+	// per version; TestTrapTemplateAuditedForMaxGoVersion guards that.
 	content, err := readRuntimeTemplate(internalRuntimeDir, constants.RUNTIME_XGO_TRAP_TEMPLATE_PATH, overlayFS, readRuntimeGenFile)
 	if err != nil {
 		return err
