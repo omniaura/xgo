@@ -174,12 +174,6 @@ func ListPackagePaths(dir string, mod string, args []string) ([]string, error) {
 	return lines, nil
 }
 
-// ListFiles list all go files, return a list of absolute paths
-// go list -e -json ./pkg
-func ListFiles(dir string, args []string) ([]string, error) {
-	return lisFiles(dir, false, args)
-}
-
 // ListRelativeFiles list all go files, return a list of relative paths
 // go list -e -json ./pkg
 func ListRelativeFiles(dir string, args []string) ([]string, error) {

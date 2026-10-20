@@ -48,11 +48,3 @@ func indexSequence(s string, sequence []string, anchorIdx int, begin bool) (offs
 	}
 	return recordOff, anchorLen, cursor
 }
-
-func CheckSequence(output string, sequence []string) error {
-	idx, _, _ := indexSequence(output, sequence, -1, false)
-	if idx < 0 {
-		return fmt.Errorf("sequence %q missing from %q", sequence, output)
-	}
-	return nil
-}

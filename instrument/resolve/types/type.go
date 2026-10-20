@@ -181,7 +181,6 @@ func (c Unknown) String() string {
 }
 
 func (c Untyped) infoMark()           {}
-func (c Untyped) objectMark()         {}
 func (c Untyped) typeMark()           {}
 func (c Untyped) underlyingTypeMark() {}
 func (c Untyped) Underlying() UnderlyingType {

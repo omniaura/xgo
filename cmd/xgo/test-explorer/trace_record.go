@@ -39,35 +39,6 @@ type CallRecord struct {
 type traceConverter struct {
 }
 
-func (c *traceConverter) convertRoot(root *stack_model.Stack) *RootRecord {
-	if root == nil {
-		return nil
-	}
-	children := c.convertStacks(root.Children)
-	begin, _ := time.Parse(time.RFC3339, root.Begin)
-	record := &RootRecord{
-		Start: begin,
-		Root: &CallRecord{
-			Children: children,
-		},
-	}
-
-	// fill root
-	if len(children) > 0 {
-		firstChild := children[0]
-		lastChild := children[len(children)-1]
-		record.Root.Start = firstChild.Start
-		record.Root.End = lastChild.End
-
-		record.Root.Error = lastChild.Error
-		record.Root.Panic = lastChild.Panic
-		record.Root.Args = firstChild.Args
-		record.Root.Result = lastChild.Result
-	}
-
-	return record
-}
-
 func (c *traceConverter) convertStacks(stacks []*stack_model.StackEntry) []*CallRecord {
 	if stacks == nil {
 		return nil

@@ -178,29 +178,6 @@ func (c *Packages) Filter(f func(pkg *Package) bool) *Packages {
 	}
 }
 
-func readAndParseFile(fset *token.FileSet, absFilePath string, overlayFS overlay.Overlay) *File {
-	f := &File{
-		AbsPath: absFilePath,
-		Name:    filepath.Base(absFilePath),
-	}
-
-	_, content, err := overlayFS.ReadBytes(overlay.AbsFile(absFilePath))
-	if err != nil {
-		f.Error = err
-		return f
-	}
-	f.Content = content
-
-	file, err := parser.ParseFile(fset, string(absFilePath), content, parser.ParseComments|parser.SkipObjectResolution)
-	if err != nil {
-		f.Error = err
-		return f
-	}
-
-	f.Syntax = file
-	return f
-}
-
 // ParseDeferred reads and parses the files of deferred packages, in place.
 func ParseDeferred(pkgs []*Package, opts LoadOptions) {
 	var parsePkgs []*Package

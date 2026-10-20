@@ -67,12 +67,6 @@ func (c *Options) CopyReplaceDir(srcDir string, targetDir string) error {
 	return copyReplaceDir(srcDir, targetDir, c)
 }
 
-func Copy(srcDir string, targetDir string) error {
-	return copyReplaceDir(srcDir, targetDir, &Options{
-		noRm: true,
-	})
-}
-
 // Replace the target dir with files copy
 func CopyReplaceDir(srcDir string, targetDir string, useLink bool) error {
 	return copyReplaceDir(srcDir, targetDir, &Options{
@@ -400,25 +394,6 @@ func LinkFiles(srcDir string, targetDir string) error {
 		// link file
 		return os.Symlink(path, targetPath)
 	})
-}
-func LinkFile(srcFile string, dstFile string) error {
-	absFile, err := filepath.Abs(srcFile)
-	if err != nil {
-		return err
-	}
-	return os.Symlink(absFile, dstFile)
-}
-
-func LinkDirToTmp(srcDir string, tmpDir string) (dstTmpDir string, err error) {
-	subTmp, err := os.MkdirTemp(tmpDir, filepath.Base(srcDir))
-	if err != nil {
-		return "", err
-	}
-	err = LinkFiles(srcDir, subTmp)
-	if err != nil {
-		return "", err
-	}
-	return subTmp, nil
 }
 
 // LinkReplaceDir replaces targetDir with a tree mirroring srcDir in which

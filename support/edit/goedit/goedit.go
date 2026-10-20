@@ -20,13 +20,6 @@ func New(fset *token.FileSet, content string) *Edit {
 	}
 }
 
-func NewWithBytes(fset *token.FileSet, content []byte) *Edit {
-	return &Edit{
-		fset: fset,
-		buf:  edit.NewBuffer(content),
-	}
-}
-
 func (c *Edit) Fset() *token.FileSet {
 	return c.fset
 }

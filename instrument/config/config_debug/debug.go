@@ -70,19 +70,6 @@ func DebugExprStr(expr ast.Expr) string {
 	return buf.String() // Outputs: fmt.Println(x)
 }
 
-func DebugExprStrOld(expr ast.Expr) string {
-	switch expr := expr.(type) {
-	case *ast.Ident:
-		return expr.Name
-	case *ast.SelectorExpr:
-		return DebugExprStr(expr.X) + "." + expr.Sel.Name
-	case *ast.ParenExpr:
-		return "(" + DebugExprStr(expr.X) + ")"
-	case *ast.UnaryExpr:
-	}
-	return ""
-}
-
 func AfterSelectorResolve(expr ast.Expr) {
 	if DebugExprStr(expr) == "reader2222.Reader" {
 		Debugpoint()

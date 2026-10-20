@@ -4,9 +4,7 @@ package testconfig
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/xhd2015/xgo/support/goinfo"
@@ -80,24 +78,6 @@ func (c *Config) GetGoCmd() string {
 		return c.GoCmd
 	}
 	return "go"
-}
-
-// Load reads path. Missing file returns (nil, nil). Empty file returns empty Config.
-func Load(path string) (*Config, error) {
-	if path == "" {
-		return nil, nil
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	if len(strings.TrimSpace(string(data))) == 0 {
-		return &Config{}, nil
-	}
-	return Parse(data)
 }
 
 // Parse unmarshals test.config.json bytes into Config.

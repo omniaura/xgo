@@ -131,11 +131,6 @@ func splitCommand(line string) (cmd string, rest string) {
 	return
 }
 
-func parseGoto(line string) (Command, error) {
-	target := strings.TrimSpace(line[len("goto "):])
-	return parseGotoTarget(target)
-}
-
 func parseGotoTarget(target string) (Command, error) {
 	if target == "opening {" || target == "closing }" {
 		return Command{Type: CmdGoto, GotoTarget: target}, nil

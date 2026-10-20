@@ -5,6 +5,8 @@
 
 package runtime
 
+import __xgo_atomic "internal/runtime/atomic"
+
 import (
 	"unsafe"
 )
@@ -30,6 +32,10 @@ var __xgo_var_trap func(info unsafe.Pointer, varAddr interface{}, res interface{
 var __xgo_var_ptr_trap func(info unsafe.Pointer, varAddr interface{}, res interface{})
 
 func XgoTrap(info interface{}, recvPtr interface{}, args []interface{}, results []interface{}) (func(), bool) {
+	if !__xgo_can_trap() {
+		return nil, false
+	}
+
 	if __xgo_trap == nil {
 		return nil, false
 	}
@@ -37,6 +43,10 @@ func XgoTrap(info interface{}, recvPtr interface{}, args []interface{}, results 
 }
 
 func XgoTrapVar(info interface{}, varAddr interface{}, res interface{}) {
+	if !__xgo_can_trap() {
+		return
+	}
+
 	if __xgo_var_trap == nil {
 		return
 	}
@@ -44,6 +54,10 @@ func XgoTrapVar(info interface{}, varAddr interface{}, res interface{}) {
 }
 
 func XgoTrapVarPtr(info interface{}, varAddr interface{}, res interface{}) {
+	if !__xgo_can_trap() {
+		return
+	}
+
 	if __xgo_var_ptr_trap == nil {
 		return
 	}
@@ -104,7 +118,7 @@ func XgoPeekPanic() (interface{}, uintptr) {
 	if p == nil || p.goexit || p.recovered {
 		return nil, 0
 	}
-	return p.arg, p.__RETPC__
+	return p.arg, p.retpc
 }
 
 // XgoGetFullPCName returns full name
@@ -279,4 +293,70 @@ func __xgo_callback_on_create_g(curg *g, newg *g) {
 	for _, callback := range __xgo_on_create_g_callbacks {
 		callback(curg_p, newg_p)
 	}
+}
+
+func __xgo_get_pc_name_impl(pc uintptr) string {
+	return FuncForPC(pc).__xgo_no_print_name()
+}
+
+func (f *Func) __xgo_no_print_name() string {
+	if f == nil {
+		return ""
+	}
+	fn := f.raw()
+	if fn.isInlined() { // inlined version
+		fi := (*funcinl)(unsafe.Pointer(fn))
+		return fi.name
+	}
+	return funcname(f.funcInfo())
+}
+
+// __xgo_trap_skip is 1 while instrumented functions can skip calling
+// XgoTrap, and building its arguments, because nothing could intercept the
+// call. Only an xgo/runtime that turns it off again on first registration
+// sets it. It is read on every instrumented call while registrations may
+// run concurrently, hence atomic.
+var __xgo_trap_skip uint32
+
+// XgoTrapOn reports whether an instrumented function should call XgoTrap:
+// when nothing makes every function skip it, or when something was
+// registered for that function, which sets its flag.
+//
+// A nil flag instead makes the next call on this goroutine report false.
+// An instrumented function whose trap returned a post calls itself again
+// through a helper that defers post, and that nested call, the next
+// instrumented call on the goroutine, must run the body without trapping.
+func XgoTrapOn(flag *uint32) bool {
+	if !__xgo_can_trap() {
+		return false
+	}
+
+	gp := getg()
+	if flag == nil {
+		gp.__xgo_g.trapSkipNext = true
+		return false
+	}
+	if gp.__xgo_g.trapSkipNext {
+		gp.__xgo_g.trapSkipNext = false
+		return false
+	}
+	return __xgo_atomic.Load(&__xgo_trap_skip) == 0 || __xgo_atomic.Load(flag) != 0
+}
+
+func XgoSetTrapSkip(skip bool) {
+	var v uint32
+	if skip {
+		v = 1
+	}
+	__xgo_atomic.Store(&__xgo_trap_skip, v)
+}
+
+// __xgo_can_trap must run before reading trap state or invoking user code.
+// Runtime callbacks can run on g0 (even with m.curg set), on gsignal, or
+// while holding runtime locks. They cannot safely allocate, defer or block.
+//
+//go:nosplit
+func __xgo_can_trap() bool {
+	gp := getg()
+	return gp == gp.m.curg && gp.m.locks == 0
 }

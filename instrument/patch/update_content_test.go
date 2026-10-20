@@ -200,34 +200,3 @@ func TestUpdateContentNoSeparator_OutOfBoundsIndex(t *testing.T) {
 
 	UpdateContent("content", "/*<begin>*/", "/*<end>*/", []string{"content"}, 1, UpdatePosition_Before, "add")
 }
-
-// Test for comparing UpdateContent vs UpdateContentLines difference
-func TestUpdateContent_VsUpdateContentLines(t *testing.T) {
-	content := "func main() {\n\tfmt.Println(\"test\")\n}"
-	beginMark := "/*<begin>*/"
-	endMark := "/*<end>*/"
-	seq := []string{"func main"}
-	addContent := "// Added content"
-
-	// With UpdateContent (no separator)
-	resultNoSeparator := UpdateContent(content, beginMark, endMark, seq, 0, UpdatePosition_Before, addContent)
-
-	// With UpdateContentLines (newline separator)
-	resultWithSeparator := UpdateContentLines(content, beginMark, endMark, seq, 0, UpdatePosition_Before, addContent)
-
-	// Expected results — both now use empty separator
-	expectedNoSeparator := "/*<begin>*/// Added content/*<end>*/func main() {\n\tfmt.Println(\"test\")\n}"
-	expectedWithSeparator := expectedNoSeparator
-
-	// Normalize line endings for comparison
-	resultNoSeparator = strings.ReplaceAll(resultNoSeparator, "\r\n", "\n")
-	resultWithSeparator = strings.ReplaceAll(resultWithSeparator, "\r\n", "\n")
-
-	if resultNoSeparator != expectedNoSeparator {
-		t.Errorf("UpdateContent() diff: %s", assert.Diff(expectedNoSeparator, resultNoSeparator))
-	}
-
-	if resultWithSeparator != expectedWithSeparator {
-		t.Errorf("UpdateContentLines() diff: %s", assert.Diff(expectedWithSeparator, resultWithSeparator))
-	}
-}

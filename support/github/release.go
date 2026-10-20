@@ -8,10 +8,6 @@ import (
 	"github.com/xhd2015/xgo/support/httputil"
 )
 
-func GetLatestReleaseURL(repo string) string {
-	return fmt.Sprintf("https://github.com/%s/releases/latest", repo)
-}
-
 func GetLatestReleaseTag(ctx context.Context, latestURL string) (string, error) {
 	// example location:
 	//   https://github.com/xhd2015/xgo/releases/tag/v1.0.31

@@ -671,19 +671,6 @@ func addBlankImportForPackage(srcDir string, dstDir string, imports []string, fi
 	return mapping, nil
 }
 
-func exists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-func isDir(path string) bool {
-	stat, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return stat.IsDir()
-}
-
 func isFile(path string) bool {
 	stat, err := os.Stat(path)
 	if err != nil {

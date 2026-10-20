@@ -21,15 +21,6 @@ import (
 	"github.com/xhd2015/xgo/support/osinfo"
 )
 
-// the _FilePath declared at toplevel
-// serves as an item list where
-// the runtime and compiler maybe
-// affected.
-// NOTE: do not remove files, always add files,
-// these old files may exists in older version
-// so can be cleared by newer xgo
-type _FilePath = patch.FilePath
-
 // patchRuntime applies the file-based patches for goVersion to goroot.
 // the patch should be idempotent
 // the origGoroot is used to generate runtime defs, see https://github.com/xhd2015/xgo/issues/4#issuecomment-2017880791

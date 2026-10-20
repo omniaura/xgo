@@ -133,7 +133,7 @@ func TestParseGoOverlayPrefersCanonicalSource(t *testing.T) {
 	if err := os.WriteFile(file, nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	canonical := CanonicalizeAbsFile(AbsFile(file), PathOptions{})
+	canonical := evalSymlinksAbs(ResolveAbsFile(AbsFile(file), PathOptions{}))
 	alias := AbsFile(filepath.Join(filepath.Dir(file), "..", filepath.Base(filepath.Dir(file)), filepath.Base(file)))
 	parsed := ParseGoOverlay(&GoOverlay{Replace: Replace{
 		alias:     "caller.go",
@@ -170,8 +170,8 @@ func TestComposeGoOverlaysResolvesRelativePathsFromBaseDir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantSource := CanonicalizeAbsFile("subject.go", opts)
-	wantTarget := CanonicalizeAbsFile(".xgo/gen/subject.go", opts)
+	wantSource := evalSymlinksAbs(ResolveAbsFile("subject.go", opts))
+	wantTarget := evalSymlinksAbs(ResolveAbsFile(".xgo/gen/subject.go", opts))
 	if got.Replace[wantSource] != wantTarget {
 		t.Fatalf("composed mapping = %#v, want %q -> %q", got.Replace, wantSource, wantTarget)
 	}
@@ -204,7 +204,7 @@ func TestProjectOntoCallerSources(t *testing.T) {
 	}
 	opts := PathOptions{BaseDir: baseDir}
 	caller := ParseGoOverlay(&GoOverlay{Replace: Replace{"subject.go": "replacement/subject.go"}}, opts)
-	genTarget := CanonicalizeAbsFile("gen/subject.go", opts)
+	genTarget := evalSymlinksAbs(ResolveAbsFile("gen/subject.go", opts))
 	composed := &GoOverlay{Replace: Replace{
 		caller.Entries[0].SourceCanonical: genTarget,
 	}}

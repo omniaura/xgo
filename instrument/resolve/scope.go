@@ -255,18 +255,8 @@ func (c *Scope) GetDef(name string) *Define {
 	return nil
 }
 
-func (c *Scope) needDetectVarTrap() bool {
-	return c.Global.detectVarTrap
-}
-
 func (c *Scope) needDetectMock() bool {
 	return c.Global.detectMock
-}
-
-func (c *Scope) needRecordDef() bool {
-	// need to record ident def?
-	//   a:=SomeExpr()
-	return c.needDetectMock()
 }
 
 func errorUnknown(expectType string, node ast.Node) {

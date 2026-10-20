@@ -8,9 +8,6 @@ func PatchJSONPretty[T any](file string, patch func(v *T) error) error {
 	return patchJSON(file, true, patch)
 }
 
-func PatchJSON[T any](file string, patch func(v *T) error) error {
-	return patchJSON(file, true, patch)
-}
 func patchJSON[T any](file string, pretty bool, patch func(v *T) error) error {
 	return Patch(file, func(data []byte) ([]byte, error) {
 		var jsonData T
