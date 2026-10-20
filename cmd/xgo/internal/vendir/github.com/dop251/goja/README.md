@@ -10,7 +10,7 @@ performance.
 
 This project was largely inspired by [otto](https://github.com/robertkrimen/otto).
 
-Minimum required Go version is 1.16.
+The minimum required Go version is 1.26.
 
 Features
 --------
@@ -21,39 +21,9 @@ Features
  * Capable of running Babel, Typescript compiler and pretty much anything written in ES5.
  * Sourcemaps.
  * Most of ES6 functionality, still work in progress, see https://github.com/dop251/goja/milestone/1?closed=1
- 
+
 Known incompatibilities and caveats
 -----------------------------------
-
-### WeakMap
-WeakMap is implemented by embedding references to the values into the keys. This means that as long
-as the key is reachable all values associated with it in any weak maps also remain reachable and therefore
-cannot be garbage collected even if they are not otherwise referenced, even after the WeakMap is gone.
-The reference to the value is dropped either when the key is explicitly removed from the WeakMap or when the
-key becomes unreachable.
-
-To illustrate this:
-
-```javascript
-var m = new WeakMap();
-var key = {};
-var value = {/* a very large object */};
-m.set(key, value);
-value = undefined;
-m = undefined; // The value does NOT become garbage-collectable at this point
-key = undefined; // Now it does
-// m.delete(key); // This would work too
-```
-
-The reason for it is the limitation of the Go runtime. At the time of writing (version 1.15) having a finalizer
-set on an object which is part of a reference cycle makes the whole cycle non-garbage-collectable. The solution
-above is the only reasonable way I can think of without involving finalizers. This is the third attempt
-(see https://github.com/dop251/goja/issues/250 and https://github.com/dop251/goja/issues/199 for more details).
-
-Note, this does not have any effect on the application logic, but may cause a higher-than-expected memory usage.
-
-### WeakRef and FinalizationRegistry
-For the reason mentioned above implementing WeakRef and FinalizationRegistry does not seem to be possible at this stage.
 
 ### JSON
 `JSON.parse()` uses the standard Go library which operates in UTF-8. Therefore, it cannot correctly parse broken UTF-16
@@ -77,7 +47,7 @@ FAQ
 
 ### How fast is it?
 
-Although it's faster than many scripting language implementations in Go I have seen 
+Although it's faster than many scripting language implementations in Go I have seen
 (for example it's 6-7 times faster than otto on average) it is not a
 replacement for V8 or SpiderMonkey or any other general-purpose JavaScript engine.
 You can find some benchmarks [here](https://github.com/dop251/goja/issues/2).
@@ -99,13 +69,14 @@ It gives you a much better control over execution environment so can be useful f
 ### Is it goroutine-safe?
 
 No. An instance of goja.Runtime can only be used by a single goroutine
-at a time. You can create as many instances of Runtime as you like but 
+at a time. You can create as many instances of Runtime as you like but
 it's not possible to pass object values between runtimes.
 
-### Where is setTimeout()?
+### Where is setTimeout()/setInterval()?
 
-setTimeout() assumes concurrent execution of code which requires an execution
-environment, for example an event loop similar to nodejs or a browser.
+setTimeout() and setInterval() are common functions to provide concurrent execution in ECMAScript environments, but the two functions are not part of the ECMAScript standard.
+Browsers and NodeJS just happen to provide similar, but not identical, functions. The hosting application need to control the environment for concurrent execution, e.g. an event loop, and supply the functionality to script code.
+
 There is a [separate project](https://github.com/dop251/goja_nodejs) aimed at providing some NodeJS functionality,
 and it includes an event loop.
 
@@ -170,21 +141,23 @@ There are 2 approaches:
 
 - Using [AssertFunction()](https://pkg.go.dev/github.com/dop251/goja#AssertFunction):
 ```go
-vm := New()
-_, err := vm.RunString(`
+const SCRIPT = `
 function sum(a, b) {
-    return a+b;
+    return +a + b;
 }
-`)
+`
+
+vm := goja.New()
+_, err := vm.RunString(SCRIPT)
 if err != nil {
     panic(err)
 }
-sum, ok := AssertFunction(vm.Get("sum"))
+sum, ok := goja.AssertFunction(vm.Get("sum"))
 if !ok {
     panic("Not a function")
 }
 
-res, err := sum(Undefined(), vm.ToValue(40), vm.ToValue(2))
+res, err := sum(goja.Undefined(), vm.ToValue(40), vm.ToValue(2))
 if err != nil {
     panic(err)
 }
@@ -194,24 +167,24 @@ fmt.Println(res)
 - Using [Runtime.ExportTo()](https://pkg.go.dev/github.com/dop251/goja#Runtime.ExportTo):
 ```go
 const SCRIPT = `
-function f(param) {
-    return +param + 2;
+function sum(a, b) {
+    return +a + b;
 }
 `
 
-vm := New()
+vm := goja.New()
 _, err := vm.RunString(SCRIPT)
 if err != nil {
     panic(err)
 }
 
-var fn func(string) string
-err = vm.ExportTo(vm.Get("f"), &fn)
+var sum func(int, int) int
+err = vm.ExportTo(vm.Get("sum"), &sum)
 if err != nil {
     panic(err)
 }
 
-fmt.Println(fn("40")) // note, _this_ value in the function will be undefined.
+fmt.Println(sum(40, 2)) // note, _this_ value in the function will be undefined.
 // Output: 42
 ```
 
@@ -225,7 +198,7 @@ the standard JavaScript naming convention, so if you need to make your JS code l
 dealing with a 3rd party library, you can use a [FieldNameMapper](https://pkg.go.dev/github.com/dop251/goja#FieldNameMapper):
 
 ```go
-vm := New()
+vm := goja.New()
 vm.SetFieldNameMapper(TagFieldNameMapper("json", true))
 type S struct {
     Field int `json:"field"`
@@ -257,7 +230,7 @@ Any exception thrown in JavaScript is returned as an error of type *Exception. I
 by using the Value() method:
 
 ```go
-vm := New()
+vm := goja.New()
 _, err := vm.RunString(`
 
 throw("Test");
@@ -282,7 +255,7 @@ func Test() {
     panic(vm.ToValue("Error"))
 }
 
-vm = New()
+vm = goja.New()
 vm.Set("Test", Test)
 _, err := vm.RunString(`
 
@@ -313,7 +286,7 @@ func TestInterrupt(t *testing.T) {
     }
     `
 
-    vm := New()
+    vm := goja.New()
     time.AfterFunc(200 * time.Millisecond, func() {
         vm.Interrupt("halt")
     })

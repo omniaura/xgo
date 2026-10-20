@@ -92,7 +92,7 @@ func DiffCommit(dir string, ref string, compareRef string, options *DiffCommitOp
 
 			// added files
 			"echo 'added-files:'",
-			fmt.Sprintf(`git diff --diff-filter=A --name-only --ignore-submodules "$compareRef" $ref -- %s|| true`, patternArg),
+			fmt.Sprintf(`git diff --diff-filter=A --name-only --ignore-submodules "$compareRef" $ref%s|| true`, patternArg),
 			"echo -ne '\r\r\r\r\r\r'",
 
 			// untracked files
@@ -103,7 +103,7 @@ func DiffCommit(dir string, ref string, compareRef string, options *DiffCommitOp
 			// modified files
 			// add -c core.fileMode=false to ignore mode change
 			"echo 'modified-files:'",
-			fmt.Sprintf(`git -c core.fileMode=false diff --diff-filter=M --name-only --ignore-submodules "$compareRef" $ref -- %s|| true`, patternArg),
+			fmt.Sprintf(`git -c core.fileMode=false diff --diff-filter=M --name-only --ignore-submodules "$compareRef" $ref%s|| true`, patternArg),
 			"echo -ne '\r\r\r\r\r\r'",
 
 			// // renamed files
@@ -113,7 +113,7 @@ func DiffCommit(dir string, ref string, compareRef string, options *DiffCommitOp
 			// renamed files with summary
 			"echo 'renamed-files-with-summary:'",
 			//  rename src/{module_funder/id/submodule_funder_seabank/cl => module_funder_bke/id}/bcl/task/repair_clawback_task.go (64%)
-			fmt.Sprintf(`git diff --diff-filter=R --summary --ignore-submodules "$compareRef" $ref -- %s|| true`, patternArg),
+			fmt.Sprintf(`git diff --diff-filter=R --summary --ignore-submodules "$compareRef" $ref%s|| true`, patternArg),
 		}...)
 	})
 	if err != nil {

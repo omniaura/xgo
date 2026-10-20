@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: xgo
       
@@ -46,7 +46,7 @@ jobs:
           EOF
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.22'
       
@@ -57,7 +57,7 @@ jobs:
           xgo exec --reset-instrument --log-debug go version
           xgo revision
       
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: gin-gonic/gin
           path:  gin-gonic/gin
@@ -68,7 +68,7 @@ jobs:
           cd gin-gonic/gin
           xgo test -v --trap-all ./...
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: pocketbase/pocketbase
           path:  pocketbase/pocketbase
@@ -80,7 +80,7 @@ jobs:
           # Cron start/stop, rate-limit and watcher-debounce tests are timing-sensitive under xgo --trap-all.
           xgo test -v --trap-all -skip='TestRandomStringByRegex|TestCronsRun|TestCronStartStop|TestDefaultRateLimitMiddleware|TestNotifyWatcher_CollectionsUpdate' ./...
       
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: xhd2015/kuscia
           path: secretflow/kuscia
@@ -93,7 +93,7 @@ jobs:
           xgo test -v --trap-all -run 'TestK8sLogWorker|TestK8sLogManager|TestDataProxyContentToFlightStreamBinary_WriteFailed|TestFlightStreamToDataProxyContentBinary_ErrorFormat|TestBandWidth|TestLatency|TestProxyTask|TestGetDomainData|TestRequestSizeTask|TestCRDModSuccess|TestCRDModFail|TestDomainRouteMod|TestDomainRouteModFail|TestNetworkMod|TestRegisterDomain_ServerNotExists' ./pkg/agent/provider/pod ./pkg/datamesh/dataserver/io/builtin ./pkg/diagnose/app/netstat ./pkg/diagnose/mods ./pkg/gateway/controller
 
       # # this is slow
-      # - uses: actions/checkout@v4
+      # - uses: actions/checkout@v7
       #   with:
       #     repository: xhd2015/Bifrost-fork
       #     path: brokercap/Bifrost
@@ -110,7 +110,7 @@ jobs:
       #         fi
       #     fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: stakwork/sphinx-tribes
           path: stakwork/sphinx-tribes
@@ -122,7 +122,7 @@ jobs:
           # TestMultipleCronJobs waits a fixed 5s for cron runs, timing-sensitive under --trap-all.
           xgo test -v --trap-all -skip='TestMultipleCronJobs' $(go list ./...|grep -Ev 'github.com/stakwork/sphinx-tribes/db|github.com/stakwork/sphinx-tribes/handlers|github.com/stakwork/sphinx-tribes/routes|github.com/stakwork/sphinx-tribes/middlewares')
 
-      # - uses: actions/checkout@v4
+      # - uses: actions/checkout@v7
       #   with:
       #     repository: kubernetes/kubernetes
       #     path: kubernetes/kubernetes

@@ -1,14 +1,15 @@
 package goja
 
 import (
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 	"reflect"
+
+	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 )
 
 type destructKeyedSource struct {
 	r        *Runtime
 	wrapped  Value
-	usedKeys map[Value]struct{}
+	usedKeys propNameSet
 }
 
 func newDestructKeyedSource(r *Runtime, wrapped Value) *destructKeyedSource {
@@ -30,10 +31,7 @@ func (d *destructKeyedSource) w() objectImpl {
 }
 
 func (d *destructKeyedSource) recordKey(key Value) {
-	if d.usedKeys == nil {
-		d.usedKeys = make(map[Value]struct{})
-	}
-	d.usedKeys[key] = struct{}{}
+	d.usedKeys.add(key)
 }
 
 func (d *destructKeyedSource) sortLen() int {
@@ -52,7 +50,7 @@ func (d *destructKeyedSource) className() string {
 	return d.w().className()
 }
 
-func (d *destructKeyedSource) typeOf() valueString {
+func (d *destructKeyedSource) typeOf() String {
 	return d.w().typeOf()
 }
 
@@ -158,18 +156,6 @@ func (d *destructKeyedSource) deleteSym(s *Symbol, throw bool) bool {
 	return d.w().deleteSym(s, throw)
 }
 
-func (d *destructKeyedSource) toPrimitiveNumber() Value {
-	return d.w().toPrimitiveNumber()
-}
-
-func (d *destructKeyedSource) toPrimitiveString() Value {
-	return d.w().toPrimitiveString()
-}
-
-func (d *destructKeyedSource) toPrimitive() Value {
-	return d.w().toPrimitive()
-}
-
 func (d *destructKeyedSource) assertCallable() (call func(FunctionCall) Value, ok bool) {
 	return d.w().assertCallable()
 }
@@ -214,7 +200,7 @@ func (i *destructKeyedSourceIter) next() (propIterItem, iterNextFunc) {
 			return item, nil
 		}
 		i.wrapped = next
-		if _, exists := i.d.usedKeys[item.name]; !exists {
+		if !i.d.usedKeys.has(item.name) {
 			return item, i.next
 		}
 	}
@@ -280,7 +266,7 @@ func (d *destructKeyedSource) stringKeys(all bool, accum []Value) []Value {
 func (d *destructKeyedSource) filterUsedKeys(keys []Value) []Value {
 	k := 0
 	for i, key := range keys {
-		if _, exists := d.usedKeys[key]; exists {
+		if d.usedKeys.has(key) {
 			continue
 		}
 		if k != i {

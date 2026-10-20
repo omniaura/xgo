@@ -14,7 +14,7 @@ jobs:
   check-build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Prepare typo config
       run: |
@@ -24,7 +24,7 @@ jobs:
         cat /tmp/typo-config.toml
 
     - name: Check spelling of files
-      uses: crate-ci/typos@master
+      uses: crate-ci/typos@7f9d0819ca1c008ade73f4b41fa9d258d48f605b # v1.51.1
       continue-on-error: false
       with: 
         files: ./
@@ -32,7 +32,7 @@ jobs:
         isolated: true
 
     - name: Set up Go1.17
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
         go-version: '1.17'
 
@@ -46,7 +46,7 @@ jobs:
       run: go build -o /dev/null -v ./cmd/xgo
 
     - name: Set up Go1.18
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
         go-version: '1.18'
     

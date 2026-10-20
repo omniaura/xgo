@@ -5,33 +5,28 @@ import (
 	"time"
 
 	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git/fetch"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-inspect/sh"
 )
 
 type FetchOptions struct {
 	Timeout time.Duration
 	Depth   int
+	Env     map[string]string
 }
 
 func FetchAll(dir string, opts *FetchOptions) error {
 	var timeout time.Duration
 	var depth int
+	var env map[string]string
 	if opts != nil {
 		timeout = opts.Timeout
 		depth = opts.Depth
+		env = opts.Env
 	}
-	fetchArgs := fetch.FormatFetch("", &fetch.Options{
+	args := fetch.FormatFetch("", &fetch.Options{
 		AllTags: true,
 		Depth:   depth,
 	})
-
-	// "url=$(git remote get-url origin)",
-	// "if [[ $url = *'/shopee/seamoney-investment/investment-be/txn/service'* ]];then exit 0;fi",
-	_, err := RunCommandsWithOptions(dir, sh.RunBashOptions{
-		Timeout: timeout,
-	}, "git "+sh.Quotes(fetchArgs...))
-
-	return err
+	return RunGitErr(dir, &RunGitOptions{Timeout: timeout, Env: env}, args...)
 }
 
 func FetchSingle(dir string, origin string, ref string, opts *FetchOptions) error {
@@ -46,22 +41,17 @@ func FetchSingle(dir string, origin string, ref string, opts *FetchOptions) erro
 	}
 	var timeout time.Duration
 	var depth int
+	var env map[string]string
 	if opts != nil {
 		timeout = opts.Timeout
 		depth = opts.Depth
+		env = opts.Env
 	}
 
-	fetchArgs := fetch.FormatFetch(origin, &fetch.Options{
+	args := fetch.FormatFetch(origin, &fetch.Options{
 		Branch:  ref,
 		AllTags: true,
 		Depth:   depth,
 	})
-
-	// "url=$(git remote get-url origin)",
-	// "if [[ $url = *'/shopee/seamoney-investment/investment-be/txn/service'* ]];then exit 0;fi",
-	_, err := RunCommandsWithOptions(dir, sh.RunBashOptions{
-		Timeout: timeout,
-	}, "git "+sh.Quotes(fetchArgs...))
-
-	return err
+	return RunGitErr(dir, &RunGitOptions{Timeout: timeout, Env: env}, args...)
 }

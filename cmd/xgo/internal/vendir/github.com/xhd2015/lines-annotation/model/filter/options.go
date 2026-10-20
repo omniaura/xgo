@@ -8,6 +8,42 @@ type Options struct {
 
 	Include []string
 	Exclude []string
+
+	// ExcludePathSegments drops files whose path has any exact path-component
+	// matching a listed name (e.g. "vendor", "node_modules"). Callers supply
+	// the list; the library does not hardcode defaults.
+	ExcludePathSegments []string
+}
+
+// HasExcludedPathSegment reports whether file has any path component that
+// exactly equals one of the given segment names. Backslashes are normalized
+// to slashes; empty components and empty segment entries are ignored.
+func HasExcludedPathSegment(file string, segments []string) bool {
+	if len(segments) == 0 {
+		return false
+	}
+	var names []string
+	for _, s := range segments {
+		if s != "" {
+			names = append(names, s)
+		}
+	}
+	if len(names) == 0 {
+		return false
+	}
+
+	normalized := strings.ReplaceAll(file, "\\", "/")
+	for _, part := range strings.Split(normalized, "/") {
+		if part == "" {
+			continue
+		}
+		for _, name := range names {
+			if part == name {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Deprecated: use Options instead
