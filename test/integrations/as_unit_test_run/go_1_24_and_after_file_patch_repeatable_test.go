@@ -1,5 +1,3 @@
-//go:build go1.24
-
 package as_unit_test_run
 
 import (

@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,12 +12,8 @@ import (
 	"time"
 
 	"github.com/xhd2015/xgo/cmd/xgo/asset"
-	"github.com/xhd2015/xgo/instrument/build"
-	"github.com/xhd2015/xgo/instrument/constants"
 	embedutil "github.com/xhd2015/xgo/instrument/embed"
 	"github.com/xhd2015/xgo/instrument/instrument_compiler"
-	"github.com/xhd2015/xgo/instrument/instrument_go"
-	"github.com/xhd2015/xgo/instrument/instrument_runtime"
 	"github.com/xhd2015/xgo/instrument/patch"
 	"github.com/xhd2015/xgo/support/filecopy"
 	"github.com/xhd2015/xgo/support/fileutil"
@@ -35,10 +30,10 @@ import (
 // so can be cleared by newer xgo
 type _FilePath = patch.FilePath
 
-// assume go 1.20
+// patchRuntime applies the file-based patches for goVersion to goroot.
 // the patch should be idempotent
 // the origGoroot is used to generate runtime defs, see https://github.com/xhd2015/xgo/issues/4#issuecomment-2017880791
-func patchRuntime(origGoroot string, goroot string, xgoSrc string, goVersion *goinfo.GoVersion, syncWithLink bool, resetOrCoreRevisionChanged bool, allowDebugCompile bool, useFilePatches bool, skipRebuildCompilerAndGo bool) error {
+func patchRuntime(origGoroot string, goroot string, xgoSrc string, goVersion *goinfo.GoVersion, resetOrCoreRevisionChanged bool, skipRebuildCompilerAndGo bool) error {
 	if goroot == "" {
 		return fmt.Errorf("requires goroot")
 	}
@@ -49,113 +44,55 @@ func patchRuntime(origGoroot string, goroot string, xgoSrc string, goVersion *go
 		return nil
 	}
 
-	if useFilePatches && goVersion.Minor >= 24 {
-		var patchDir string
-		if isDevelopment {
-			patchDir = filepath.Join(xgoSrc, "patches", fmt.Sprintf("go%d.%d", goVersion.Major, goVersion.Minor))
-		} else {
-			var err error
-			patchDir, err = os.MkdirTemp("", "xgo-patches-*")
+	var patchDir string
+	if isDevelopment {
+		patchDir = filepath.Join(xgoSrc, "patches", fmt.Sprintf("go%d.%d", goVersion.Major, goVersion.Minor))
+	} else {
+		var err error
+		patchDir, err = os.MkdirTemp("", "xgo-patches-*")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(patchDir)
+		if err := embedutil.CopyDir(asset.PatchesFS, asset.Patches, patchDir, embedutil.CopyOptions{}); err != nil {
+			return fmt.Errorf("extract patches: %w", err)
+		}
+		patchDir = filepath.Join(patchDir, fmt.Sprintf("go%d.%d", goVersion.Major, goVersion.Minor))
+		filepath.WalkDir(patchDir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			defer os.RemoveAll(patchDir)
-			if _, err := fs.ReadDir(asset.PatchesFS, "."); err != nil {
-				return fmt.Errorf("file-based patches not embedded (binary built with Go < 1.24)")
+			if !d.IsDir() && strings.HasSuffix(path, ".go.txt") {
+				return os.Rename(path, strings.TrimSuffix(path, ".txt"))
 			}
-			if err := embedutil.CopyDir(asset.PatchesFS, asset.Patches, patchDir, embedutil.CopyOptions{}); err != nil {
-				return fmt.Errorf("extract patches: %w", err)
-			}
-			patchDir = filepath.Join(patchDir, fmt.Sprintf("go%d.%d", goVersion.Major, goVersion.Minor))
-			filepath.WalkDir(patchDir, func(path string, d os.DirEntry, err error) error {
-				if err != nil {
-					return err
-				}
-				if !d.IsDir() && strings.HasSuffix(path, ".go.txt") {
-					return os.Rename(path, strings.TrimSuffix(path, ".txt"))
-				}
-				return nil
-			})
-			xgoSrc, err = os.MkdirTemp("", "xgo-src-*")
-			if err != nil {
-				return err
-			}
-			defer os.RemoveAll(xgoSrc)
-			if err := embedutil.CopyDir(asset.CompilerPatchGenFS, asset.CompilerPatchGen, filepath.Join(xgoSrc, "patch"), embedutil.CopyOptions{}); err != nil {
-				return fmt.Errorf("extract compiler patch: %w", err)
-			}
-		}
-		if _, err := os.Stat(patchDir); os.IsNotExist(err) {
-			return fmt.Errorf("file-based patch directory not found: %s", patchDir)
-		}
-
-		extraEnv := map[string]string{
-			"XGO_SRC":            xgoSrc,
-			"INSTRUMENT_GOROOT":  goroot,
-			"ORIG_GOROOT":        origGoroot,
-			"GO_VERSION":         fmt.Sprintf("go%d.%d.%d", goVersion.Major, goVersion.Minor, goVersion.Patch),
-			"GOOS":               runtime.GOOS,
-			"GOARCH":             runtime.GOARCH,
-		}
-		var skipKinds []string
-		if skipRebuildCompilerAndGo {
-			skipKinds = []string{"rebuild-compiler", "rebuild-go"}
-		}
-		return patch.ApplyPatches(patchDir, goroot, xgoSrc, extraEnv, skipKinds, mkbuiltinHandler)
-	}
-
-	// instrument go
-	err := instrument_go.BuildInstrument(goroot, goVersion, allowDebugCompile, skipRebuildCompilerAndGo)
-	if err != nil {
-		return err
-	}
-
-	// instrument go tool cover
-	err = instrument_go.InstrumentGoToolCover(goroot, goVersion)
-	if err != nil {
-		return err
-	}
-	xgoTrapTemplateBytes, err := readRuntimeGenFile(xgoSrc, constants.RUNTIME_XGO_TRAP_TEMPLATE_PATH)
-	if err != nil {
-		return err
-	}
-	xgoTrapTemplate := string(xgoTrapTemplateBytes)
-
-	// instrument runtime
-	err = instrument_runtime.InstrumentRuntime(goroot, goVersion, xgoTrapTemplate, instrument_runtime.InstrumentRuntimeOptions{
-		Mode: instrument_runtime.InstrumentMode_ForceAndIgnoreMark,
-	})
-	if err != nil {
-		return err
-	}
-
-	err = instrument_compiler.BuildInstrument(origGoroot, goroot, goVersion, xgoSrc, resetOrCoreRevisionChanged, syncWithLink, skipRebuildCompilerAndGo)
-	if err != nil {
-		return err
-	}
-
-	if allowDebugCompile {
-		_, err = build.BuildGoToolCompileDebugBinary(goroot)
+			return nil
+		})
+		xgoSrc, err = os.MkdirTemp("", "xgo-src-*")
 		if err != nil {
 			return err
 		}
-	}
-
-	if V1_0_0 {
-		// runtime
-		err := patchRuntimeAndTesting(origGoroot, goroot, goVersion)
-		if err != nil {
-			return err
-		}
-
-		// patch compiler
-		err = patchCompilerLegacy(origGoroot, goroot, goVersion, xgoSrc, resetOrCoreRevisionChanged, syncWithLink)
-		if err != nil {
-			return err
+		defer os.RemoveAll(xgoSrc)
+		if err := embedutil.CopyDir(asset.CompilerPatchGenFS, asset.CompilerPatchGen, filepath.Join(xgoSrc, "patch"), embedutil.CopyOptions{}); err != nil {
+			return fmt.Errorf("extract compiler patch: %w", err)
 		}
 	}
+	if _, err := os.Stat(patchDir); os.IsNotExist(err) {
+		return fmt.Errorf("file-based patch directory not found: %s", patchDir)
+	}
 
-	return nil
+	extraEnv := map[string]string{
+		"XGO_SRC":           xgoSrc,
+		"INSTRUMENT_GOROOT": goroot,
+		"ORIG_GOROOT":       origGoroot,
+		"GO_VERSION":        fmt.Sprintf("go%d.%d.%d", goVersion.Major, goVersion.Minor, goVersion.Patch),
+		"GOOS":              runtime.GOOS,
+		"GOARCH":            runtime.GOARCH,
+	}
+	var skipKinds []string
+	if skipRebuildCompilerAndGo {
+		skipKinds = []string{"rebuild-compiler", "rebuild-go"}
+	}
+	return patch.ApplyPatches(patchDir, goroot, xgoSrc, extraEnv, skipKinds, mkbuiltinHandler)
 }
 
 func checkRevisionChanged(coreRevisionFile string, currentCoreRevision string) (bool, error) {

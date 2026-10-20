@@ -11,8 +11,6 @@ import (
 )
 
 var CompilerRuntimeDefFile = patch.FilePath{"src", "cmd", "compile", "internal", "typecheck", "_builtin", "runtime.go"}
-var CompilerRuntimeDefFile18 = patch.FilePath{"src", "cmd", "compile", "internal", "typecheck", "builtin", "runtime.go"}
-var CompilerRuntimeDefFile16 = patch.FilePath{"src", "cmd", "compile", "internal", "gc", "builtin", "runtime.go"}
 
 // cd src/cmd/compile/internal/typecheck && go run mkbuiltin.go
 func MkBuiltin(origGoroot string, outputGoroot string, goVersion *goinfo.GoVersion, extraDefs string) error {
@@ -40,27 +38,11 @@ func MkBuiltin(origGoroot string, outputGoroot string, goVersion *goinfo.GoVersi
 }
 
 func GetMkBuiltinDir(goroot string, goVersion *goinfo.GoVersion) string {
-	var paths []string
-	if goVersion.Major > 1 || (goVersion.Major == 1 && goVersion.Minor > 16) {
-		paths = []string{goroot, "src", "cmd", "compile", "internal", "typecheck"}
-	} else {
-		paths = []string{goroot, "src", "cmd", "compile", "internal", "gc"}
-	}
-	return filepath.Join(paths...)
+	return filepath.Join(goroot, "src", "cmd", "compile", "internal", "typecheck")
 }
 
 func PrepareRuntimeDefs(goRoot string, goVersion *goinfo.GoVersion, extraDef string) error {
-	runtimeDefFiles := []string(CompilerRuntimeDefFile)
-	if goVersion.Major == 1 && goVersion.Minor <= 19 {
-		if goVersion.Minor > 16 {
-			// in go1.19 and below, builtin has no _ prefix
-			runtimeDefFiles = []string(CompilerRuntimeDefFile18)
-		} else {
-			runtimeDefFiles = []string(CompilerRuntimeDefFile16)
-		}
-	}
-	runtimeDefFile := filepath.Join(runtimeDefFiles...)
-	fullFile := filepath.Join(goRoot, runtimeDefFile)
+	fullFile := CompilerRuntimeDefFile.JoinPrefix(goRoot)
 
 	return patch.EditFile(fullFile, func(content string) (string, error) {
 		content = patch.UpdateContent(content,

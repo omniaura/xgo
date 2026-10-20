@@ -16,10 +16,8 @@ func TestAppendTrapSkipImpl(t *testing.T) {
 		minor  int
 		atomic string
 	}{
-		{17, `import __xgo_atomic "runtime/internal/atomic"`},
-		{22, `import __xgo_atomic "runtime/internal/atomic"`},
-		{23, `import __xgo_atomic "internal/runtime/atomic"`},
 		{27, `import __xgo_atomic "internal/runtime/atomic"`},
+		{28, `import __xgo_atomic "internal/runtime/atomic"`},
 	} {
 		got, err := AppendTrapSkipImpl(&goinfo.GoVersion{Major: 1, Minor: c.minor}, tmpl)
 		if err != nil {

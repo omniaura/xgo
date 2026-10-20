@@ -2,17 +2,13 @@ package goinfo
 
 const (
 	GO_MAJOR_1    = 1
-	GO_VERSION_16 = 16 // unsupported
-	GO_VERSION_17 = 17
-	GO_VERSION_18 = 18
-	GO_VERSION_19 = 19
-	GO_VERSION_20 = 20
-	GO_VERSION_21 = 21
-	GO_VERSION_22 = 22
-	GO_VERSION_23 = 23
-	GO_VERSION_24 = 24
-	GO_VERSION_25 = 25
-	GO_VERSION_26 = 26
 	GO_VERSION_27 = 27
 	GO_VERSION_28 = 28
+)
+
+// The go1.N range xgo supports. script/drop-go-version raises
+// MIN_SUPPORTED_MINOR when retiring a Go version.
+const (
+	MIN_SUPPORTED_MINOR = 27
+	MAX_SUPPORTED_MINOR = 28
 )

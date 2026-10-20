@@ -8,13 +8,9 @@ import (
 )
 
 func TestAppendGetFuncNameImpl(t *testing.T) {
-	for minor := 17; minor <= 28; minor++ {
+	for minor := 27; minor <= 28; minor++ {
 		got := AppendGetFuncNameImpl(&goinfo.GoVersion{Major: 1, Minor: minor}, "")
-		want := RuntimeGetFuncName_Go117_120
-		if minor >= 21 {
-			want = RuntimeGetFuncName_Go121
-		}
-		if !strings.Contains(got, want) {
+		if !strings.Contains(got, RuntimeGetFuncName_Go121) {
 			t.Fatalf("go1.%d: missing function name implementation", minor)
 		}
 	}

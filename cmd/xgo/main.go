@@ -217,7 +217,6 @@ func handleBuild(cmd string, args []string) error {
 	syncXgoOnly := opts.syncXgoOnly
 	setupDev := opts.setupDev
 	buildCompiler := opts.buildCompiler
-	syncWithLink := opts.syncWithLink
 	debugTarget := opts.debugTarget
 	vscode := opts.vscode
 	mod := opts.mod
@@ -350,15 +349,6 @@ func handleBuild(cmd string, args []string) error {
 		return err
 	}
 
-	useFilePatches, warning, err := resolveUseFilePatches(opts.useFilePatches, goVersion)
-	if err != nil {
-		return err
-	}
-	if warning != "" {
-		fmt.Fprintf(os.Stderr, "%s\n", warning)
-	}
-	opts.useFilePatches = &useFilePatches
-
 	goVersionName := fmt.Sprintf("go%d.%d.%d", goVersion.Major, goVersion.Minor, goVersion.Patch)
 	logDebug("go version: %s", goVersionName)
 
@@ -403,7 +393,7 @@ func handleBuild(cmd string, args []string) error {
 			return err
 		}
 		// ~/.xgo/go-instrument/go1.21.0
-		instrumentDir = filepath.Join(xgoDir, "go-instrument"+instrumentSuffix, mappedGorootName+"_"+instrumentRevisionKey(getCoreRevision(), *opts.useFilePatches))
+		instrumentDir = filepath.Join(xgoDir, "go-instrument"+instrumentSuffix, mappedGorootName+"_"+instrumentRevisionKey(getCoreRevision(), true))
 		if opts.skipRebuildCompilerAndGo {
 			// Source-only setup must never be mistaken for a runnable toolchain.
 			instrumentDir += "_src-only"
@@ -510,7 +500,7 @@ func handleBuild(cmd string, args []string) error {
 		defer func() { sourceLease.close() }()
 		var instrumentLease *cacheLock
 		if !noSetup && !instrumented && !opts.patchGorootInPlace && !isDevelopment {
-			instrumentLease, err = prepareInstrumentDir(instrumentDir, instrumentSetupRecord(getCoreRevision(), goVersionName, *opts.useFilePatches), resetInstrument || buildCompiler, func(stage string) error {
+			instrumentLease, err = prepareInstrumentDir(instrumentDir, instrumentSetupRecord(getCoreRevision(), goVersionName, true), resetInstrument || buildCompiler, func(stage string) error {
 				// Only cold setup reads the original tree. Keep its lease
 				// through the invocation so in-place patchers cannot race it.
 				if sourceLease == nil {
@@ -524,10 +514,10 @@ func handleBuild(cmd string, args []string) error {
 					}
 				}
 				stageGoroot := filepath.Join(stage, goVersionName)
-				if err := syncGoroot(goroot, stageGoroot, filepath.Join(stage, "full-sync-record.txt"), *opts.useFilePatches && runtime.GOOS != "windows"); err != nil {
+				if err := syncGoroot(goroot, stageGoroot, filepath.Join(stage, "full-sync-record.txt"), runtime.GOOS != "windows"); err != nil {
 					return err
 				}
-				if err := patchRuntime(goroot, stageGoroot, realXgoSrc, goVersion, true, true, false, *opts.useFilePatches, opts.skipRebuildCompilerAndGo); err != nil {
+				if err := patchRuntime(goroot, stageGoroot, realXgoSrc, goVersion, true, opts.skipRebuildCompilerAndGo); err != nil {
 					return err
 				}
 				if err := os.MkdirAll(filepath.Join(stage, "pkgdata"), 0755); err != nil {
@@ -566,7 +556,7 @@ func handleBuild(cmd string, args []string) error {
 					return err
 				}
 			}
-			if err := patchRuntime(goroot, instrumentGoroot, realXgoSrc, goVersion, isDevelopment || syncWithLink || setupDev || buildCompiler, resetInstrument || buildCompiler || coreRevisionChanged || gorootErr != nil || opts.patchGorootInPlace, isDevelopment, *opts.useFilePatches, opts.skipRebuildCompilerAndGo); err != nil {
+			if err := patchRuntime(goroot, instrumentGoroot, realXgoSrc, goVersion, resetInstrument || buildCompiler || coreRevisionChanged || gorootErr != nil || opts.patchGorootInPlace, opts.skipRebuildCompilerAndGo); err != nil {
 				return err
 			}
 			if err := os.WriteFile(revisionFile, []byte(getCoreRevision()), 0644); err != nil {
@@ -741,10 +731,9 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		// sticks to old mod and modfile
 		modForLoad := mod
 		modfileForLoad := modfile
-		// In Go 1.25+, overlays cannot replace files in GOMODCACHE.
-		// Always load runtime into a local dir so xgo writes modifications
-		// there instead of creating GOMODCACHE overlays.
-		needLocalRuntime := goVersion.Minor >= 25
+		// Overlays cannot replace files in GOMODCACHE, so always load runtime
+		// into a local dir and write modifications there.
+		const needLocalRuntime = true
 		pkgPatterns := targetPatterns(cmd, remainArgs)
 		// set when instrumentUserCode should add import _ "…/runtime/trace"
 		// to the packages of the command
@@ -1001,7 +990,6 @@ xgo will try best to compile with newer xgo/runtime v%s, it's recommended to upg
 		if len(buildFlags) > 0 {
 			buildCmdArgs = append(buildCmdArgs, buildFlags...)
 		}
-		buildCmdArgs = append(buildCmdArgs, build.ExternalLinkerFlags(goVersion)...)
 		if len(progFlags) > 0 {
 			runFlagsAfterBuild = append(runFlagsAfterBuild, progFlags...)
 		}
@@ -1246,8 +1234,8 @@ func checkGoVersion(goroot string, needCheckVersion bool) (*goinfo.GoVersion, er
 	}
 	if needCheckVersion {
 		minor := goVersion.Minor
-		if goVersion.Major != 1 || (minor < 17 || minor > 28) {
-			return nil, fmt.Errorf("xgo only support go1.17 ~ go1.28, current: %s", goVersionStr)
+		if goVersion.Major != 1 || minor < goinfo.MIN_SUPPORTED_MINOR || minor > goinfo.MAX_SUPPORTED_MINOR {
+			return nil, fmt.Errorf("xgo only supports go1.%d ~ go1.%d, current: %s", goinfo.MIN_SUPPORTED_MINOR, goinfo.MAX_SUPPORTED_MINOR, goVersionStr)
 		}
 	}
 	return goVersion, nil

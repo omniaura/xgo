@@ -291,7 +291,7 @@ Added to `cmd/xgo/main.go`. When enabled for go1.24+, `patchRuntime()` calls `Ap
 ### New Go Version Workflow
 
 When Go 1.26 arrives:
-1. `cp -r patches/go1.25 patches/go1.26`
+1. `cp -r patches/go1.28 patches/go1.29`
 2. Build + test → find failures
 3. Edit individual `.xgo.patch` files to adjust selectors
 4. Run `go test ./instrument/patch/...` to verify

@@ -1,5 +1,4 @@
 //go:build unix
-// +build unix
 
 package persistent_after_build
 

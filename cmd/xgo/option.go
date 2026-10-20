@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/xhd2015/xgo/support/flag"
-	"github.com/xhd2015/xgo/support/goinfo"
 )
 
 type options struct {
@@ -58,7 +57,6 @@ type options struct {
 	syncXgoOnly   bool
 	setupDev      bool
 	buildCompiler bool
-	syncWithLink  bool
 
 	mod string
 	// recognize go flags as is
@@ -109,11 +107,6 @@ type options struct {
 	// use unified test mode
 	unified bool
 
-	// --use-file-patches
-	// use file-based .xgo.patch instead of programmatic patching
-	// nil = not set; resolved later based on go version
-	useFilePatches *bool
-
 	// --patch-goroot-in-place
 	// when set for `xgo setup`, skip syncing/copying the GOROOT
 	// and directly patch the given --with-goroot in-place.
@@ -161,7 +154,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 	var setupDev bool
 	var buildCompiler bool
 
-	var syncWithLink *bool
 	var withGoroot string
 	var dumpIR string
 	var dumpAST string
@@ -198,7 +190,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 	var goFlag bool
 	var xgoRaceSafe bool
 
-	var useFilePatches *bool
 	var patchGorootInPlace bool
 	var skipRebuildCompilerAndGo bool
 
@@ -437,11 +428,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 			buildCompiler = true
 			continue
 		}
-		if arg == "--sync-with-link" {
-			v := true
-			syncWithLink = &v
-			continue
-		}
 		if arg == "--no-build-output" {
 			noBuildOutput = true
 			continue
@@ -462,23 +448,13 @@ func parseOptions(cmd string, args []string) (*options, error) {
 			noLineDirective = true
 			continue
 		}
-		if arg == "--use-file-patches" {
-			v := true
-			useFilePatches = &v
+		// file-based patches are the only instrumentation path; the flag is
+		// still accepted so existing scripts keep working
+		if arg == "--use-file-patches" || arg == "--use-file-patches=true" {
 			continue
 		}
 		if strings.HasPrefix(arg, "--use-file-patches=") {
-			val := strings.TrimPrefix(arg, "--use-file-patches=")
-			if val == "true" || val == "" {
-				v := true
-				useFilePatches = &v
-			} else if val == "false" {
-				v := false
-				useFilePatches = &v
-			} else {
-				return nil, fmt.Errorf("--use-file-patches expects true or false, got %q", val)
-			}
-			continue
+			return nil, fmt.Errorf("%s is no longer supported: file-based patches are always used", arg)
 		}
 
 		if isDevelopment {
@@ -632,7 +608,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 		setupDev:      setupDev,
 		buildCompiler: buildCompiler,
 		// default false
-		syncWithLink: syncWithLink != nil && *syncWithLink,
 
 		mod:                             mod,
 		gcflags:                         gcflags,
@@ -656,7 +631,6 @@ func parseOptions(cmd string, args []string) (*options, error) {
 		deleteFlag:               deleteFlag,
 		goFlag:                   goFlag,
 		xgoRaceSafe:              xgoRaceSafe,
-		useFilePatches:           useFilePatches,
 		patchGorootInPlace:       patchGorootInPlace,
 		skipRebuildCompilerAndGo: skipRebuildCompilerAndGo,
 	}, nil
@@ -764,31 +738,6 @@ func parseStackTraceFlag(arg string) (string, bool) {
 		return "off", true
 	}
 	panic(fmt.Errorf("unrecognized value %s: %s, expects on|off", arg, val))
-}
-
-func resolveUseFilePatches(explicit *bool, goVersion *goinfo.GoVersion) (value bool, warning string, err error) {
-	if explicit == nil {
-		// default: go1.25+ uses file-based patches
-		if goVersion != nil && goVersion.Major == 1 && goVersion.Minor >= 25 {
-			return true, "", nil
-		}
-		return false, "", nil
-	}
-	if *explicit {
-		if goVersion == nil || !(goVersion.Major == 1 && goVersion.Minor >= 24) {
-			ver := "unknown"
-			if goVersion != nil {
-				ver = fmt.Sprintf("go%d.%d", goVersion.Major, goVersion.Minor)
-			}
-			return false, "", fmt.Errorf("--use-file-patches is only supported for go1.24+, got %s; use --use-file-patches=false to disable", ver)
-		}
-		return true, "", nil
-	}
-	// explicitly false — go1.26 is the last version that supports legacy instrument_go
-	if goVersion != nil && goVersion.Major == 1 && goVersion.Minor > 26 {
-		return false, "", fmt.Errorf("--use-file-patches=false is not supported for go%d.%d; from go1.27 onward, file-based patches are always used", goVersion.Major, goVersion.Minor)
-	}
-	return false, "", nil
 }
 
 func getPkgArgs(args []string) []string {

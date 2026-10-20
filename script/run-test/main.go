@@ -23,26 +23,26 @@ import (
 // run predefined tests for each GOROOT.
 // this simplifies xgo's compatibility test across multiple go versions.
 // specifically, `go-release` directory can be downloaded using:
-//   go run ./script/download-go go1.19.13
+//   go run ./script/download-go go1.27.2
 // if there is no any go version under `go-release`, the system GOROOT will be used.
 
 // usage:
 //
-//	go run ./script/run-test/ --include go1.19.13
-//	go run ./script/run-test/ -count=1 --include go1.19.13
-//	go run ./script/run-test/ --include go1.19.13 -run TestHelloWorld -v
-//	go run ./script/run-test/ -count=1 --include go1.17.13 --include go1.18.10 --include go1.19.13 --include go1.20.14 --include go1.21.8 --include go1.22.2
-//  go run ./script/run-test/ -cover -coverpkg github.com/xhd2015/xgo/runtime/... -coverprofile covers/cover.out --include go1.21.8
+//	go run ./script/run-test/ --include go1.27.2
+//	go run ./script/run-test/ -count=1 --include go1.27.2
+//	go run ./script/run-test/ --include go1.27.2 -run TestHelloWorld -v
+//	go run ./script/run-test/ -count=1 --include go1.27.2 --include go1.28rc1
+//  go run ./script/run-test/ -cover -coverpkg github.com/xhd2015/xgo/runtime/... -coverprofile covers/cover.out --include go1.27.2
 
 // specific test:
-//   go run ./script/run-test --include go1.18.10 --log-debug ./runtime/test/patch
+//   go run ./script/run-test --include go1.27.2 --log-debug ./runtime/test/patch
 
 // run all tests under runtime/test, but not nested go mod
-//   go run ./script/run-test --include go1.20.14 --include ./runtime/test/all
+//   go run ./script/run-test --include go1.27.2 --include ./runtime/test/all
 
 // debug:
-//   go run ./script/run-test --include go1.20.14 --debug ./runtime/test/patch      # will debug runtime
-//   go run ./script/run-test --include go1.20.14 --debug-xgo ./runtime/test/patch  # will debug instrumentation
+//   go run ./script/run-test --include go1.27.2 --debug ./runtime/test/patch      # will debug runtime
+//   go run ./script/run-test --include go1.27.2 --debug-xgo ./runtime/test/patch  # will debug instrumentation
 
 // when will cache affect?
 //   -tags dev : cache is off by default, so revision is not significant
@@ -177,7 +177,6 @@ func main() {
 	var flagRace bool
 	var flagXgoRaceSafe bool
 
-	var useFilePatches *bool
 	var flagList bool
 	var flagJSON bool
 	var noGit bool
@@ -312,18 +311,6 @@ func main() {
 			installXgo = true
 			continue
 		}
-		if arg == "--use-file-patches" {
-			useFilePatches = ptrBool(true)
-			continue
-		} else if strings.HasPrefix(arg, "--use-file-patches=") {
-			var err error
-			useFilePatches, err = parseUseFilePatchesFlag(arg[len("--use-file-patches="):])
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
-				os.Exit(1)
-			}
-			continue
-		}
 
 		if arg == "--json" {
 			flagJSON = true
@@ -366,21 +353,20 @@ func main() {
 		remainArgs = appendShortIfFast(remainArgs)
 	}
 	rf := reproduceFlags{
-		installXgo:    installXgo,
-		withSetup:     withSetup,
-		resetInstr:    resetInstrument,
-		logDebug:      logDebug,
-		debug:         debug,
-		debugXgo:      debugXgo,
-		debugGo:       debugGo,
-		debugCompile:  debugCompile,
-		tags:          tags,
-		race:          flagRace,
-		xgoRaceSafe:   flagXgoRaceSafe,
-		fast:          flagFast,
-		useFilePatches: useFilePatches,
-		setupOnly:     withInstrumentedGorootOnly,
-		remainArgs:    remainArgs,
+		installXgo:   installXgo,
+		withSetup:    withSetup,
+		resetInstr:   resetInstrument,
+		logDebug:     logDebug,
+		debug:        debug,
+		debugXgo:     debugXgo,
+		debugGo:      debugGo,
+		debugCompile: debugCompile,
+		tags:         tags,
+		race:         flagRace,
+		xgoRaceSafe:  flagXgoRaceSafe,
+		fast:         flagFast,
+		setupOnly:    withInstrumentedGorootOnly,
+		remainArgs:   remainArgs,
 	}
 	if flagList {
 		list(remainTests, flagJSON, predefinedTests)
@@ -503,7 +489,7 @@ func main() {
 	if withSetup || withInstrumentedGorootOnly {
 		instrumentedGoroots = make([]string, len(goroots))
 		for i, goroot := range goroots {
-			instrumentedGoroots[i], err = instrumentGoroot(goroot, false, useFilePatches)
+			instrumentedGoroots[i], err = instrumentGoroot(goroot, false)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "setup goroot: %s %v\n", goroot, err)
 				os.Exit(1)
@@ -572,17 +558,9 @@ func main() {
 			cmdArgs := []string{
 				"run",
 			}
-			cmdArgs = append(cmdArgs, build.ExternalLinkerFlags(goVersion)...)
 			cmdArgs = append(cmdArgs, "./cmd/xgo", "setup", "--reset-instrument", "--with-goroot", goroot)
 			if logDebug {
 				cmdArgs = append(cmdArgs, "--log-debug=stdout")
-			}
-			if useFilePatches != nil {
-				if *useFilePatches {
-					cmdArgs = append(cmdArgs, "--use-file-patches")
-				} else {
-					cmdArgs = append(cmdArgs, "--use-file-patches=false")
-				}
 			}
 			err := cmd.Run("go", cmdArgs...)
 			if err != nil {
@@ -703,7 +681,6 @@ func main() {
 				BuildOnly:       buildOnly,
 				GoBinary:        goExe,
 				DebugGo:         debugGo,
-				UseFilePatches:  useFilePatches,
 				GoVersion:       goVersion,
 				XgoDebugCompile: xgoDebugCompile,
 			}
@@ -795,25 +772,10 @@ func main() {
 	}
 }
 
-func instrumentGoroot(goroot string, logDebug bool, useFilePatches *bool) (string, error) {
-	goVersion, err := goinfo.GetGorootVersion(goroot)
-	if err != nil {
-		return "", err
-	}
-	args := []string{
-		"run",
-	}
-	args = append(args, build.ExternalLinkerFlags(goVersion)...)
-	args = append(args, "./cmd/xgo", "setup", "--with-goroot", goroot)
+func instrumentGoroot(goroot string, logDebug bool) (string, error) {
+	args := []string{"run", "./cmd/xgo", "setup", "--with-goroot", goroot}
 	if logDebug {
 		args = append(args, "--log-debug")
-	}
-	if useFilePatches != nil {
-		if *useFilePatches {
-			args = append(args, "--use-file-patches")
-		} else {
-			args = append(args, "--use-file-patches=false")
-		}
 	}
 	fmt.Printf("go %s\n", strings.Join(args, " "))
 	return cmd.Output("go", args...)
@@ -902,7 +864,6 @@ type Opts struct {
 	GoBinary       string
 	DebugXgo       bool
 	DebugGo        bool
-	UseFilePatches *bool
 
 	GoVersion *goinfo.GoVersion
 
@@ -917,9 +878,7 @@ func doRunTest(goroot string, usePlainGo bool, dir string, args []string, tests 
 	var buildOnly bool
 	var goBinary string
 	var debugGo bool
-	var useFilePatches *bool
 	var xgoDebugCompile string
-	var externalLinkerFlags []string
 	if len(opts) > 0 {
 		if len(opts) != 1 {
 			panic("only one opts is allowed")
@@ -932,9 +891,7 @@ func doRunTest(goroot string, usePlainGo bool, dir string, args []string, tests 
 		buildOnly = opt.BuildOnly
 		goBinary = opt.GoBinary
 		debugGo = opt.DebugGo
-		useFilePatches = opt.UseFilePatches
 		xgoDebugCompile = opt.XgoDebugCompile
-		externalLinkerFlags = build.ExternalLinkerFlags(opt.GoVersion)
 	}
 	goroot, err := filepath.Abs(goroot)
 	if err != nil {
@@ -946,7 +903,6 @@ func doRunTest(goroot string, usePlainGo bool, dir string, args []string, tests 
 		testArgs = []string{"test"}
 	} else if useBuiltXgo {
 		buildArgs := []string{"build"}
-		buildArgs = append(buildArgs, externalLinkerFlags...)
 		if tags != "" {
 			buildArgs = append(buildArgs, "-tags", tags)
 		}
@@ -962,16 +918,8 @@ func doRunTest(goroot string, usePlainGo bool, dir string, args []string, tests 
 			return err
 		}
 		testArgs = []string{"test"}
-		if useFilePatches != nil {
-			if *useFilePatches {
-				testArgs = append(testArgs, "--use-file-patches")
-			} else {
-				testArgs = append(testArgs, "--use-file-patches=false")
-			}
-		}
 	} else if !debugXgo {
 		testArgs = []string{"run"}
-		testArgs = append(testArgs, externalLinkerFlags...)
 
 		runTag := tags
 		if tags == "" && xgoDebugCompile != "" {
@@ -981,13 +929,6 @@ func doRunTest(goroot string, usePlainGo bool, dir string, args []string, tests 
 			testArgs = append(testArgs, "-tags", runTag)
 		}
 		testArgs = append(testArgs, "./cmd/xgo", "test")
-		if useFilePatches != nil {
-			if *useFilePatches {
-				testArgs = append(testArgs, "--use-file-patches")
-			} else {
-				testArgs = append(testArgs, "--use-file-patches=false")
-			}
-		}
 
 		if xgoDebugCompile != "" {
 			var val string
@@ -998,18 +939,10 @@ func doRunTest(goroot string, usePlainGo bool, dir string, args []string, tests 
 		}
 	} else {
 		testArgs = []string{"run"}
-		testArgs = append(testArgs, externalLinkerFlags...)
 		if tags != "" {
 			testArgs = append(testArgs, "-tags", tags)
 		}
 		testArgs = append(testArgs, "./cmd/xgo", "test")
-		if useFilePatches != nil {
-			if *useFilePatches {
-				testArgs = append(testArgs, "--use-file-patches")
-			} else {
-				testArgs = append(testArgs, "--use-file-patches=false")
-			}
-		}
 	}
 	if buildOnly {
 		testArgs = append(testArgs, "-c", "-o", "/dev/null")
@@ -1126,21 +1059,20 @@ func (c *commandError) Error() string {
 }
 
 type reproduceFlags struct {
-	installXgo    bool
-	withSetup     bool
-	resetInstr    bool
-	logDebug      bool
-	debug         bool
-	debugXgo      bool
-	debugGo       bool
-	debugCompile  string
-	tags          string
-	race          bool
-	xgoRaceSafe   bool
-	fast          bool
-	useFilePatches *bool
-	setupOnly     bool
-	remainArgs    []string
+	installXgo   bool
+	withSetup    bool
+	resetInstr   bool
+	logDebug     bool
+	debug        bool
+	debugXgo     bool
+	debugGo      bool
+	debugCompile string
+	tags         string
+	race         bool
+	xgoRaceSafe  bool
+	fast         bool
+	setupOnly    bool
+	remainArgs   []string
 }
 
 func buildReproduceCmd(goVersion *goinfo.GoVersion, testPackages []string, rf reproduceFlags) string {
@@ -1187,13 +1119,6 @@ func buildReproduceCmd(goVersion *goinfo.GoVersion, testPackages []string, rf re
 	if rf.setupOnly {
 		parts = append(parts, "--with-setup-only")
 	}
-	if rf.useFilePatches != nil {
-		if *rf.useFilePatches {
-			parts = append(parts, "--use-file-patches")
-		} else {
-			parts = append(parts, "--use-file-patches=false")
-		}
-	}
 	parts = append(parts, rf.remainArgs...)
 	parts = append(parts, testPackages...)
 	return strings.Join(parts, " ")
@@ -1219,7 +1144,6 @@ func (d *detector) found() bool {
 	return d.foundMatch
 }
 
-func ptrBool(b bool) *bool { return &b }
 
 func appendShortIfFast(remainArgs []string) []string {
 	for _, a := range remainArgs {
@@ -1228,14 +1152,4 @@ func appendShortIfFast(remainArgs []string) []string {
 		}
 	}
 	return append(remainArgs, "-short")
-}
-
-func parseUseFilePatchesFlag(val string) (*bool, error) {
-	if val == "" || val == "true" {
-		return ptrBool(true), nil
-	}
-	if val == "false" {
-		return ptrBool(false), nil
-	}
-	return nil, fmt.Errorf("unknown value for --use-file-patches: %s, expects true|false", val)
 }

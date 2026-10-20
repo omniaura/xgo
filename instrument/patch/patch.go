@@ -37,15 +37,6 @@ func EditFile(file string, callback func(content string) (string, error)) (err e
 	return fileutil.WriteFile(file, []byte(newContent))
 }
 
-// Deprecated: use AddImportAfterName instead
-func AddCodeAfterImportsLegacy(code string, beginMark string, endMark string, contents []string) string {
-	idx := indexSeq(code, []string{"import", "(", "\n"}, false)
-	if idx < 0 {
-		panic(fmt.Errorf("import not found"))
-	}
-	return insertContentLinesNoDuplicate(code, beginMark, endMark, idx, strings.Join(contents, "\n")+"\n")
-}
-
 // return start and end index of package name
 func mustFindPackageName(code string) (int, int) {
 	const PACKAGE_MARK = "package "
@@ -87,19 +78,6 @@ func isToken(c byte) bool {
 // Deprecated: use AddContentAtIndex instead
 func AddContentBefore(content string, beginMark string, endMark string, seq []string, addContent string) string {
 	return UpdateContentLines(content, beginMark, endMark, seq, 0, UpdatePosition_Before, addContent)
-}
-
-// Deprecated: use AddContentAtIndex instead
-func AddContentAfter(content string, beginMark string, endMark string, seq []string, addContent string) string {
-	return addContentAt(content, beginMark, endMark, seq, addContent, false)
-}
-
-func addContentAt(content string, beginMark string, endMark string, seq []string, addContent string, begin bool) string {
-	idx := indexSeq(content, seq, begin)
-	if idx < 0 {
-		panic(fmt.Errorf("sequence not found: %v", seq))
-	}
-	return insertContentLinesNoDuplicate(content, beginMark, endMark, idx, addContent)
 }
 
 type UpdatePosition int
@@ -153,35 +131,6 @@ func updateContent(content string, beginMark string, endMark string, seq []strin
 	return insertOrReplaceContentNoDuplicate(content, isReplace, anchorLen, beginMark, endMark, offset, patchContent, separator)
 }
 
-func ReplaceContentAfter(content string, beginMark string, endMark string, seq []string, target string, replaceContent string) string {
-	if replaceContent == "" {
-		return content
-	}
-	closuerContent := beginMark + replaceContent + endMark
-	idx := indexSeq(content, seq, false)
-	if idx < 0 {
-		panic(fmt.Errorf("sequence not found: %v", seq))
-	}
-	if strings.Contains(content, closuerContent) {
-		return content
-	}
-	content, ok := tryReplaceWithMark(content, beginMark, endMark, "", replaceContent)
-	if ok {
-		return content
-	}
-	targetIdx := strings.Index(content[idx:], target)
-	if targetIdx < 0 {
-		panic(fmt.Errorf("not found: %s", target))
-	}
-	return content[:idx+targetIdx] + closuerContent + content[idx+targetIdx+len(target):]
-}
-
-// signature example: /*<begin ident>*/ {content} /*<end ident>*/
-// insert content at index
-func insertContentLinesNoDuplicate(content string, beginMark string, endMark string, idx int, insertContent string) string {
-	return insertOrReplaceContentNoDuplicate(content, false, 0, beginMark, endMark, idx, insertContent, "")
-}
-
 func insertOrReplaceContentNoDuplicate(content string, replace bool, replaceLen int, beginMark string, endMark string, idx int, insertContent string, separator string) string {
 	if insertContent == "" {
 		return content
@@ -218,8 +167,4 @@ func tryReplaceWithMark(content string, beginMark string, endMark string, separa
 	}
 	lastIdx := endIdx + len(endMark)
 	return content[:beginIdx] + beginMark + separator + patchContent + separator + endMark + separator + content[lastIdx:], true
-}
-
-func indexSeq(s string, sequence []string, begin bool) int {
-	return strutil.IndexSequenceAt(s, sequence, begin)
 }

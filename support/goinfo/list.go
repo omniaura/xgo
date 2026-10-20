@@ -81,10 +81,7 @@ var packageJSONFields = func() string {
 
 // go list -e -json ./pkg
 func ListPackages(args []string, opts LoadPackageOptions) ([]*Package, error) {
-	jsonFlag := "-json"
-	if v := opts.GoVersion; v != nil && (v.Major > 1 || v.Major == 1 && v.Minor >= 19) {
-		jsonFlag = "-json=" + packageJSONFields
-	}
+	jsonFlag := "-json=" + packageJSONFields
 	flags := []string{"list", "-e", jsonFlag}
 	if opts.Mod != "" {
 		flags = append(flags, "-mod="+opts.Mod)

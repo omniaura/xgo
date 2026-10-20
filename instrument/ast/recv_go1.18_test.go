@@ -1,6 +1,3 @@
-//go:build go1.18
-// +build go1.18
-
 // Tests for ParseReceiverType covering generic receiver forms that require
 // Go 1.18+ AST types (*ast.IndexExpr and *ast.IndexListExpr).
 //

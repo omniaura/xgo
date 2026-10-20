@@ -25,8 +25,8 @@ type Rule struct {
 	Action     string  `json:"action"` // include,exclude or empty
 }
 
-// FileOptions is written to options-from-file.json for the instrumented compiler
-// (XGO_COMPILER_OPTIONS_FILE). Keep in sync with patch/legacy/ctxt.Options.
+// FileOptions is the merged content of --options-from-file and mock rules,
+// written to options-from-file.json and read back when instrumenting.
 type FileOptions struct {
 	FilterRules []Rule `json:"filter_rules"`
 	// MockRuleIncludeAsMainModule is additive module paths treated as main for

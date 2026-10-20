@@ -5,15 +5,6 @@ import (
 	"strings"
 )
 
-func IndexSequenceAt(s string, sequence []string, begin bool) int {
-	idx := 0
-	if !begin {
-		idx = -1
-	}
-	off, _, _ := indexSequence(s, sequence, idx, begin)
-	return off
-}
-
 // - `anchorOffset` is the offset of the `i`'s anchor, if `begin` is false, it adds the length of the anchor
 // - `anchorLen` is the length of the `i`'s anchor
 // - `endOffset` is the end offset, which is the last anchor's starting offset plus its length
