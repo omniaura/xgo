@@ -854,8 +854,6 @@ func listGoroots(dir string) ([]string, error) {
 	return dirs, nil
 }
 
-type testKind string
-
 type Opts struct {
 	Tags           string
 	IsSetupGoroot  bool
@@ -1140,10 +1138,6 @@ func (d *detector) Write(p []byte) (n int, err error) {
 	}
 	return os.Stdout.Write(p)
 }
-func (d *detector) found() bool {
-	return d.foundMatch
-}
-
 
 func appendShortIfFast(remainArgs []string) []string {
 	for _, a := range remainArgs {

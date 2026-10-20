@@ -217,16 +217,3 @@ func parseRecord(file string) (*RootExport, error) {
 	}
 	return root, nil
 }
-
-func parseStack(file string) (*stack_model.Stack, error) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-	var stack *stack_model.Stack
-	err = json.Unmarshal(data, &stack)
-	if err != nil {
-		return nil, err
-	}
-	return stack, nil
-}

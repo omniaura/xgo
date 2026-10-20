@@ -192,7 +192,7 @@ func instrumentUserCode(goroot string, projectDir string, projectRoot string, go
 			}
 			return nil, nil
 		}
-		if errors.Is(err, instrument_xgo_runtime.ErrRuntimeVersionDeprecatedV1_0_0) {
+		if errors.Is(err, instrument_xgo_runtime.ErrRuntimeVersionDeprecated) {
 			if !goFlag {
 				if triedUpgrade {
 					return nil, fmt.Errorf("xgo v%s auto upgrade failed, you can fix this by:\n  go get %s@latest", VERSION, constants.RUNTIME_MODULE)

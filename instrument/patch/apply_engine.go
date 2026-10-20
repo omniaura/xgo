@@ -15,21 +15,11 @@ type cursor struct {
 	isReplace bool // set by find_for_replace
 }
 
-// edit represents a single edit operation collected during patch application.
-type edit struct {
-	seq       int    // sequence number (incremented per positioning command)
-	offset    int    // insertion offset
-	oldEnd    int    // for replace: end offset of old content
-	newText   string // the text to insert/replace with
-	oldText   string // for replace: the original text (for marker old tag)
-	isReplace bool
-}
-
 // editGroup represents all edits at a single sequence number (cursor position).
 type editGroup struct {
 	seq       int
-	offset    int    // insertion point for insert_before
-	insertEnd int    // insertion point for insert_after
+	offset    int // insertion point for insert_before
+	insertEnd int // insertion point for insert_after
 	segments  []string
 	isReplace bool
 	oldText   string // for replace: the original text

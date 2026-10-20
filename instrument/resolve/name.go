@@ -52,10 +52,3 @@ func getFieldNames(fields *ast.FieldList) []string {
 	}
 	return names
 }
-
-func getFieldName(f *ast.Field) string {
-	if f == nil || f.Names == nil {
-		return ""
-	}
-	return f.Names[0].Name
-}

@@ -79,23 +79,12 @@ func replaceFuncInXgoTrap() error {
 	})
 }
 
-func replaceFuncInLegacyRuntimeLink() error {
-	return fileutil.UpdateFile(filepath.Join(legacyRuntimeLinkTemplatePath...), func(content []byte) (bool, []byte, error) {
-		newContent, err := replaceXgoFunc(string(content), "Xgo")
-		if err != nil {
-			return false, nil, err
-		}
-		return true, []byte(newContent), nil
-	})
-}
-
 const xgoFuncStartMarker = "// ==start xgo func=="
 const xgoFuncEndMarker = "// ==end xgo func=="
 
 var funcTemplatePath = []string{"runtime", "core", "func_template.go"}
 var funcPath = []string{"runtime", "core", "func.go"}
 var xgoTrapTemplatePath = []string{"runtime", "internal", "runtime", "xgo_trap_template.go"}
-var legacyRuntimeLinkTemplatePath = []string{"instrument", "instrument_xgo_runtime", "runtime_link_template_legacy_1_1_0.go"}
 
 func replaceXgoFunc(content string, prefix string) (string, error) {
 	cstart, cend, cTypeDefStartIdx, cLastBraceIdx, err := getFuncInfoRange(content)

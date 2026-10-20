@@ -10,7 +10,6 @@ import (
 	"github.com/xhd2015/xgo/instrument/constants"
 	"github.com/xhd2015/xgo/instrument/load"
 	"github.com/xhd2015/xgo/instrument/overlay"
-	"github.com/xhd2015/xgo/instrument/patch"
 	"github.com/xhd2015/xgo/support/goinfo"
 	"github.com/xhd2015/xgo/support/strutil"
 )
@@ -62,16 +61,15 @@ func CheckRuntimeLegacyVersion(goroot string, projectDir string, overlayFS overl
 	return true, coreVersion, nil
 }
 
-func isDeprecatedCoreVersion(coreVersion string) bool {
-	return strings.HasPrefix(coreVersion, "1.0.")
-}
+// MIN_CORE_VERSION is the oldest xgo/runtime core xgo links as is. Older
+// runtimes are swapped for the embedded one: their xgo_trap_template.go still
+// needs instantiating (go-version placeholders, appended trap-skip and
+// function name helpers, entry guards), which core 1.3.0 templates carry
+// already. Keep it at or below CORE_VERSION in cmd/xgo/version.go.
+const MIN_CORE_VERSION = "1.3.0"
 
-func GetLinkRuntimeCode(runtimeLinkTemplate string) string {
-	code, err := patch.RemoveBuildIgnore(runtimeLinkTemplate)
-	if err != nil {
-		panic(err)
-	}
-	return code
+func isDeprecatedCoreVersion(coreVersion string) bool {
+	return goinfo.CompareSemVer("v"+coreVersion, "v"+MIN_CORE_VERSION) < 0
 }
 
 func ReplaceActualXgoVersion(versionCode string, xgoVersion string, xgoRevision string, xgoNumber int) string {

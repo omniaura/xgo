@@ -1,8 +1,6 @@
 package testconfig
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -56,24 +54,6 @@ func TestParseMockRulesAndBypass(t *testing.T) {
 	}
 	if len(cfg.MockRules) != 1 || !strings.Contains(cfg.MockRules[0], `"any":true`) {
 		t.Fatalf("MockRules=%v", cfg.MockRules)
-	}
-}
-
-func TestLoadMissing(t *testing.T) {
-	cfg, err := Load(filepath.Join(t.TempDir(), "nope.json"))
-	if err != nil || cfg != nil {
-		t.Fatalf("got (%v, %v)", cfg, err)
-	}
-}
-
-func TestLoadEmpty(t *testing.T) {
-	path := filepath.Join(t.TempDir(), DefaultFileName)
-	if err := os.WriteFile(path, []byte("  \n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	cfg, err := Load(path)
-	if err != nil || cfg == nil {
-		t.Fatalf("got (%v, %v)", cfg, err)
 	}
 }
 

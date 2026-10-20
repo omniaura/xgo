@@ -17,8 +17,7 @@ const (
 
 // legacy
 const (
-	// Deprecated: we can remove once xgo/runtime v1.1.0 no longer used
-	RUNTIME_LEGACY_CORE_INFO_PKG = "github.com/xhd2015/xgo/runtime/core/info"
+// Deprecated: we can remove once xgo/runtime v1.1.0 no longer used
 )
 
 const (

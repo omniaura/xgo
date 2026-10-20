@@ -604,7 +604,6 @@ func consumeTestEvent(r io.Reader, rootItemPath []string, builder func(line []by
 
 type jsonTestEventBuilder struct {
 	pathPrefix   []string
-	absDir       string
 	dirPkgPath   string
 	testResolver *testResolver
 

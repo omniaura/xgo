@@ -10,11 +10,6 @@ import (
 	"github.com/xhd2015/xgo/support/cmd"
 )
 
-func FindGoModDir(dir string) (string, error) {
-	_, dir, err := FindGoModDirSubPath(dir)
-	return dir, err
-}
-
 // FindGoModDirSubPath find go.mod by traversing dir bottom up,
 // upon finding a go.mod file, it returns the corresponding
 // sub path and root dir

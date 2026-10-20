@@ -148,13 +148,6 @@ func ResolveAbsFile(file AbsFile, opts PathOptions) AbsFile {
 	return AbsFile(filepath.ToSlash(filepath.Clean(path)))
 }
 
-// CanonicalizeAbsFile resolves and symlink-canonicalizes a single path.
-// Prefer ParseGoOverlay when normalizing a full overlay so each path is
-// resolved only once.
-func CanonicalizeAbsFile(file AbsFile, opts PathOptions) AbsFile {
-	return evalSymlinksAbs(ResolveAbsFile(file, opts))
-}
-
 func evalSymlinksAbs(file AbsFile) AbsFile {
 	path := filepath.FromSlash(string(file))
 	if resolved, err := evalSymlinks(path); err == nil {

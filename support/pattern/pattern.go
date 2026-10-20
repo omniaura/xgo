@@ -43,15 +43,6 @@ type element struct {
 
 type elements []element
 
-func (c *Pattern) MatchPrefix(path string) bool {
-	return matchSegsPrefix(c.exprs, splitPath(path))
-}
-
-// match exact
-func (c *Pattern) Match(path string) bool {
-	return matchSegsFull(c.exprs, splitPath(path))
-}
-
 func (c *Pattern) matchPrefixPaths(paths []string) bool {
 	return matchSegsPrefix(c.exprs, paths)
 }
@@ -61,19 +52,6 @@ func (c Patterns) MatchAnyPrefix(path string) bool {
 	return matchAnyPatterns(c, paths)
 }
 
-func (c Patterns) MatchAny(path string) bool {
-	paths := splitPath(path)
-	for _, pattern := range c {
-		if matchSegsFull(pattern.exprs, paths) {
-			return true
-		}
-	}
-	return false
-}
-
-func (c Patterns) matchAnyPrefixPaths(paths []string) bool {
-	return matchAnyPatterns(c, paths)
-}
 func matchAnyPatterns(patterns []*Pattern, paths []string) bool {
 	for _, pattern := range patterns {
 		if pattern.matchPrefixPaths(paths) {
@@ -133,10 +111,6 @@ func splitPath(path string) []string {
 
 func matchSegsPrefix(exprs []expr, segments []string) bool {
 	return doMatch(exprs, segments, true)
-}
-
-func matchSegsFull(exprs []expr, segments []string) bool {
-	return doMatch(exprs, segments, false)
 }
 
 // f(L,j,segs,i) = if L[j] double star: f(L,j,segs,i+1) or f(L,j+1,segs,i); else if L[j] matches segs[i],f(L,j+1,segs,i+1)

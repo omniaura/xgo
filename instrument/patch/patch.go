@@ -3,7 +3,6 @@ package patch
 import (
 	"fmt"
 	"strings"
-	"unicode"
 
 	"github.com/xhd2015/xgo/support/fileutil"
 	"github.com/xhd2015/xgo/support/strutil"
@@ -37,49 +36,6 @@ func EditFile(file string, callback func(content string) (string, error)) (err e
 	return fileutil.WriteFile(file, []byte(newContent))
 }
 
-// return start and end index of package name
-func mustFindPackageName(code string) (int, int) {
-	const PACKAGE_MARK = "package "
-	pkgIdx := strings.Index(code, PACKAGE_MARK)
-	if pkgIdx < 0 {
-		panic(fmt.Errorf("package not found"))
-	}
-	base := pkgIdx + len(PACKAGE_MARK)
-
-	// until next non-space
-	n := len(code)
-	nameStart := -1
-	for i := base; i < n; i++ {
-		if code[i] != ' ' && code[i] != '\t' {
-			nameStart = i
-			break
-		}
-	}
-	if nameStart < 0 {
-		panic(fmt.Errorf("package name not found"))
-	}
-	if !isToken(code[nameStart]) {
-		panic(fmt.Errorf("package not expected symbol: %q", code[nameStart]))
-	}
-	nameEnd := n
-	for i := nameStart + 1; i < n; i++ {
-		if !isToken(code[i]) {
-			nameEnd = i
-			break
-		}
-	}
-	return nameStart, nameEnd
-}
-
-func isToken(c byte) bool {
-	return c == '_' || unicode.IsLetter(rune(c)) || unicode.IsDigit(rune(c))
-}
-
-// Deprecated: use AddContentAtIndex instead
-func AddContentBefore(content string, beginMark string, endMark string, seq []string, addContent string) string {
-	return UpdateContentLines(content, beginMark, endMark, seq, 0, UpdatePosition_Before, addContent)
-}
-
 type UpdatePosition int
 
 const (
@@ -87,12 +43,6 @@ const (
 	UpdatePosition_Before  UpdatePosition = 1
 	UpdatePosition_Replace UpdatePosition = 2
 )
-
-// UpdateContentLines add content before or after the `i`'s anchor in `seq`
-// two lines will be automatically added after `beginMark`, and before `endMark`, so you don't need to include a line in `addContent`
-func UpdateContentLines(content string, beginMark string, endMark string, seq []string, i int, position UpdatePosition, addContent string) string {
-	return updateContent(content, beginMark, endMark, seq, i, position, addContent, "")
-}
 
 func UpdateContent(content string, beginMark string, endMark string, seq []string, i int, position UpdatePosition, addContent string) string {
 	return updateContent(content, beginMark, endMark, seq, i, position, addContent, "")

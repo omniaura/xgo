@@ -1,4 +1,0 @@
-package main
-
-//prepend <embed> import _ "embed"
-import "fmt"

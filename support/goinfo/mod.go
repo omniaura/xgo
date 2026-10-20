@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/osinfo"
 	"github.com/xhd2015/xgo/support/strutil"
 )
 
@@ -30,36 +29,6 @@ func ResolveMainModule(dir string) (subPaths []string, mainModule string, err er
 	}
 
 	return subPaths, modPath, nil
-}
-
-func ResolveModulePkgPath(dir string) (mainModPath string, pkgPath string, err error) {
-	subPaths, mainModule, err := ResolveMainModule(dir)
-	if err != nil {
-		return "", "", err
-	}
-	if len(subPaths) == 0 {
-		return mainModule, mainModule, nil
-	}
-	return mainModule, mainModule + "/" + strings.Join(subPaths, "/"), nil
-}
-
-func isRelative(arg string) bool {
-	if arg == "" {
-		// pwd
-		return true
-	}
-	n := len(arg)
-	if arg[0] != '.' {
-		return false
-	}
-	if n == 1 || arg[1] == '/' || (osinfo.IS_WINDOWS && arg[1] == '\\') {
-		// . ./ .\
-		return true
-	}
-	if arg[1] != '.' {
-		return false
-	}
-	return n == 2 || arg[2] == '/' || (osinfo.IS_WINDOWS && arg[2] == '\\')
 }
 
 func findGoMod(dir string) (file string, subPaths []string, err error) {

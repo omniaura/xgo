@@ -42,12 +42,3 @@ func doMerge(lineByPrefix map[string]*CovLine, dst []*CovLine, src []*CovLine) [
 	}
 	return dst
 }
-
-func findByPrefix(linesA []*CovLine, prefix string) int {
-	for i := 0; i < len(linesA); i++ {
-		if linesA[i].Prefix == prefix {
-			return i
-		}
-	}
-	return -1
-}

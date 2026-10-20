@@ -43,10 +43,6 @@ func Debug() *CmdBuilder {
 		debug: true,
 	}
 }
-func IgnoreError(b ...bool) *CmdBuilder {
-	c := &CmdBuilder{}
-	return c.IgnoreError(b...)
-}
 
 func New() *CmdBuilder {
 	return &CmdBuilder{}
@@ -73,10 +69,6 @@ func (c *CmdBuilder) Dir(dir string) *CmdBuilder {
 	c.dir = dir
 	return c
 }
-func (c *CmdBuilder) Stdin(stdin io.Reader) *CmdBuilder {
-	c.stdin = stdin
-	return c
-}
 
 func (c *CmdBuilder) Stdout(stdout io.Writer) *CmdBuilder {
 	c.stdout = stdout
@@ -90,15 +82,6 @@ func (c *CmdBuilder) Stderr(stderr io.Writer) *CmdBuilder {
 
 func (c *CmdBuilder) Debug() *CmdBuilder {
 	c.debug = true
-	return c
-}
-
-func (c *CmdBuilder) IgnoreError(b ...bool) *CmdBuilder {
-	ignore := true
-	if len(b) > 0 {
-		ignore = b[0]
-	}
-	c.ignoreError = ignore
 	return c
 }
 

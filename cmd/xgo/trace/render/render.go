@@ -61,14 +61,6 @@ func readStacksFromReader(reader io.Reader, force bool) ([]*stack_model.Stack, b
 	return stacks, true, nil
 }
 
-func RenderFile(file string, w io.Writer) error {
-	stacks, _, err := readStacks(file, true)
-	if err != nil {
-		return err
-	}
-	return RenderStacks(stacks, file, w)
-}
-
 func RenderStacks(stacks []*stack_model.Stack, file string, w io.Writer) (err error) {
 	defer func() {
 		if e := recover(); e != nil {

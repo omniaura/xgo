@@ -1,6 +1,0 @@
-package main
-
-func greet(s string) string {
-    //replace <hello> return "patched " +s
-	return "hello " + s
-}
