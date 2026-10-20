@@ -37,17 +37,20 @@ func ListFilePatterns(dir string, ref string, patterns []string) ([]string, erro
 // extraFlags: --diff-filter=A
 func diffFiles(dir string, ref string, compareRef string, extraFlags []string, patterns []string) (string, error) {
 	if ref == "" {
-		return "", fmt.Errorf("requires ref")
+		return "", fmt.Errorf("requries ref")
 	}
 	if compareRef == "" {
-		return "", fmt.Errorf("requires compareRef")
+		return "", fmt.Errorf("requries compareRef")
 	}
 
 	// git diff --diff-filter=A --name-only --ignore-submodules "$compareRef" "$ref" -- ${patterns} || true
 	// --relative: always respect current dir. without this, when dir is a sub dir from toplevle, diff still returns full path
 	args := []string{"-c", "core.fileMode=false", "diff", "--relative"}
 	args = append(args, extraFlags...)
-	args = append(args, "--name-only", "--ignore-submodules", compareRef)
+	if !hasSummaryFlag(extraFlags) {
+		args = append(args, "--name-only")
+	}
+	args = append(args, "--ignore-submodules", compareRef)
 	if ref != COMMIT_WORKING {
 		args = append(args, ref)
 	}
@@ -66,4 +69,13 @@ func diffFiles(dir string, ref string, compareRef string, extraFlags []string, p
 		return "", err
 	}
 	return output, nil
+}
+
+func hasSummaryFlag(flags []string) bool {
+	for _, f := range flags {
+		if f == "--summary" {
+			return true
+		}
+	}
+	return false
 }

@@ -1,6 +1,9 @@
 package goja
 
 import (
+	"math/big"
+	"strings"
+
 	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ast"
 	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
 	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
@@ -12,7 +15,7 @@ type compiledExpr interface {
 	emitSetter(valueExpr compiledExpr, putOnStack bool)
 	emitRef()
 	emitUnary(prepare, body func(), postfix, putOnStack bool)
-	deleteExpr() compiledExpr
+	emitDelete(putOnStack bool)
 	constant() bool
 	addSrcMap()
 }
@@ -77,32 +80,6 @@ type compiledArrayAssignmentPattern struct {
 	expr *ast.ArrayPattern
 }
 
-type deleteGlobalExpr struct {
-	baseCompiledExpr
-	name unistring.String
-}
-
-type deleteVarExpr struct {
-	baseCompiledExpr
-	name unistring.String
-}
-
-type deletePropExpr struct {
-	baseCompiledExpr
-	left compiledExpr
-	name unistring.String
-}
-
-type deleteElemExpr struct {
-	baseCompiledExpr
-	left, member compiledExpr
-}
-
-type constantExpr struct {
-	baseCompiledExpr
-	val Value
-}
-
 type baseCompiledExpr struct {
 	c      *compiler
 	offset int
@@ -116,6 +93,12 @@ type compiledIdentifierExpr struct {
 type compiledAwaitExpression struct {
 	baseCompiledExpr
 	arg compiledExpr
+}
+
+type compiledYieldExpression struct {
+	baseCompiledExpr
+	arg      compiledExpr
+	delegate bool
 }
 
 type funcType uint8
@@ -142,7 +125,8 @@ type compiledFunctionLiteral struct {
 	homeObjOffset   uint32
 	typ             funcType
 	isExpr          bool
-	isAsync         bool
+
+	isAsync, isGenerator bool
 }
 
 type compiledBracketExpr struct {
@@ -204,11 +188,6 @@ type compiledEnumGetExpr struct {
 	baseCompiledExpr
 }
 
-type defaultDeleteExpr struct {
-	baseCompiledExpr
-	expr compiledExpr
-}
-
 type compiledSpreadCallArgument struct {
 	baseCompiledExpr
 	expr compiledExpr
@@ -222,13 +201,6 @@ type compiledOptionalChain struct {
 type compiledOptional struct {
 	baseCompiledExpr
 	expr compiledExpr
-}
-
-func (e *defaultDeleteExpr) emitGetter(putOnStack bool) {
-	e.expr.emitGetter(false)
-	if putOnStack {
-		e.c.emit(loadVal(e.c.p.defineLiteralValue(valueTrue)))
-	}
 }
 
 func (c *compiler) compileExpression(v ast.Expression) compiledExpr {
@@ -315,6 +287,13 @@ func (c *compiler) compileExpression(v ast.Expression) compiledExpr {
 		}
 		r.init(c, v.Await)
 		return r
+	case *ast.YieldExpression:
+		r := &compiledYieldExpression{
+			arg:      c.compileExpression(v.Argument),
+			delegate: v.Delegate,
+		}
+		r.init(c, v.Yield)
+		return r
 	default:
 		c.assert(false, int(v.Idx0())-1, "Unknown expression type: %T", v)
 		panic("unreachable")
@@ -338,12 +317,11 @@ func (e *baseCompiledExpr) emitRef() {
 	e.c.assert(false, e.offset, "Cannot emit reference for this type of expression")
 }
 
-func (e *baseCompiledExpr) deleteExpr() compiledExpr {
-	r := &constantExpr{
-		val: valueTrue,
+func (e *baseCompiledExpr) emitDelete(putOnStack bool) {
+	if putOnStack {
+		e.addSrcMap()
+		e.c.emitLiteralValue(valueTrue)
 	}
-	r.init(e.c, file.Idx(e.offset+1))
-	return r
 }
 
 func (e *baseCompiledExpr) emitUnary(func(), func(), bool, bool) {
@@ -353,13 +331,6 @@ func (e *baseCompiledExpr) emitUnary(func(), func(), bool, bool) {
 func (e *baseCompiledExpr) addSrcMap() {
 	if e.offset >= 0 {
 		e.c.p.addSrcMap(e.offset)
-	}
-}
-
-func (e *constantExpr) emitGetter(putOnStack bool) {
-	if putOnStack {
-		e.addSrcMap()
-		e.c.emit(loadVal(e.c.p.defineLiteralValue(e.val)))
 	}
 }
 
@@ -513,33 +484,34 @@ func (e *compiledIdentifierExpr) emitUnary(prepare, body func(), postfix, putOnS
 	}
 }
 
-func (e *compiledIdentifierExpr) deleteExpr() compiledExpr {
+func (e *compiledIdentifierExpr) emitDelete(putOnStack bool) {
 	if e.c.scope.strict {
 		e.c.throwSyntaxError(e.offset, "Delete of an unqualified identifier in strict mode")
 		panic("Unreachable")
 	}
 	if b, noDynamics := e.c.scope.lookupName(e.name); noDynamics {
 		if b == nil {
-			r := &deleteGlobalExpr{
-				name: e.name,
+			e.addSrcMap()
+			e.c.emit(deleteGlobal(e.name))
+			if !putOnStack {
+				e.c.emit(pop)
 			}
-			r.init(e.c, file.Idx(0))
-			return r
+			return
 		}
 	} else {
 		if b == nil {
-			r := &deleteVarExpr{
-				name: e.name,
+			e.addSrcMap()
+			e.c.emit(deleteVar(e.name))
+			if !putOnStack {
+				e.c.emit(pop)
 			}
-			r.init(e.c, file.Idx(e.offset+1))
-			return r
+			return
 		}
 	}
-	r := &compiledLiteral{
-		val: valueFalse,
+	if putOnStack {
+		e.addSrcMap()
+		e.c.emitLiteralValue(valueFalse)
 	}
-	r.init(e.c, file.Idx(e.offset+1))
-	return r
 }
 
 type compiledSuperDotExpr struct {
@@ -631,8 +603,13 @@ func (e *compiledSuperDotExpr) emitRef() {
 	}
 }
 
-func (e *compiledSuperDotExpr) deleteExpr() compiledExpr {
-	return e.c.superDeleteError(e.offset)
+func (c *compiler) emitSuperReferenceError() {
+	c.emit(throwConst{referenceError("Unsupported reference to 'super'")})
+}
+
+func (e *compiledSuperDotExpr) emitDelete(_ bool) {
+	e.addSrcMap()
+	e.c.emitSuperReferenceError()
 }
 
 type compiledDotExpr struct {
@@ -767,9 +744,8 @@ func (e *compiledPrivateDotExpr) emitUnary(prepare, body func(), postfix, putOnS
 	}
 }
 
-func (e *compiledPrivateDotExpr) deleteExpr() compiledExpr {
+func (e *compiledPrivateDotExpr) emitDelete(_ bool) {
 	e.c.throwSyntaxError(e.offset, "Private fields can not be deleted")
-	panic("unreachable")
 }
 
 func (e *compiledPrivateDotExpr) emitRef() {
@@ -877,20 +853,15 @@ func (e *compiledSuperBracketExpr) emitRef() {
 	}
 }
 
-func (c *compiler) superDeleteError(offset int) compiledExpr {
-	return c.compileEmitterExpr(func() {
-		c.emit(throwConst{referenceError("Unsupported reference to 'super'")})
-	}, file.Idx(offset+1))
-}
-
-func (e *compiledSuperBracketExpr) deleteExpr() compiledExpr {
-	return e.c.superDeleteError(e.offset)
+func (e *compiledSuperBracketExpr) emitDelete(_ bool) {
+	e.addSrcMap()
+	e.c.emitSuperReferenceError()
 }
 
 func (c *compiler) checkConstantString(expr compiledExpr) (unistring.String, bool) {
 	if expr.constant() {
 		if val, ex := c.evalConst(expr); ex == nil {
-			if s, ok := val.(valueString); ok {
+			if s, ok := val.(String); ok {
 				return s.string(), true
 			}
 		}
@@ -957,6 +928,7 @@ func (e *compiledDotExpr) emitRef() {
 func (e *compiledDotExpr) emitSetter(valueExpr compiledExpr, putOnStack bool) {
 	e.left.emitGetter(true)
 	valueExpr.emitGetter(true)
+	e.addSrcMap()
 	if e.c.scope.strict {
 		if putOnStack {
 			e.c.emit(setPropStrict(e.name))
@@ -1019,13 +991,17 @@ func (e *compiledDotExpr) emitUnary(prepare, body func(), postfix, putOnStack bo
 	}
 }
 
-func (e *compiledDotExpr) deleteExpr() compiledExpr {
-	r := &deletePropExpr{
-		left: e.left,
-		name: e.name,
+func (e *compiledDotExpr) emitDelete(putOnStack bool) {
+	e.left.emitGetter(true)
+	e.addSrcMap()
+	if e.c.scope.strict {
+		e.c.emit(deletePropStrict(e.name))
+	} else {
+		e.c.emit(deleteProp(e.name))
 	}
-	r.init(e.c, file.Idx(e.offset)+1)
-	return r
+	if !putOnStack {
+		e.c.emit(pop)
+	}
 }
 
 func (e *compiledBracketExpr) emitGetter(putOnStack bool) {
@@ -1115,16 +1091,7 @@ func (e *compiledBracketExpr) emitUnary(prepare, body func(), postfix, putOnStac
 	}
 }
 
-func (e *compiledBracketExpr) deleteExpr() compiledExpr {
-	r := &deleteElemExpr{
-		left:   e.left,
-		member: e.member,
-	}
-	r.init(e.c, file.Idx(e.offset)+1)
-	return r
-}
-
-func (e *deleteElemExpr) emitGetter(putOnStack bool) {
+func (e *compiledBracketExpr) emitDelete(putOnStack bool) {
 	e.left.emitGetter(true)
 	e.member.emitGetter(true)
 	e.addSrcMap()
@@ -1133,42 +1100,6 @@ func (e *deleteElemExpr) emitGetter(putOnStack bool) {
 	} else {
 		e.c.emit(deleteElem)
 	}
-	if !putOnStack {
-		e.c.emit(pop)
-	}
-}
-
-func (e *deletePropExpr) emitGetter(putOnStack bool) {
-	e.left.emitGetter(true)
-	e.addSrcMap()
-	if e.c.scope.strict {
-		e.c.emit(deletePropStrict(e.name))
-	} else {
-		e.c.emit(deleteProp(e.name))
-	}
-	if !putOnStack {
-		e.c.emit(pop)
-	}
-}
-
-func (e *deleteVarExpr) emitGetter(putOnStack bool) {
-	/*if e.c.scope.strict {
-		e.c.throwSyntaxError(e.offset, "Delete of an unqualified identifier in strict mode")
-		return
-	}*/
-	e.c.emit(deleteVar(e.name))
-	if !putOnStack {
-		e.c.emit(pop)
-	}
-}
-
-func (e *deleteGlobalExpr) emitGetter(putOnStack bool) {
-	/*if e.c.scope.strict {
-		e.c.throwSyntaxError(e.offset, "Delete of an unqualified identifier in strict mode")
-		return
-	}*/
-
-	e.c.emit(deleteGlobal(e.name))
 	if !putOnStack {
 		e.c.emit(pop)
 	}
@@ -1238,6 +1169,44 @@ func (e *compiledAssignExpr) emitGetter(putOnStack bool) {
 			e.right.emitGetter(true)
 			e.c.emit(shr)
 		}, false, putOnStack)
+	case token.LOGICAL_AND, token.LOGICAL_OR, token.COALESCE:
+		e.left.emitRef()
+		e.c.emit(getValue)
+		mark := len(e.c.p.code)
+		e.c.emit(nil)
+		if id, ok := e.left.(*compiledIdentifierExpr); ok {
+			e.c.emitNamedOrConst(e.right, id.name)
+		} else {
+			e.right.emitGetter(true)
+		}
+		if putOnStack {
+			e.c.emit(putValue)
+		} else {
+			e.c.emit(putValueP)
+		}
+		e.c.emit(jump(2))
+		offset := len(e.c.p.code) - mark
+		switch e.operator {
+		case token.LOGICAL_AND:
+			if putOnStack {
+				e.c.p.code[mark] = jne(offset)
+			} else {
+				e.c.p.code[mark] = jneP(offset)
+			}
+		case token.LOGICAL_OR:
+			if putOnStack {
+				e.c.p.code[mark] = jeq(offset)
+			} else {
+				e.c.p.code[mark] = jeqP(offset)
+			}
+		case token.COALESCE:
+			if putOnStack {
+				e.c.p.code[mark] = jcoalesc(offset)
+			} else {
+				e.c.p.code[mark] = jcoalescP(offset)
+			}
+		}
+		e.c.emit(popRef)
 	default:
 		e.c.assert(false, e.offset, "Unknown assign operator: %s", e.operator.String())
 		panic("unreachable")
@@ -1246,7 +1215,7 @@ func (e *compiledAssignExpr) emitGetter(putOnStack bool) {
 
 func (e *compiledLiteral) emitGetter(putOnStack bool) {
 	if putOnStack {
-		e.c.emit(loadVal(e.c.p.defineLiteralValue(e.val)))
+		e.c.emitLiteralValue(e.val)
 	}
 }
 
@@ -1257,15 +1226,15 @@ func (e *compiledLiteral) constant() bool {
 func (e *compiledTemplateLiteral) emitGetter(putOnStack bool) {
 	if e.tag == nil {
 		if len(e.elements) == 0 {
-			e.c.emit(loadVal(e.c.p.defineLiteralValue(stringEmpty)))
+			e.c.emitLiteralString(stringEmpty)
 		} else {
 			tail := e.elements[len(e.elements)-1].Parsed
 			if len(e.elements) == 1 {
-				e.c.emit(loadVal(e.c.p.defineLiteralValue(stringValueFromRaw(tail))))
+				e.c.emitLiteralString(stringValueFromRaw(tail))
 			} else {
 				stringCount := 0
 				if head := e.elements[0].Parsed; head != "" {
-					e.c.emit(loadVal(e.c.p.defineLiteralValue(stringValueFromRaw(head))))
+					e.c.emitLiteralString(stringValueFromRaw(head))
 					stringCount++
 				}
 				e.expressions[0].emitGetter(true)
@@ -1273,7 +1242,7 @@ func (e *compiledTemplateLiteral) emitGetter(putOnStack bool) {
 				stringCount++
 				for i := 1; i < len(e.elements)-1; i++ {
 					if elt := e.elements[i].Parsed; elt != "" {
-						e.c.emit(loadVal(e.c.p.defineLiteralValue(stringValueFromRaw(elt))))
+						e.c.emitLiteralString(stringValueFromRaw(elt))
 						stringCount++
 					}
 					e.expressions[i].emitGetter(true)
@@ -1281,7 +1250,7 @@ func (e *compiledTemplateLiteral) emitGetter(putOnStack bool) {
 					stringCount++
 				}
 				if tail != "" {
-					e.c.emit(loadVal(e.c.p.defineLiteralValue(stringValueFromRaw(tail))))
+					e.c.emitLiteralString(stringValueFromRaw(tail))
 					stringCount++
 				}
 				e.c.emit(concatStrings(stringCount))
@@ -1358,8 +1327,9 @@ func (e *compiledFunctionLiteral) compile() (prg *Program, name unistring.String
 	savedPrg := e.c.p
 	preambleLen := 8 // enter, boxThis, loadStack(0), initThis, createArgs, set, loadCallee, init
 	e.c.p = &Program{
-		src:  e.c.p.src,
-		code: e.c.newCode(preambleLen, 16),
+		src:    e.c.p.src,
+		code:   e.c.newCode(preambleLen, 16),
+		srcMap: []srcMapItem{{srcPos: e.offset}},
 	}
 	e.c.newScope()
 	s := e.c.scope
@@ -1410,7 +1380,7 @@ func (e *compiledFunctionLiteral) compile() (prg *Program, name unistring.String
 			b.isArg = true
 			hasPatterns = true
 		default:
-			e.c.throwSyntaxError(int(item.Idx0())-1, "Unsupported BindingElement type: %T", item)
+			e.c.throwSyntaxErrorf(int(item.Idx0())-1, "Unsupported BindingElement type: %T", item)
 			return
 		}
 		if item.Initializer != nil {
@@ -1565,6 +1535,9 @@ func (e *compiledFunctionLiteral) compile() (prg *Program, name unistring.String
 	}
 
 	e.c.compileFunctions(funcs)
+	if e.isGenerator {
+		e.c.emit(yieldEmpty)
+	}
 	e.c.compileStatements(body, false)
 
 	var last ast.Statement
@@ -1626,6 +1599,7 @@ func (e *compiledFunctionLiteral) compile() (prg *Program, name unistring.String
 		}
 	}
 
+	needInitThis := false
 	if thisBinding != nil {
 		if !s.isDynamic() && thisBinding.useCount() == 0 {
 			s.deleteBinding(thisBinding)
@@ -1634,13 +1608,15 @@ func (e *compiledFunctionLiteral) compile() (prg *Program, name unistring.String
 			if thisBinding.inStash || s.isDynamic() {
 				delta++
 				thisBinding.emitInitAtScope(s, preambleLen-delta)
+				needInitThis = true
 			}
 		}
 	}
 
 	stashSize, stackSize := s.finaliseVarAlloc(0)
 
-	if thisBinding != nil && thisBinding.inStash && (!s.argsInStash || stackSize > 0) {
+	if needInitThis && (!s.argsInStash || firstForwardRef != -1 || stackSize > 0) {
+		code[preambleLen-delta] = initStashP(code[preambleLen-delta].(initStash))
 		delta++
 		code[preambleLen-delta] = loadStack(0)
 	} // otherwise, 'this' will be at stack[sp-1], no need to load
@@ -1714,6 +1690,7 @@ func (e *compiledFunctionLiteral) compile() (prg *Program, name unistring.String
 		}
 	}
 	code[delta] = enter
+	e.c.p.srcMap[0].pc = delta
 	s.trimCode(delta)
 
 	strict = s.strict
@@ -1741,16 +1718,24 @@ func (e *compiledFunctionLiteral) emitGetter(putOnStack bool) {
 		if e.isAsync {
 			e.c.emit(&newAsyncMethod{newMethod: newMethod{newFunc: newFunc{prg: p, length: length, name: name, source: e.source, strict: strict}, homeObjOffset: e.homeObjOffset}})
 		} else {
-			e.c.emit(&newMethod{newFunc: newFunc{prg: p, length: length, name: name, source: e.source, strict: strict}, homeObjOffset: e.homeObjOffset})
+			if e.isGenerator {
+				e.c.emit(&newGeneratorMethod{newMethod: newMethod{newFunc: newFunc{prg: p, length: length, name: name, source: e.source, strict: strict}, homeObjOffset: e.homeObjOffset}})
+			} else {
+				e.c.emit(&newMethod{newFunc: newFunc{prg: p, length: length, name: name, source: e.source, strict: strict}, homeObjOffset: e.homeObjOffset})
+			}
 		}
 	case funcRegular:
 		if e.isAsync {
 			e.c.emit(&newAsyncFunc{newFunc: newFunc{prg: p, length: length, name: name, source: e.source, strict: strict}})
 		} else {
-			e.c.emit(&newFunc{prg: p, length: length, name: name, source: e.source, strict: strict})
+			if e.isGenerator {
+				e.c.emit(&newGeneratorFunc{newFunc: newFunc{prg: p, length: length, name: name, source: e.source, strict: strict}})
+			} else {
+				e.c.emit(&newFunc{prg: p, length: length, name: name, source: e.source, strict: strict})
+			}
 		}
 	default:
-		e.c.throwSyntaxError(e.offset, "Unsupported func type: %v", e.typ)
+		e.c.throwSyntaxErrorf(e.offset, "Unsupported func type: %v", e.typ)
 	}
 	if !putOnStack {
 		e.c.emit(pop)
@@ -1760,7 +1745,11 @@ func (e *compiledFunctionLiteral) emitGetter(putOnStack bool) {
 func (c *compiler) compileFunctionLiteral(v *ast.FunctionLiteral, isExpr bool) *compiledFunctionLiteral {
 	strictBody := c.isStrictStatement(v.Body)
 	if v.Name != nil && (c.scope.strict || strictBody != nil) {
+		c.checkIdentifierName(v.Name.Name, int(v.Name.Idx)-1)
 		c.checkIdentifierLName(v.Name.Name, int(v.Name.Idx)-1)
+	}
+	if v.Async && v.Generator {
+		c.throwSyntaxError(int(v.Function)-1, "Async generators are not supported yet")
 	}
 	r := &compiledFunctionLiteral{
 		name:            v.Name,
@@ -1772,6 +1761,7 @@ func (c *compiler) compileFunctionLiteral(v *ast.FunctionLiteral, isExpr bool) *
 		typ:             funcRegular,
 		strict:          strictBody,
 		isAsync:         v.Async,
+		isGenerator:     v.Generator,
 	}
 	r.init(c, v.Idx0())
 	return r
@@ -2104,7 +2094,7 @@ func (e *compiledClassLiteral) emitGetter(putOnStack bool) {
 
 	if (clsBinding != nil && clsBinding.useCount() > 0) || s.dynLookup {
 		if clsBinding != nil {
-			// Because this block may be in the middle of an expression, it's initial stack position
+			// Because this block may be in the middle of an expression, its initial stack position
 			// cannot be known, and therefore it may not have any stack variables.
 			// Note, because clsBinding would be accessed through a function, it should already be in stash,
 			// this is just to make sure.
@@ -2276,7 +2266,7 @@ func (c *compiler) compileArrowFunctionLiteral(v *ast.ArrowFunctionLiteral) *com
 			},
 		}
 	default:
-		c.throwSyntaxError(int(b.Idx0())-1, "Unsupported ConciseBody type: %T", b)
+		c.throwSyntaxErrorf(int(b.Idx0())-1, "Unsupported ConciseBody type: %T", b)
 	}
 	r := &compiledFunctionLiteral{
 		parameterList:   v.ParameterList,
@@ -2380,7 +2370,7 @@ func (c *compiler) compileMetaProperty(v *ast.MetaProperty) compiledExpr {
 		r.init(c, v.Idx0())
 		return r
 	}
-	c.throwSyntaxError(int(v.Idx)-1, "Unsupported meta property: %s.%s", v.Meta.Name, v.Property.Name)
+	c.throwSyntaxErrorf(int(v.Idx)-1, "Unsupported meta property: %s.%s", v.Meta.Name, v.Property.Name)
 	return nil
 }
 
@@ -2413,11 +2403,11 @@ func (c *compiler) emitThrow(v Value) {
 	if o, ok := v.(*Object); ok {
 		t := nilSafe(o.self.getStr("name", nil)).toString().String()
 		switch t {
-		case "TypeError":
+		case "TypeError", "RangeError":
 			c.emit(loadDynamic(t))
 			msg := o.self.getStr("message", nil)
 			if msg != nil {
-				c.emit(loadVal(c.p.defineLiteralValue(msg)))
+				c.emitLiteralValue(msg)
 				c.emit(_new(1))
 			} else {
 				c.emit(_new(0))
@@ -2434,7 +2424,7 @@ func (c *compiler) emitConst(expr compiledExpr, putOnStack bool) {
 	v, ex := c.evalConst(expr)
 	if ex == nil {
 		if putOnStack {
-			c.emit(loadVal(c.p.defineLiteralValue(v)))
+			c.emitLiteralValue(v)
 		}
 	} else {
 		c.emitThrow(ex.val)
@@ -2451,7 +2441,9 @@ func (c *compiler) evalConst(expr compiledExpr) (Value, *Exception) {
 	var savedPrg *Program
 	createdPrg := false
 	if c.evalVM.prg == nil {
-		c.evalVM.prg = &Program{}
+		c.evalVM.prg = &Program{
+			src: c.p.src,
+		}
 		savedPrg = c.p
 		c.p = c.evalVM.prg
 		createdPrg = true
@@ -2504,7 +2496,7 @@ func (e *compiledUnaryExpr) emitGetter(putOnStack bool) {
 		e.c.emit(typeof)
 		goto end
 	case token.DELETE:
-		e.operand.deleteExpr().emitGetter(putOnStack)
+		e.operand.emitDelete(putOnStack)
 		return
 	case token.MINUS:
 		e.c.emitExpr(e.operand, true)
@@ -2561,7 +2553,7 @@ func (e *compiledConditionalExpr) emitGetter(putOnStack bool) {
 	e.consequent.emitGetter(putOnStack)
 	j1 := len(e.c.p.code)
 	e.c.emit(nil)
-	e.c.p.code[j] = jne(len(e.c.p.code) - j)
+	e.c.p.code[j] = jneP(len(e.c.p.code) - j)
 	e.alternate.emitGetter(putOnStack)
 	e.c.p.code[j1] = jump(len(e.c.p.code) - j1)
 }
@@ -2598,7 +2590,7 @@ func (e *compiledLogicalOr) emitGetter(putOnStack bool) {
 				e.c.emitExpr(e.right, putOnStack)
 			} else {
 				if putOnStack {
-					e.c.emit(loadVal(e.c.p.defineLiteralValue(v)))
+					e.c.emitLiteralValue(v)
 				}
 			}
 		} else {
@@ -2611,7 +2603,7 @@ func (e *compiledLogicalOr) emitGetter(putOnStack bool) {
 	e.addSrcMap()
 	e.c.emit(nil)
 	e.c.emitExpr(e.right, true)
-	e.c.p.code[j] = jeq1(len(e.c.p.code) - j)
+	e.c.p.code[j] = jeq(len(e.c.p.code) - j)
 	if !putOnStack {
 		e.c.emit(pop)
 	}
@@ -2639,7 +2631,7 @@ func (e *compiledCoalesce) emitGetter(putOnStack bool) {
 				e.c.emitExpr(e.right, putOnStack)
 			} else {
 				if putOnStack {
-					e.c.emit(loadVal(e.c.p.defineLiteralValue(v)))
+					e.c.emitLiteralValue(v)
 				}
 			}
 		} else {
@@ -2679,7 +2671,9 @@ func (e *compiledLogicalAnd) emitGetter(putOnStack bool) {
 	if e.left.constant() {
 		if v, ex := e.c.evalConst(e.left); ex == nil {
 			if !v.ToBoolean() {
-				e.c.emit(loadVal(e.c.p.defineLiteralValue(v)))
+				if putOnStack {
+					e.c.emitLiteralValue(v)
+				}
 			} else {
 				e.c.emitExpr(e.right, putOnStack)
 			}
@@ -2693,7 +2687,7 @@ func (e *compiledLogicalAnd) emitGetter(putOnStack bool) {
 	e.addSrcMap()
 	e.c.emit(nil)
 	e.c.emitExpr(e.right, true)
-	e.c.p.code[j] = jneq1(len(e.c.p.code) - j)
+	e.c.p.code[j] = jne(len(e.c.p.code) - j)
 	if !putOnStack {
 		e.c.emit(pop)
 	}
@@ -3118,12 +3112,12 @@ func (e *compiledCallExpr) emitGetter(putOnStack bool) {
 	}
 }
 
-func (e *compiledCallExpr) deleteExpr() compiledExpr {
-	r := &defaultDeleteExpr{
-		expr: e,
+func (e *compiledCallExpr) emitDelete(putOnStack bool) {
+	e.emitGetter(false)
+	if putOnStack {
+		e.addSrcMap()
+		e.c.emitLiteralValue(valueTrue)
 	}
-	r.init(e.c, file.Idx(e.offset+1))
-	return r
 }
 
 func (c *compiler) compileSpreadCallArgument(spread *ast.SpreadElement) compiledExpr {
@@ -3183,7 +3177,10 @@ func (c *compiler) compileIdentifierExpression(v *ast.Identifier) compiledExpr {
 }
 
 func (c *compiler) compileNumberLiteral(v *ast.NumberLiteral) compiledExpr {
-	if c.scope.strict && len(v.Literal) > 1 && v.Literal[0] == '0' && v.Literal[1] <= '7' && v.Literal[1] >= '0' {
+	if c.scope.strict && len(v.Literal) > 1 && v.Literal[0] == '0' && v.Literal[1] <= '9' && v.Literal[1] >= '0' {
+		if strings.ContainsAny(v.Literal, "89") {
+			c.throwSyntaxError(int(v.Idx)-1, "Decimals with leading zeros are not allowed in strict mode")
+		}
 		c.throwSyntaxError(int(v.Idx)-1, "Octal literals are not allowed in strict mode")
 		panic("Unreachable")
 	}
@@ -3193,6 +3190,8 @@ func (c *compiler) compileNumberLiteral(v *ast.NumberLiteral) compiledExpr {
 		val = intToValue(num)
 	case float64:
 		val = floatToValue(num)
+	case *big.Int:
+		val = (*valueBigInt)(num)
 	default:
 		c.assert(false, int(v.Idx)-1, "Unsupported number literal type: %T", v.Value)
 		panic("unreachable")
@@ -3378,7 +3377,7 @@ func (c *compiler) emitObjectPattern(pattern *ast.ObjectPattern, emitAssign func
 				c.emit(getKey)
 			}, initializer, prop.Idx0()), emitAssign)
 		default:
-			c.throwSyntaxError(int(prop.Idx0()-1), "Unsupported AssignmentProperty type: %T", prop)
+			c.throwSyntaxErrorf(int(prop.Idx0()-1), "Unsupported AssignmentProperty type: %T", prop)
 		}
 	}
 	if pattern.Rest != nil {
@@ -3527,12 +3526,44 @@ func (c *compiler) endOptChain() {
 	c.block = c.block.outer
 }
 
+func (c *compiler) endOptChainDelete() {
+	lbl := len(c.p.code)
+	for _, item := range c.block.breaks {
+		c.p.code[item] = joptdel(lbl - item)
+	}
+	for _, item := range c.block.conts {
+		c.p.code[item] = joptdelc(lbl - item)
+	}
+	c.block = c.block.outer
+}
+
+func (c *compiler) endOptChainDeleteP() {
+	lbl := len(c.p.code)
+	for _, item := range c.block.breaks {
+		c.p.code[item] = joptdelP(lbl - item)
+	}
+	for _, item := range c.block.conts {
+		c.p.code[item] = joptdelcP(lbl - item)
+	}
+	c.block = c.block.outer
+}
+
 func (e *compiledOptionalChain) emitGetter(putOnStack bool) {
 	e.c.startOptChain()
 	e.expr.emitGetter(true)
 	e.c.endOptChain()
 	if !putOnStack {
 		e.c.emit(pop)
+	}
+}
+
+func (e *compiledOptionalChain) emitDelete(putOnStack bool) {
+	e.c.startOptChain()
+	e.expr.emitDelete(putOnStack)
+	if putOnStack {
+		e.c.endOptChainDelete()
+	} else {
+		e.c.endOptChainDeleteP()
 	}
 }
 
@@ -3546,8 +3577,29 @@ func (e *compiledOptional) emitGetter(putOnStack bool) {
 
 func (e *compiledAwaitExpression) emitGetter(putOnStack bool) {
 	e.arg.emitGetter(true)
-	e.c.emit(await{})
+	e.c.emit(await)
 	if !putOnStack {
 		e.c.emit(pop)
+	}
+}
+
+func (e *compiledYieldExpression) emitGetter(putOnStack bool) {
+	if e.arg != nil {
+		e.arg.emitGetter(true)
+	} else {
+		e.c.emit(loadUndef)
+	}
+	if putOnStack {
+		if e.delegate {
+			e.c.emit(yieldDelegateRes)
+		} else {
+			e.c.emit(yieldRes)
+		}
+	} else {
+		if e.delegate {
+			e.c.emit(yieldDelegate)
+		} else {
+			e.c.emit(yield)
+		}
 	}
 }

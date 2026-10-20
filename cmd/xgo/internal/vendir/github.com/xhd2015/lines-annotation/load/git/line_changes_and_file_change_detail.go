@@ -13,8 +13,32 @@ import (
 
 type LoadLineChangesOptions = filter.Options
 
+// GitPathPatterns builds git pathspec from LoadLineChanges options so vendor /
+// node_modules / non-.go files are excluded in ls-files and diff, not only in Go.
+func GitPathPatterns(opts *LoadLineChangesOptions) []string {
+	patterns := []string{"*.go", ":(exclude)*_test.go"}
+	if opts == nil {
+		return patterns
+	}
+	for _, seg := range opts.ExcludePathSegments {
+		if seg == "" {
+			continue
+		}
+		patterns = append(patterns, ":(exclude)"+seg, ":(exclude)"+seg+"/**")
+	}
+	return patterns
+}
+
 func LoadLineChangesWithFilter(gitDir string, commitHash string, compareCommitHash string, filter func(file string) bool) (*model.ProjectAnnotation, error) {
-	gitDiff := git.NewGitDiff(gitDir, compareCommitHash, commitHash)
+	// Same git pathspec as LoadLineChanges with worker junkpath segments.
+	// Callback still applies extra filters (lang, include/exclude).
+	return loadLineChangesWithFilter(gitDir, commitHash, compareCommitHash, GitPathPatterns(&LoadLineChangesOptions{
+		ExcludePathSegments: []string{"vendor", "node_modules"},
+	}), filter)
+}
+
+func loadLineChangesWithFilter(gitDir string, commitHash string, compareCommitHash string, pathPatterns []string, filter func(file string) bool) (*model.ProjectAnnotation, error) {
+	gitDiff := git.NewGitDiffWithPatterns(gitDir, compareCommitHash, commitHash, pathPatterns)
 
 	// map the content
 	changedFilesRanger, err := line.MakeGitDiffRanger(gitDiff, func(file string) bool {
@@ -81,7 +105,7 @@ func LoadLineChanges(gitDir string, commitHash string, compareCommitHash string,
 	if opts != nil && (len(opts.Include) > 0 || len(opts.Exclude) > 0) {
 		fileFilter = path_filter.NewFileFilter(opts.Include, opts.Exclude)
 	}
-	return LoadLineChangesWithFilter(gitDir, commitHash, compareCommitHash, func(file string) bool {
+	return loadLineChangesWithFilter(gitDir, commitHash, compareCommitHash, GitPathPatterns(opts), func(file string) bool {
 		if !strings.HasSuffix(file, ".go") {
 			return false
 		}
@@ -89,6 +113,9 @@ func LoadLineChanges(gitDir string, commitHash string, compareCommitHash string,
 			return false
 		}
 		if fileFilter != nil && !fileFilter.MatchFile(file) {
+			return false
+		}
+		if opts != nil && filter.HasExcludedPathSegment(file, opts.ExcludePathSegments) {
 			return false
 		}
 		return true

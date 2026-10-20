@@ -1,6 +1,7 @@
 package git
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -28,9 +29,10 @@ func GetBranchesContainingRef(dir string, ref string) (branches []string, err er
 	//    refs/remotes/origin/release-v2.17.1
 	//    refs/remotes/origin/release-v2.18.0
 	//    refs/remotes/origin/release-v2.21.0
-	output, err := cmd.Dir(dir).Output("git", "branch", "-a", "--format=%(refname)", "--contains", ref)
+	var stderr bytes.Buffer
+	output, err := cmd.Dir(dir).Stderr(&stderr).Output("git", "branch", "-a", "--format=%(refname)", "--contains", ref)
 	if err != nil {
-		return nil, err
+		return nil, wrapGitBranchContainsErr(ref, err, stderr.String())
 	}
 
 	candidates := TrimRefsAsBranches(splitLinesFilterEmpty(output))

@@ -351,7 +351,7 @@ func (p *proxyObject) preventExtensions(throw bool) bool {
 			p.val.runtime.typeErrorResult(throw, "'preventExtensions' on proxy: trap returned falsish")
 			return false
 		}
-		if te := target.self.isExtensible(); booleanTrapResult && te {
+		if target.self.isExtensible() {
 			panic(p.val.runtime.NewTypeError("'preventExtensions' on proxy: trap returned truish but the proxy target is extensible"))
 		}
 	}
@@ -382,7 +382,7 @@ func (p *proxyObject) proxyDefineOwnPropertyPreCheck(trapResult, throw bool) boo
 	return true
 }
 
-func (p *proxyObject) proxyDefineOwnPropertyPostCheck(prop Value, target *Object, descr PropertyDescriptor) {
+func (p *proxyObject) proxyDefineOwnPropertyPostCheck(name unistring.String, getName func() unistring.String, prop Value, target *Object, descr PropertyDescriptor) {
 	targetDesc := propToValueProp(prop)
 	extensibleTarget := target.self.isExtensible()
 	settingConfigFalse := descr.Configurable == FLAG_FALSE
@@ -394,9 +394,7 @@ func (p *proxyObject) proxyDefineOwnPropertyPostCheck(prop Value, target *Object
 			panic(p.val.runtime.NewTypeError())
 		}
 	} else {
-		if !p.__isCompatibleDescriptor(extensibleTarget, &descr, targetDesc) {
-			panic(p.val.runtime.NewTypeError())
-		}
+		p.val.runtime.isCompatiblePropertyDescriptor(name, getName, extensibleTarget, &descr, targetDesc, true)
 		if settingConfigFalse && targetDesc.configurable {
 			panic(p.val.runtime.NewTypeError())
 		}
@@ -414,7 +412,7 @@ func (p *proxyObject) defineOwnPropertyStr(name unistring.String, descr Property
 		if !p.proxyDefineOwnPropertyPreCheck(booleanTrapResult, throw) {
 			return false
 		}
-		p.proxyDefineOwnPropertyPostCheck(target.self.getOwnPropStr(name), target, descr)
+		p.proxyDefineOwnPropertyPostCheck(name, nil, target.self.getOwnPropStr(name), target, descr)
 		return true
 	}
 	return target.self.defineOwnPropertyStr(name, descr, throw)
@@ -426,7 +424,7 @@ func (p *proxyObject) defineOwnPropertyIdx(idx valueInt, descr PropertyDescripto
 		if !p.proxyDefineOwnPropertyPreCheck(booleanTrapResult, throw) {
 			return false
 		}
-		p.proxyDefineOwnPropertyPostCheck(target.self.getOwnPropIdx(idx), target, descr)
+		p.proxyDefineOwnPropertyPostCheck("", func() unistring.String { return idx.string() }, target.self.getOwnPropIdx(idx), target, descr)
 		return true
 	}
 
@@ -439,7 +437,7 @@ func (p *proxyObject) defineOwnPropertySym(s *Symbol, descr PropertyDescriptor, 
 		if !p.proxyDefineOwnPropertyPreCheck(booleanTrapResult, throw) {
 			return false
 		}
-		p.proxyDefineOwnPropertyPostCheck(target.self.getOwnPropSym(s), target, descr)
+		p.proxyDefineOwnPropertyPostCheck("", func() unistring.String { return s.descriptiveString().string() }, target.self.getOwnPropSym(s), target, descr)
 		return true
 	}
 
@@ -506,7 +504,7 @@ func (p *proxyObject) hasOwnPropertySym(s *Symbol) bool {
 	return p.getOwnPropSym(s) != nil
 }
 
-func (p *proxyObject) proxyGetOwnPropertyDescriptor(targetProp Value, target *Object, trapResult Value, name fmt.Stringer) Value {
+func (p *proxyObject) proxyGetOwnPropertyDescriptor(name unistring.String, getName func() unistring.String, targetProp Value, target *Object, trapResult Value) Value {
 	r := p.val.runtime
 	targetDesc := propToValueProp(targetProp)
 	var trapResultObj *Object
@@ -514,6 +512,9 @@ func (p *proxyObject) proxyGetOwnPropertyDescriptor(targetProp Value, target *Ob
 		if obj, ok := trapResult.(*Object); ok {
 			trapResultObj = obj
 		} else {
+			if getName != nil {
+				name = getName()
+			}
 			panic(r.NewTypeError("'getOwnPropertyDescriptor' on proxy: trap returned neither object nor undefined for property '%s'", name.String()))
 		}
 	}
@@ -532,7 +533,7 @@ func (p *proxyObject) proxyGetOwnPropertyDescriptor(targetProp Value, target *Ob
 	extensibleTarget := target.self.isExtensible()
 	resultDesc := r.toPropertyDescriptor(trapResultObj)
 	resultDesc.complete()
-	if !p.__isCompatibleDescriptor(extensibleTarget, &resultDesc, targetDesc) {
+	if !p.val.runtime.isCompatiblePropertyDescriptor(name, getName, extensibleTarget, &resultDesc, targetDesc, false) {
 		panic(r.NewTypeError("'getOwnPropertyDescriptor' on proxy: trap returned descriptor for property '%s' that is incompatible with the existing property in the proxy target", name.String()))
 	}
 
@@ -560,7 +561,7 @@ func (p *proxyObject) proxyGetOwnPropertyDescriptor(targetProp Value, target *Ob
 func (p *proxyObject) getOwnPropStr(name unistring.String) Value {
 	target := p.target
 	if v, ok := p.checkHandler().getOwnPropertyDescriptorStr(target, name); ok {
-		return p.proxyGetOwnPropertyDescriptor(target.self.getOwnPropStr(name), target, v, name)
+		return p.proxyGetOwnPropertyDescriptor(name, nil, target.self.getOwnPropStr(name), target, v)
 	}
 
 	return target.self.getOwnPropStr(name)
@@ -569,7 +570,7 @@ func (p *proxyObject) getOwnPropStr(name unistring.String) Value {
 func (p *proxyObject) getOwnPropIdx(idx valueInt) Value {
 	target := p.target
 	if v, ok := p.checkHandler().getOwnPropertyDescriptorIdx(target, idx); ok {
-		return p.proxyGetOwnPropertyDescriptor(target.self.getOwnPropIdx(idx), target, v, idx)
+		return p.proxyGetOwnPropertyDescriptor("", func() unistring.String { return idx.string() }, target.self.getOwnPropIdx(idx), target, v)
 	}
 
 	return target.self.getOwnPropIdx(idx)
@@ -578,7 +579,7 @@ func (p *proxyObject) getOwnPropIdx(idx valueInt) Value {
 func (p *proxyObject) getOwnPropSym(s *Symbol) Value {
 	target := p.target
 	if v, ok := p.checkHandler().getOwnPropertyDescriptorSym(target, s); ok {
-		return p.proxyGetOwnPropertyDescriptor(target.self.getOwnPropSym(s), target, v, s)
+		return p.proxyGetOwnPropertyDescriptor("", func() unistring.String { return s.descriptiveString().string() }, target.self.getOwnPropSym(s), target, v)
 	}
 
 	return target.self.getOwnPropSym(s)
@@ -791,25 +792,25 @@ func (p *proxyObject) proxyOwnKeys() ([]Value, bool) {
 	if v, ok := p.checkHandler().ownKeys(target); ok {
 		keys := p.val.runtime.toObject(v)
 		var keyList []Value
-		keySet := make(map[Value]struct{})
+		var keySet propNameSet
 		l := toLength(keys.self.getStr("length", nil))
 		for k := int64(0); k < l; k++ {
 			item := keys.self.getIdx(valueInt(k), nil)
-			if _, ok := item.(valueString); !ok {
+			if _, ok := item.(String); !ok {
 				if _, ok := item.(*Symbol); !ok {
 					panic(p.val.runtime.NewTypeError("%s is not a valid property name", item.String()))
 				}
 			}
-			if _, exists := keySet[item]; exists {
+			if keySet.has(item) {
 				panic(p.val.runtime.NewTypeError("'ownKeys' on proxy: trap returned duplicate entries"))
 			}
 			keyList = append(keyList, item)
-			keySet[item] = struct{}{}
+			keySet.add(item)
 		}
 		ext := target.self.isExtensible()
 		for item, next := target.self.iterateKeys()(); next != nil; item, next = next() {
-			if _, exists := keySet[item.name]; exists {
-				delete(keySet, item.name)
+			if keySet.has(item.name) {
+				keySet.delete(item.name)
 			} else {
 				if !ext {
 					panic(p.val.runtime.NewTypeError("'ownKeys' on proxy: trap result did not include '%s'", item.name.String()))
@@ -825,7 +826,7 @@ func (p *proxyObject) proxyOwnKeys() ([]Value, bool) {
 				}
 			}
 		}
-		if !ext && len(keyList) > 0 && len(keySet) > 0 {
+		if !ext && len(keyList) > 0 && keySet.size() > 0 {
 			panic(p.val.runtime.NewTypeError("'ownKeys' on proxy: trap returned extra keys but proxy target is non-extensible"))
 		}
 
@@ -907,55 +908,6 @@ func (p *proxyObject) construct(args []Value, newTarget *Object) *Object {
 		return p.val.runtime.toObject(v)
 	}
 	return p.ctor(args, newTarget)
-}
-
-func (p *proxyObject) __isCompatibleDescriptor(extensible bool, desc *PropertyDescriptor, current *valueProperty) bool {
-	if current == nil {
-		return extensible
-	}
-
-	if !current.configurable {
-		if desc.Configurable == FLAG_TRUE {
-			return false
-		}
-
-		if desc.Enumerable != FLAG_NOT_SET && desc.Enumerable.Bool() != current.enumerable {
-			return false
-		}
-
-		if desc.IsGeneric() {
-			return true
-		}
-
-		if desc.IsData() != !current.accessor {
-			return desc.Configurable != FLAG_FALSE
-		}
-
-		if desc.IsData() && !current.accessor {
-			if !current.configurable {
-				if desc.Writable == FLAG_TRUE && !current.writable {
-					return false
-				}
-				if !current.writable {
-					if desc.Value != nil && !desc.Value.SameAs(current.value) {
-						return false
-					}
-				}
-			}
-			return true
-		}
-		if desc.IsAccessor() && current.accessor {
-			if !current.configurable {
-				if desc.Setter != nil && desc.Setter.SameAs(current.setterFunc) {
-					return false
-				}
-				if desc.Getter != nil && desc.Getter.SameAs(current.getterFunc) {
-					return false
-				}
-			}
-		}
-	}
-	return true
 }
 
 func (p *proxyObject) __sameValue(val1, val2 Value) bool {
@@ -1050,7 +1002,7 @@ func (p *proxyObject) className() string {
 	return classObject
 }
 
-func (p *proxyObject) typeOf() valueString {
+func (p *proxyObject) typeOf() String {
 	if p.call == nil {
 		return stringObjectC
 	}

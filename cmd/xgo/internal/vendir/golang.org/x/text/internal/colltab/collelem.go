@@ -71,8 +71,6 @@ func (ce Elem) ctype() ceType {
 		}
 		return ceDecompose
 	}
-	panic("should not reach here")
-	return ceType(-1)
 }
 
 // For normal collation elements, we assume that a collation element either has
@@ -354,7 +352,7 @@ const (
 	maxPrimary          = illegalOffset + 1
 )
 
-// implicitPrimary returns the primary weight for the a rune
+// implicitPrimary returns the primary weight for the given rune
 // for which there is no entry for the rune in the collation table.
 // We take a different approach from the one specified in
 // https://unicode.org/reports/tr10/#Implicit_Weights,

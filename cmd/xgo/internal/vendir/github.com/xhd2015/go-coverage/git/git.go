@@ -1,11 +1,17 @@
 package git
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/sh"
 )
@@ -59,6 +65,15 @@ func FindAll(dir string, oldCommit string, newCommit string) (allFiles []string,
 
 type GitRepo struct {
 	Dir string
+	// PathPatterns are optional git pathspecs appended after `--` (e.g. "*.go", ":(exclude)vendor").
+	PathPatterns []string
+}
+
+func (c *GitRepo) pathSpecArg() string {
+	if c == nil || len(c.PathPatterns) == 0 {
+		return ""
+	}
+	return " -- " + sh.Quotes(c.PathPatterns...)
 }
 
 func NewGitRepo(dir string) *GitRepo {
@@ -81,7 +96,7 @@ func QuoteCommit(commit string) string {
 }
 
 func (c *GitRepo) FindUpdate(oldCommit string, newCommit string) ([]string, error) {
-	cmd := fmt.Sprintf(`git -C %s diff --diff-filter=M --name-only --ignore-submodules %s %s`, sh.Quote(c.Dir), QuoteCommit(oldCommit), QuoteCommit(newCommit))
+	cmd := fmt.Sprintf(`git -C %s diff --diff-filter=M --name-only --ignore-submodules %s %s%s`, sh.Quote(c.Dir), QuoteCommit(oldCommit), QuoteCommit(newCommit), c.pathSpecArg())
 	stdout, _, err := sh.RunBashCmdOpts(cmd, sh.RunBashOptions{
 		NeedStdOut: true,
 	})
@@ -91,7 +106,7 @@ func (c *GitRepo) FindUpdate(oldCommit string, newCommit string) ([]string, erro
 	return splitLinesFilterEmpty(stdout), nil
 }
 func (c *GitRepo) FindAdded(oldCommit string, newCommit string) ([]string, error) {
-	cmd := fmt.Sprintf(`git -C %s diff --diff-filter=A --name-only --ignore-submodules %s %s`, sh.Quote(c.Dir), QuoteCommit(oldCommit), QuoteCommit(newCommit))
+	cmd := fmt.Sprintf(`git -C %s diff --diff-filter=A --name-only --ignore-submodules %s %s%s`, sh.Quote(c.Dir), QuoteCommit(oldCommit), QuoteCommit(newCommit), c.pathSpecArg())
 	stdout, _, err := sh.RunBashCmdOpts(cmd, sh.RunBashOptions{
 		NeedStdOut: true,
 	})
@@ -111,7 +126,7 @@ func (c *GitRepo) FindRenames(oldCommit string, newCommit string) (map[string]st
 	// --- a/test/stubv2/boot/boot.go
 	// +++ b/test/stub/boot/boot.go
 	// @@ -4,8 +4,10 @@ import (
-	cmd := fmt.Sprintf(`git -C %s diff --find-renames --diff-filter=R --ignore-submodules %s %s|grep -A 3 '^diff --git a/'|grep -E '^rename' || true`, sh.Quote(c.Dir), QuoteCommit(oldCommit), QuoteCommit(newCommit))
+	cmd := fmt.Sprintf(`git -C %s diff --find-renames --diff-filter=R --ignore-submodules %s %s%s|grep -A 3 '^diff --git a/'|grep -E '^rename' || true`, sh.Quote(c.Dir), QuoteCommit(oldCommit), QuoteCommit(newCommit), c.pathSpecArg())
 	stdout, stderr, err := sh.RunBashCmdOpts(cmd, sh.RunBashOptions{
 		// Verbose:    true,
 		NeedStdOut: true,
@@ -139,7 +154,7 @@ func (c *GitRepo) FindRenames(oldCommit string, newCommit string) (map[string]st
 
 // without --ignore-submodules, git diff may include diff of dirs
 func (c *GitRepo) FindRenamesV2(oldCommit string, newCommit string, fn func(newFile string, oldFile string, percent string)) error {
-	cmd := fmt.Sprintf(`git -C %s diff --diff-filter=R --summary --ignore-submodules %s %s || true`, sh.Quote(c.Dir), QuoteCommit(oldCommit), QuoteCommit(newCommit))
+	cmd := fmt.Sprintf(`git -C %s diff --diff-filter=R --summary --ignore-submodules %s %s%s || true`, sh.Quote(c.Dir), QuoteCommit(oldCommit), QuoteCommit(newCommit), c.pathSpecArg())
 	stdout, stderr, err := sh.RunBashCmdOpts(cmd, sh.RunBashOptions{
 		// Verbose:    true,
 		NeedStdOut: true,
@@ -229,6 +244,13 @@ type GitSnapshot struct {
 	files     []string
 	filesErr  error
 	fileMap   map[string]bool
+
+	// gitCommonDir is the bare / common git directory resolved from Dir.
+	// Resolved once via disk parse (no git -C checkout), so GetContent/ListFiles
+	// still work after a linked worktree admin dir under bare/worktrees is deleted.
+	gitDirInit   sync.Once
+	gitCommonDir string
+	gitDirErr    error
 }
 
 func (c *GitSnapshot) GetContent(file string) (string, error) {
@@ -238,6 +260,9 @@ func (c *GitSnapshot) GetContent(file string) (string, error) {
 	}
 
 	c.ensureInitList()
+	if c.filesErr != nil {
+		return "", c.filesErr
+	}
 	if !c.fileMap[normFile] {
 		return "", fmt.Errorf("not a file, maybe a dir:%v", file)
 	}
@@ -249,29 +274,211 @@ func (c *GitSnapshot) GetContent(file string) (string, error) {
 		return string(content), nil
 	}
 
-	content, _, err := sh.RunBashWithOpts([]string{
-		fmt.Sprintf("git -C %s cat-file -p %s:%s", sh.Quote(c.Dir), sh.Quote(c.ref()), sh.Quote(normFile)),
-	}, sh.RunBashOptions{
-		NeedStdOut: true,
-	})
+	// Direct argv (no bash): git --git-dir=<common> cat-file -p ref:file.
+	content, err := c.runGitCatFile(normFile)
+	if err == nil {
+		return content, nil
+	}
+	// ECHILD harden: Wait can fail with "no child processes" after the child
+	// already wrote stdout. Prefer content when we have it; otherwise retry once.
+	if isNoChildProcessErr(err) {
+		if content != "" {
+			return content, nil
+		}
+		content, err = c.runGitCatFile(normFile)
+		if err == nil {
+			return content, nil
+		}
+		if isNoChildProcessErr(err) && content != "" {
+			return content, nil
+		}
+	}
 	return content, err
+}
+
+// ensureGitCommonDir returns the absolute git common (bare) directory for c.Dir.
+// Resolution is disk-only (parse .git / commondir / worktrees layout) so it does
+// not require a live linked admin gitdir under bare/worktrees at call time.
+func (c *GitSnapshot) ensureGitCommonDir() (string, error) {
+	c.gitDirInit.Do(func() {
+		c.gitCommonDir, c.gitDirErr = resolveGitCommonDir(c.Dir)
+	})
+	return c.gitCommonDir, c.gitDirErr
+}
+
+// resolveGitCommonDir derives the git common dir from a checkout path without
+// invoking `git -C <checkout>`, which fails when the linked admin is deleted.
+func resolveGitCommonDir(dir string) (string, error) {
+	if dir == "" {
+		return "", fmt.Errorf("resolve git common dir: empty dir")
+	}
+	gitPath := filepath.Join(dir, ".git")
+	st, err := os.Stat(gitPath)
+	if err != nil {
+		// Dir itself may already be a bare/common git directory.
+		if isGitDir(dir) {
+			return filepath.Clean(dir), nil
+		}
+		return "", fmt.Errorf("resolve git common dir: %w", err)
+	}
+	if st.IsDir() {
+		// Normal repo: common dir is .git unless .git/commondir says otherwise.
+		if common, ok := readCommonDir(gitPath); ok {
+			return common, nil
+		}
+		return filepath.Clean(gitPath), nil
+	}
+	// Linked worktree: .git is a "gitdir: <admin>" pointer file.
+	admin, err := parseGitDirPointer(gitPath, dir)
+	if err != nil {
+		return "", err
+	}
+	if st, err := os.Stat(admin); err == nil && st.IsDir() {
+		if common, ok := readCommonDir(admin); ok {
+			return common, nil
+		}
+		return admin, nil
+	}
+	// Admin already deleted: standard layout bare/worktrees/<id> → bare.
+	if filepath.Base(filepath.Dir(admin)) == "worktrees" {
+		return filepath.Clean(filepath.Dir(filepath.Dir(admin))), nil
+	}
+	return "", fmt.Errorf("resolve git common dir: linked admin missing: %s", admin)
+}
+
+// parseGitDirPointer reads a .git file of the form "gitdir: <path>".
+func parseGitDirPointer(gitPath, checkout string) (string, error) {
+	data, err := ioutil.ReadFile(gitPath)
+	if err != nil {
+		return "", fmt.Errorf("read %s: %w", gitPath, err)
+	}
+	line := strings.TrimSpace(string(data))
+	// Git may write multi-line; first line is the pointer.
+	if idx := strings.IndexByte(line, '\n'); idx >= 0 {
+		line = strings.TrimSpace(line[:idx])
+	}
+	const prefix = "gitdir:"
+	lower := strings.ToLower(line)
+	if !strings.HasPrefix(lower, prefix) {
+		return "", fmt.Errorf("not a gitdir pointer: %s", gitPath)
+	}
+	rest := strings.TrimSpace(line[len(prefix):])
+	if rest == "" {
+		return "", fmt.Errorf("empty gitdir pointer: %s", gitPath)
+	}
+	if !filepath.IsAbs(rest) {
+		rest = filepath.Join(checkout, rest)
+	}
+	return filepath.Clean(rest), nil
+}
+
+// readCommonDir reads gitDir/commondir and returns the absolute common path.
+func readCommonDir(gitDir string) (string, bool) {
+	data, err := ioutil.ReadFile(filepath.Join(gitDir, "commondir"))
+	if err != nil {
+		return "", false
+	}
+	rel := strings.TrimSpace(string(data))
+	if rel == "" {
+		return "", false
+	}
+	if filepath.IsAbs(rel) {
+		return filepath.Clean(rel), true
+	}
+	return filepath.Clean(filepath.Join(gitDir, rel)), true
+}
+
+// isGitDir reports whether path looks like a git directory (has HEAD).
+func isGitDir(path string) bool {
+	st, err := os.Stat(filepath.Join(path, "HEAD"))
+	return err == nil && !st.IsDir()
+}
+
+// runGitCatFile runs `git --git-dir=<common> cat-file -p ref:file` without a shell.
+// On error it still returns any stdout collected (needed for ECHILD harden).
+func (c *GitSnapshot) runGitCatFile(normFile string) (string, error) {
+	gitDir, err := c.ensureGitCommonDir()
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.Command("git", "--git-dir="+gitDir, "cat-file", "-p", c.ref()+":"+normFile)
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+	err = cmd.Run()
+	content := stdoutBuf.String()
+	if err != nil {
+		if isNoChildProcessErr(err) {
+			// Surface raw wait error so caller can harden; keep collected stdout.
+			return content, err
+		}
+		stderr := strings.TrimSpace(stderrBuf.String())
+		if stderr != "" {
+			return content, fmt.Errorf("git cat-file -p %s:%s: %v stderr:%s", c.ref(), normFile, err, stderr)
+		}
+		return content, fmt.Errorf("git cat-file -p %s:%s: %v", c.ref(), normFile, err)
+	}
+	return content, nil
+}
+
+// isNoChildProcessErr reports wait/ECHILD failures seen under concurrent exec.
+func isNoChildProcessErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, syscall.ECHILD) {
+		return true
+	}
+	var errno syscall.Errno
+	if errors.As(err, &errno) && errno == syscall.ECHILD {
+		return true
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "no child processes") ||
+		strings.Contains(msg, "wait: no child processes") ||
+		strings.Contains(msg, "waitid: no child processes")
 }
 func (c *GitSnapshot) ListFiles() ([]string, error) {
 	c.ensureInitList()
 	return c.files, c.filesErr
 }
 func (c *GitSnapshot) ensureInitList() {
-	withTree := ""
-	if c.Commit != COMMIT_WORKING {
-		withTree = fmt.Sprintf("--with-tree %s", QuoteCommit(c.Commit))
-	}
 	c.filesInit.Do(func() {
-		stdout, _, err := sh.RunBashWithOpts([]string{
-			fmt.Sprintf("git -C %s ls-files %s", sh.Quote(c.Dir), withTree),
-		}, sh.RunBashOptions{
-			Verbose:    true,
-			NeedStdOut: true,
-		})
+		// COMMIT_WORKING needs the work tree for ls-files; use -C Dir.
+		// Committed snapshots use --git-dir=<common> so list still works when
+		// the linked admin under bare/worktrees is gone.
+		var stdout string
+		var err error
+		if c.Commit == COMMIT_WORKING {
+			stdout, _, err = sh.RunBashWithOpts([]string{
+				fmt.Sprintf("git -C %s ls-files", sh.Quote(c.Dir)),
+			}, sh.RunBashOptions{
+				Verbose:    true,
+				NeedStdOut: true,
+			})
+		} else {
+			gitDir, gerr := c.ensureGitCommonDir()
+			if gerr != nil {
+				c.filesErr = gerr
+				return
+			}
+			// Direct argv: no shell, paths with spaces safe, no dependency on admin.
+			cmd := exec.Command("git", "--git-dir="+gitDir, "ls-files", "--with-tree", c.ref())
+			var stdoutBuf, stderrBuf bytes.Buffer
+			cmd.Stdout = &stdoutBuf
+			cmd.Stderr = &stderrBuf
+			err = cmd.Run()
+			if err != nil {
+				stderr := strings.TrimSpace(stderrBuf.String())
+				if stderr != "" {
+					err = fmt.Errorf("git ls-files --with-tree %s: %v stderr:%s", c.ref(), err, stderr)
+				} else {
+					err = fmt.Errorf("git ls-files --with-tree %s: %v", c.ref(), err)
+				}
+			} else {
+				stdout = stdoutBuf.String()
+			}
+		}
 		if err != nil {
 			c.filesErr = err
 			return

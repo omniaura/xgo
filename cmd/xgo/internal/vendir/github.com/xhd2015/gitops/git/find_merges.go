@@ -62,6 +62,7 @@ func FindDiffPoints(dir string, ref string, base string, mergedAnchorBase string
 	if err != nil {
 		return
 	}
+	historyBaseCommit := baseCommit
 
 	mergeCommits, refCommits, err := doFindMergePoints(dir, refCommit, baseCommit, ref, base, false)
 	if err != nil {
@@ -95,6 +96,7 @@ func FindDiffPoints(dir string, ref string, base string, mergedAnchorBase string
 			return
 		}
 	}
+	refCommits, err = expandDirectMergeSecondParentHashes(dir, refCommits, historyBaseCommit)
 
 	return
 }

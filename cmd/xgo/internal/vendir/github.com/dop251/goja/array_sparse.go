@@ -37,7 +37,7 @@ func (a *sparseArrayObject) _setLengthInt(l uint32, throw bool) bool {
 			// Slow path
 			for i := len(a.items) - 1; i >= 0; i-- {
 				item := a.items[i]
-				if item.idx <= l {
+				if item.idx < l {
 					break
 				}
 				if prop, ok := item.value.(*valueProperty); ok {
@@ -302,6 +302,18 @@ func (a *sparseArrayObject) hasOwnPropertyIdx(idx valueInt) bool {
 	return a.baseObject.hasOwnPropertyStr(idx.string())
 }
 
+func (a *sparseArrayObject) hasPropertyIdx(idx valueInt) bool {
+	if a.hasOwnPropertyIdx(idx) {
+		return true
+	}
+
+	if a.prototype != nil {
+		return a.prototype.self.hasPropertyIdx(idx)
+	}
+
+	return false
+}
+
 func (a *sparseArrayObject) expand(idx uint32) bool {
 	if l := len(a.items); l >= 1024 {
 		if ii := a.items[l-1].idx; ii > idx {
@@ -330,7 +342,7 @@ func (a *sparseArrayObject) _defineIdxProperty(idx uint32, desc PropertyDescript
 	if i < len(a.items) && a.items[i].idx == idx {
 		existing = a.items[i].value
 	}
-	prop, ok := a.baseObject._defineOwnProperty(unistring.String(strconv.FormatUint(uint64(idx), 10)), existing, desc, throw)
+	prop, ok := a.baseObject._defineOwnProperty("", func() unistring.String { return unistring.String(strconv.FormatUint(uint64(idx), 10)) }, existing, desc, throw)
 	if ok {
 		if idx >= a.length {
 			if !a.setLengthInt(idx+1, throw) {
@@ -456,9 +468,41 @@ func (a *sparseArrayObject) exportType() reflect.Type {
 	return reflectTypeArray
 }
 
+// protoChainHasIdxProps reports whether any object in the prototype chain
+// starting at proto has own numeric-index properties. It is conservative:
+// for object types it does not recognise it returns true.
+func protoChainHasIdxProps(proto *Object) bool {
+	for proto != nil {
+		switch p := proto.self.(type) {
+		case *arrayObject:
+			if p.objCount > 0 || p.propValueCount > 0 {
+				return true
+			}
+		case *sparseArrayObject:
+			if len(p.items) > 0 {
+				return true
+			}
+		case *baseObject:
+			p.fixPropOrder()
+			if p.idxPropCount > 0 {
+				return true
+			}
+		default:
+			return true
+		}
+		proto = proto.self.proto()
+	}
+	return false
+}
+
 func (a *sparseArrayObject) exportToArrayOrSlice(dst reflect.Value, typ reflect.Type, ctx *objectExportCtx) error {
 	r := a.val.runtime
-	if iter := a.getSym(SymIterator, nil); iter == r.global.arrayValues || iter == nil {
+	ir, err := r.getOptionalIterator(a.val, nil)
+	if err != nil {
+		return err
+	}
+
+	if (a.prototype == nil || !protoChainHasIdxProps(a.prototype)) && (ir == nil || ir.nextRes != nil) {
 		l := toIntStrict(int64(a.length))
 		if typ.Kind() == reflect.Array {
 			if dst.Len() != l {
@@ -469,20 +513,20 @@ func (a *sparseArrayObject) exportToArrayOrSlice(dst reflect.Value, typ reflect.
 		}
 		ctx.putTyped(a.val, typ, dst.Interface())
 		for _, item := range a.items {
+			idx := item.idx
+			i := toIntStrict(int64(idx))
+			if i >= l {
+				break
+			}
 			val := item.value
 			if p, ok := val.(*valueProperty); ok {
 				val = p.get(a.val)
 			}
-			idx := toIntStrict(int64(item.idx))
-			if idx >= l {
-				break
-			}
-			err := r.toReflectValue(val, dst.Index(idx), ctx)
-			if err != nil {
+			if err := r.toReflectValue(val, dst.Index(i), ctx); err != nil {
 				return fmt.Errorf("could not convert array element %v to %v at %d: %w", item.value, typ, idx, err)
 			}
 		}
 		return nil
 	}
-	return a.baseObject.exportToArrayOrSlice(dst, typ, ctx)
+	return exportToArrayOrSliceWithIterator(ir, a.val, dst, typ, ctx)
 }

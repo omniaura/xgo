@@ -15,7 +15,8 @@ func NewChecker(opts *filter.Options) *checker {
 		return nil
 	}
 	noFileFilter := len(opts.Include) == 0 && len(opts.Exclude) == 0
-	if len(opts.Suffix) == 0 && len(opts.ExcludeSuffix) == 0 && noFileFilter {
+	noSegments := len(opts.ExcludePathSegments) == 0
+	if len(opts.Suffix) == 0 && len(opts.ExcludeSuffix) == 0 && noFileFilter && noSegments {
 		return nil
 	}
 	var pathFilter *path_filter.FileFilter
@@ -37,6 +38,9 @@ func (c *checker) MatchFile(file string) bool {
 		return false
 	}
 	if c.pathFilter != nil && !c.pathFilter.MatchFile(file) {
+		return false
+	}
+	if filter.HasExcludedPathSegment(file, c.opts.ExcludePathSegments) {
 		return false
 	}
 	return true

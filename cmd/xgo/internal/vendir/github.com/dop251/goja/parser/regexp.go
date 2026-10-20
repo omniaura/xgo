@@ -40,6 +40,9 @@ type _RegExp_parser struct {
 
 	goRegexp   strings.Builder
 	passOffset int
+
+	dotAll  bool // Enable dotAll mode
+	unicode bool
 }
 
 // TransformRegExp transforms a JavaScript pattern into  a Go "regexp" pattern.
@@ -55,15 +58,17 @@ type _RegExp_parser struct {
 //
 // If the pattern is invalid (not valid even in JavaScript), then this function
 // returns an empty string and a generic error.
-func TransformRegExp(pattern string) (transformed string, err error) {
+func TransformRegExp(pattern string, dotAll, unicode bool) (transformed string, err error) {
 
 	if pattern == "" {
 		return "", nil
 	}
 
 	parser := _RegExp_parser{
-		str:    pattern,
-		length: len(pattern),
+		str:     pattern,
+		length:  len(pattern),
+		dotAll:  dotAll,
+		unicode: unicode,
 	}
 	err = parser.parse()
 	if err != nil {
@@ -147,6 +152,10 @@ func (self *_RegExp_parser) scan() {
 			self.error(true, "Unmatched ')'")
 			return
 		case '.':
+			if self.dotAll {
+				self.pass()
+				break
+			}
 			self.writeString(Re2Dot)
 			self.read()
 		default:
@@ -166,8 +175,14 @@ func (self *_RegExp_parser) scanGroup() {
 				self.error(false, "re2: Invalid (%s) <lookahead>", self.str[self.chrOffset:self.chrOffset+2])
 				return
 			case ch == '<':
-				self.error(false, "re2: Invalid (%s) <lookbehind>", self.str[self.chrOffset:self.chrOffset+2])
-				return
+				if len(str) > 2 && (str[2] == '=' || str[2] == '!') {
+					self.error(false, "re2: Invalid (%s) <lookbehind>", self.str[self.chrOffset:self.chrOffset+2])
+					return
+				}
+				self.pass()         // ?
+				self.writeByte('P') // older Go versions compatibility
+				self.pass()         // <
+				self.scanGroupName()
 			case ch != ':':
 				self.error(true, "Invalid group")
 				return
@@ -185,6 +200,10 @@ func (self *_RegExp_parser) scanGroup() {
 		case '[':
 			self.scanBracket()
 		case '.':
+			if self.dotAll {
+				self.pass()
+				break
+			}
 			self.writeString(Re2Dot)
 			self.read()
 		default:
@@ -194,6 +213,24 @@ func (self *_RegExp_parser) scanGroup() {
 	}
 	if self.chr != ')' {
 		self.error(true, "Unterminated group")
+		return
+	}
+	self.pass()
+}
+
+func (self *_RegExp_parser) scanGroupName() {
+	supported := true
+	if !(self.chr >= 'a' && self.chr <= 'z' || self.chr >= 'A' && self.chr <= 'Z' && self.chr == '_') {
+		supported = false
+	}
+	for self.chr != -1 && self.chr != '>' {
+		if !(self.chr >= 'a' && self.chr <= 'z' || self.chr >= 'A' && self.chr <= 'Z' && self.chr == '_' || self.chr >= '0' && self.chr <= '9') {
+			supported = false
+		}
+		self.pass()
+	}
+	if !supported {
+		self.error(false, "Unsupported group name")
 		return
 	}
 	self.pass()
@@ -218,21 +255,59 @@ func (self *_RegExp_parser) scanBracket() {
 	}
 
 	self.pass()
-	for self.chr != -1 {
-		if self.chr == ']' {
-			break
-		} else if self.chr == '\\' {
-			self.read()
-			self.scanEscape(true)
+	if self.chr == '^' {
+		self.pass()
+	}
+	for self.chr != -1 && self.chr != ']' {
+		leftIsClass := self.scanClassAtom()
+		if self.unicode || self.chr != '-' {
 			continue
 		}
-		self.pass()
+		if self.offset >= self.length || self.str[self.offset] == ']' {
+			continue
+		}
+		if leftIsClass || self.nextIsCharacterClassEscape() {
+			// A '-' next to a class escape is a literal, not a range operator.
+			self.writeString(`\-`)
+			self.read()
+		} else {
+			self.pass()
+		}
+		self.scanClassAtom()
 	}
 	if self.chr != ']' {
 		self.error(true, "Unterminated character class")
 		return
 	}
 	self.pass()
+}
+
+// scanClassAtom writes a single class atom and reports whether it stands for more than one character.
+func (self *_RegExp_parser) scanClassAtom() bool {
+	if self.chr == '\\' {
+		self.read()
+		isClass := isCharacterClassEscape(self.chr)
+		self.scanEscape(true)
+		return isClass
+	}
+	if self.chr == '-' && !self.unicode {
+		// A '-' in atom position is a literal; escape it so re2 cannot pair it with the next atom.
+		self.writeString(`\-`)
+		self.read()
+		return false
+	}
+	self.pass()
+	return false
+}
+
+// isCharacterClassEscape reports whether c is a class escape standing for more than one character.
+func isCharacterClassEscape(c rune) bool {
+	return c == 'd' || c == 'D' || c == 's' || c == 'S' || c == 'w' || c == 'W'
+}
+
+// nextIsCharacterClassEscape reports whether the input after the current character is a class escape.
+func (self *_RegExp_parser) nextIsCharacterClassEscape() bool {
+	return self.offset+1 < self.length && self.str[self.offset] == '\\' && isCharacterClassEscape(rune(self.str[self.offset+1]))
 }
 
 // \...
@@ -285,7 +360,7 @@ func (self *_RegExp_parser) scanEscape(inClass bool) {
 
 	case 'u':
 		self.read()
-		if self.chr == '{' {
+		if self.chr == '{' && self.unicode {
 			self.read()
 			length, base = 0, 16
 		} else {
@@ -324,6 +399,10 @@ func (self *_RegExp_parser) scanEscape(inClass bool) {
 		} else if 'A' <= self.chr && self.chr <= 'Z' {
 			value = int64(self.chr - 'A' + 1)
 		} else {
+			if self.unicode {
+				self.error(true, "Invalid control escape")
+				return
+			}
 			self.writeByte('c')
 			return
 		}
@@ -353,6 +432,18 @@ func (self *_RegExp_parser) scanEscape(inClass bool) {
 			self.writeString("[^" + WhitespaceChars + "]")
 		}
 		self.read()
+		return
+	case 'k':
+		// The rules are too complicated to implement here, so we pass it on to regexp2
+		self.error(false, "named group back-reference")
+		return
+	case 'p', 'P':
+		if self.unicode {
+			// re2 does not know most of the ECMAScript property names, so we pass it on to regexp2
+			self.error(false, "Unicode property escape")
+			return
+		}
+		self.pass()
 		return
 	default:
 		// $ is an identifier character, so we have to have
@@ -385,7 +476,8 @@ func (self *_RegExp_parser) scanEscape(inClass bool) {
 			digit := uint32(digitValue(self.chr))
 			if digit >= base {
 				// Not a valid digit
-				goto skip
+				self.error(true, "Invalid Unicode escape")
+				return
 			}
 			self.read()
 		}

@@ -23,18 +23,23 @@ const (
 	classString        = "String"
 	classBoolean       = "Boolean"
 	classError         = "Error"
-	classAggError      = "AggregateError"
 	classRegExp        = "RegExp"
 	classDate          = "Date"
 	classJSON          = "JSON"
+	classRawJSON       = "RawJSON"
 	classGlobal        = "global"
 	classPromise       = "Promise"
 
+	classIterator             = "Iterator"
+	classIteratorHelper       = "Iterator Helper"
 	classArrayIterator        = "Array Iterator"
 	classMapIterator          = "Map Iterator"
 	classSetIterator          = "Set Iterator"
 	classStringIterator       = "String Iterator"
 	classRegExpStringIterator = "RegExp String Iterator"
+
+	classGenerator         = "Generator"
+	classGeneratorFunction = "GeneratorFunction"
 )
 
 var (
@@ -44,11 +49,13 @@ var (
 )
 
 type Object struct {
-	id      uint64
-	runtime *Runtime
 	self    objectImpl
+	runtime *Runtime
 
-	weakRefs map[weakMap]Value
+	// As Go does not have ephemerons, the only way to ensure the correct WeakMap semantics is to make the
+	// value reachable only through the key. This unfortunately bumps the size of Object from 24 to 32 bytes,
+	// but I could not find a better alternative.
+	weakMapRefs *weakMapRefs
 }
 
 type iterNextFunc func() (propIterItem, iterNextFunc)
@@ -149,7 +156,7 @@ type objectExportCtx struct {
 type objectImpl interface {
 	sortable
 	className() string
-	typeOf() valueString
+	typeOf() String
 	getStr(p unistring.String, receiver Value) Value
 	getIdx(p valueInt, receiver Value) Value
 	getSym(p *Symbol, receiver Value) Value
@@ -182,9 +189,6 @@ type objectImpl interface {
 	deleteIdx(idx valueInt, throw bool) bool
 	deleteSym(s *Symbol, throw bool) bool
 
-	toPrimitiveNumber() Value
-	toPrimitiveString() Value
-	toPrimitive() Value
 	assertCallable() (call func(FunctionCall) Value, ok bool)
 	vmCall(vm *vm, n int)
 	assertConstructor() func(args []Value, newTarget *Object) *Object
@@ -280,7 +284,7 @@ func (o *baseObject) className() string {
 	return o.class
 }
 
-func (o *baseObject) typeOf() valueString {
+func (o *baseObject) typeOf() String {
 	return stringObjectC
 }
 
@@ -457,6 +461,12 @@ func (o *baseObject) setProto(proto *Object, throw bool) bool {
 	if current.SameAs(proto) {
 		return true
 	}
+	// 10.4.7 Immutable Prototype Exotic Objects
+	// Object.prototype seems like the only immutable prototype exotic object
+	if o.val == o.val.runtime.global.ObjectPrototype {
+		o.val.runtime.typeErrorResult(throw, "Immutable prototype object 'Object.prototype' cannot have their prototype set")
+		return false
+	}
 	if !o.extensible {
 		o.val.runtime.typeErrorResult(throw, "%s is not extensible", o.val)
 		return false
@@ -602,7 +612,7 @@ func (o *baseObject) setForeignIdx(name valueInt, val, receiver Value, throw boo
 	if idx := toIdx(name); idx != math.MaxUint32 {
 		o.ensurePropOrder()
 		if o.idxPropCount == 0 {
-			return o._setForeignIdx(name, name, nil, receiver, throw)
+			return o._setForeignIdx(name, nil, val, receiver, throw)
 		}
 	}
 	return o.setForeignStr(name.string(), val, receiver, throw)
@@ -651,59 +661,77 @@ func (o *baseObject) hasOwnPropertyIdx(idx valueInt) bool {
 	return o.val.self.hasOwnPropertyStr(idx.string())
 }
 
-func (o *baseObject) _defineOwnProperty(name unistring.String, existingValue Value, descr PropertyDescriptor, throw bool) (val Value, ok bool) {
-
-	getterObj, _ := descr.Getter.(*Object)
-	setterObj, _ := descr.Setter.(*Object)
-
-	var existing *valueProperty
-
-	if existingValue == nil {
-		if !o.extensible {
-			o.val.runtime.typeErrorResult(throw, "Cannot define property %s, object is not extensible", name)
-			return nil, false
-		}
-		existing = &valueProperty{}
-	} else {
-		if existing, ok = existingValue.(*valueProperty); !ok {
-			existing = &valueProperty{
-				writable:     true,
-				enumerable:   true,
-				configurable: true,
-				value:        existingValue,
+func (r *Runtime) isCompatiblePropertyDescriptor(name unistring.String, getName func() unistring.String, extensible bool, desc *PropertyDescriptor, current *valueProperty, throw bool) bool {
+	if current == nil {
+		if !extensible && throw {
+			if getName != nil {
+				name = getName()
 			}
+			panic(r.NewTypeError("Cannot define property %s, object is not extensible", name))
+		}
+		return extensible
+	}
+
+	if !current.configurable {
+		if desc.Configurable == FLAG_TRUE {
+			goto reject
 		}
 
-		if !existing.configurable {
-			if descr.Configurable == FLAG_TRUE {
-				goto Reject
-			}
-			if descr.Enumerable != FLAG_NOT_SET && descr.Enumerable.Bool() != existing.enumerable {
-				goto Reject
-			}
+		if desc.Enumerable != FLAG_NOT_SET && desc.Enumerable.Bool() != current.enumerable {
+			goto reject
 		}
-		if existing.accessor && descr.Value != nil || !existing.accessor && (getterObj != nil || setterObj != nil) {
-			if !existing.configurable {
-				goto Reject
+
+		if !desc.IsGeneric() && desc.IsAccessor() != current.accessor {
+			goto reject
+		}
+
+		if current.accessor {
+			if desc.Getter != nil {
+				if !(desc.Getter == _undefined && current.getterFunc == nil) && !desc.Getter.SameAs(current.getterFunc) {
+					goto reject
+				}
 			}
-		} else if !existing.accessor {
-			if !existing.configurable {
-				if !existing.writable {
-					if descr.Writable == FLAG_TRUE {
-						goto Reject
-					}
-					if descr.Value != nil && !descr.Value.SameAs(existing.value) {
-						goto Reject
-					}
+
+			if desc.Setter != nil {
+				if !(desc.Setter == _undefined && current.setterFunc == nil) && !desc.Setter.SameAs(current.setterFunc) {
+					goto reject
 				}
 			}
 		} else {
-			if !existing.configurable {
-				if descr.Getter != nil && existing.getterFunc != getterObj || descr.Setter != nil && existing.setterFunc != setterObj {
-					goto Reject
+			if !current.writable {
+				if desc.Writable == FLAG_TRUE {
+					goto reject
+				}
+				if desc.Value != nil {
+					if !desc.Value.SameAs(current.value) {
+						goto reject
+					}
 				}
 			}
 		}
+	}
+	return true
+reject:
+	if throw {
+		if getName != nil {
+			name = getName()
+		}
+		panic(r.NewTypeError("Cannot redefine property: %s", name))
+	}
+	return false
+}
+
+func (o *baseObject) _defineOwnProperty(name unistring.String, getName func() unistring.String, existingValue Value, descr PropertyDescriptor, throw bool) (val Value, ok bool) {
+	var existing *valueProperty
+	if existingValue != nil {
+		existing = propToValueProp(existingValue)
+	}
+	if !o.val.runtime.isCompatiblePropertyDescriptor(name, getName, o.extensible, &descr, existing, throw) {
+		return nil, false
+	}
+
+	if existing == nil {
+		existing = &valueProperty{}
 	}
 
 	if descr.Writable == FLAG_TRUE && descr.Enumerable == FLAG_TRUE && descr.Configurable == FLAG_TRUE && descr.Value != nil {
@@ -747,16 +775,11 @@ func (o *baseObject) _defineOwnProperty(name unistring.String, existingValue Val
 	}
 
 	return existing, true
-
-Reject:
-	o.val.runtime.typeErrorResult(throw, "Cannot redefine property: %s", name)
-	return nil, false
-
 }
 
 func (o *baseObject) defineOwnPropertyStr(name unistring.String, descr PropertyDescriptor, throw bool) bool {
 	existingVal := o.values[name]
-	if v, ok := o._defineOwnProperty(name, existingVal, descr, throw); ok {
+	if v, ok := o._defineOwnProperty(name, nil, existingVal, descr, throw); ok {
 		o.values[name] = v
 		if existingVal == nil {
 			names := copyNamesIfNeeded(o.propNames, 1)
@@ -776,7 +799,7 @@ func (o *baseObject) defineOwnPropertySym(s *Symbol, descr PropertyDescriptor, t
 	if o.symValues != nil {
 		existingVal = o.symValues.get(s)
 	}
-	if v, ok := o._defineOwnProperty(s.descriptiveString().string(), existingVal, descr, throw); ok {
+	if v, ok := o._defineOwnProperty("", func() unistring.String { return s.descriptiveString().string() }, existingVal, descr, throw); ok {
 		if o.symValues == nil {
 			o.symValues = newOrderedMap(nil)
 		}
@@ -851,7 +874,7 @@ func (o *Object) tryPrimitive(methodName unistring.String) Value {
 	return nil
 }
 
-func (o *Object) genericToPrimitiveNumber() Value {
+func (o *Object) ordinaryToPrimitiveNumber() Value {
 	if v := o.tryPrimitive("valueOf"); v != nil {
 		return v
 	}
@@ -863,11 +886,7 @@ func (o *Object) genericToPrimitiveNumber() Value {
 	panic(o.runtime.NewTypeError("Could not convert %v to primitive", o.self))
 }
 
-func (o *baseObject) toPrimitiveNumber() Value {
-	return o.val.genericToPrimitiveNumber()
-}
-
-func (o *Object) genericToPrimitiveString() Value {
+func (o *Object) ordinaryToPrimitiveString() Value {
 	if v := o.tryPrimitive("toString"); v != nil {
 		return v
 	}
@@ -876,19 +895,7 @@ func (o *Object) genericToPrimitiveString() Value {
 		return v
 	}
 
-	panic(o.runtime.NewTypeError("Could not convert %v to primitive", o.self))
-}
-
-func (o *Object) genericToPrimitive() Value {
-	return o.genericToPrimitiveNumber()
-}
-
-func (o *baseObject) toPrimitiveString() Value {
-	return o.val.genericToPrimitiveString()
-}
-
-func (o *baseObject) toPrimitive() Value {
-	return o.val.genericToPrimitiveNumber()
+	panic(o.runtime.NewTypeError("Could not convert %v (%T) to primitive", o.self, o.self))
 }
 
 func (o *Object) tryExoticToPrimitive(hint Value) Value {
@@ -911,7 +918,7 @@ func (o *Object) toPrimitiveNumber() Value {
 		return v
 	}
 
-	return o.self.toPrimitiveNumber()
+	return o.ordinaryToPrimitiveNumber()
 }
 
 func (o *Object) toPrimitiveString() Value {
@@ -919,22 +926,22 @@ func (o *Object) toPrimitiveString() Value {
 		return v
 	}
 
-	return o.self.toPrimitiveString()
+	return o.ordinaryToPrimitiveString()
 }
 
 func (o *Object) toPrimitive() Value {
 	if v := o.tryExoticToPrimitive(hintDefault); v != nil {
 		return v
 	}
-	return o.self.toPrimitive()
+	return o.ordinaryToPrimitiveNumber()
 }
 
 func (o *baseObject) assertCallable() (func(FunctionCall) Value, bool) {
 	return nil, false
 }
 
-func (o *baseObject) vmCall(vm *vm, n int) {
-	vm.r.typeErrorResult(true, "Not a function: %s", o.val.toString())
+func (o *baseObject) vmCall(vm *vm, _ int) {
+	panic(vm.r.NewTypeError("Not a function: %s", o.val.toString()))
 }
 
 func (o *baseObject) assertConstructor() func(args []Value, newTarget *Object) *Object {
@@ -1041,19 +1048,18 @@ func (o *baseObject) exportToMap(m reflect.Value, typ reflect.Type, ctx *objectE
 	return genericExportToMap(o.val, m, typ, ctx)
 }
 
-func genericExportToArrayOrSlice(o *Object, dst reflect.Value, typ reflect.Type, ctx *objectExportCtx) (err error) {
+func exportToArrayOrSliceWithIterator(ir *iteratorRecord, o *Object, dst reflect.Value, typ reflect.Type, ctx *objectExportCtx) (err error) {
 	r := o.runtime
-
-	if method := toMethod(r.getV(o, SymIterator)); method != nil {
-		// iterable
-
+	if ir != nil {
 		var values []Value
 		// cannot change (append to) the slice once it's been put into the cache, so we need to know its length beforehand
-		ex := r.try(func() {
-			values = r.iterableToList(o, method)
+		err = r.try(func() {
+			ir.iterate(func(item Value) {
+				values = append(values, item)
+			})
 		})
-		if ex != nil {
-			return ex
+		if err != nil {
+			return
 		}
 		if typ.Kind() == reflect.Array {
 			if dst.Len() != len(values) {
@@ -1082,9 +1088,9 @@ func genericExportToArrayOrSlice(o *Object, dst reflect.Value, typ reflect.Type,
 		if dst.Len() != l {
 			if typ.Kind() == reflect.Array {
 				return fmt.Errorf("cannot convert an array-like object into an array, lengths mismatch (have %d, need %d)", l, dst.Len())
-			} else {
-				dst.Set(reflect.MakeSlice(typ, l, l))
 			}
+
+			dst.Set(reflect.MakeSlice(typ, l, l))
 		}
 		ctx.putTyped(o, typ, dst.Interface())
 		for i := 0; i < l; i++ {
@@ -1095,8 +1101,17 @@ func genericExportToArrayOrSlice(o *Object, dst reflect.Value, typ reflect.Type,
 			}
 		}
 	}
-
 	return
+}
+
+func genericExportToArrayOrSlice(o *Object, dst reflect.Value, typ reflect.Type, ctx *objectExportCtx) (err error) {
+	r := o.runtime
+	ir, err := r.getOptionalIterator(o, nil)
+	if err != nil {
+		return err
+	}
+
+	return exportToArrayOrSliceWithIterator(ir, o, dst, typ, ctx)
 }
 
 func (o *baseObject) exportToArrayOrSlice(dst reflect.Value, typ reflect.Type, ctx *objectExportCtx) error {
@@ -1493,36 +1508,36 @@ func (o *Object) hasProperty(p Value) bool {
 func (o *Object) setStr(name unistring.String, val, receiver Value, throw bool) bool {
 	if receiver == o {
 		return o.self.setOwnStr(name, val, throw)
-	} else {
-		if res, ok := o.self.setForeignStr(name, val, receiver, throw); !ok {
-			if robj, ok := receiver.(*Object); ok {
-				if prop := robj.self.getOwnPropStr(name); prop != nil {
-					if desc, ok := prop.(*valueProperty); ok {
-						if desc.accessor {
-							o.runtime.typeErrorResult(throw, "Receiver property %s is an accessor", name)
-							return false
-						}
-						if !desc.writable {
-							o.runtime.typeErrorResult(throw, "Cannot assign to read only property '%s'", name)
-							return false
-						}
+	}
+
+	if res, ok := o.self.setForeignStr(name, val, receiver, throw); !ok {
+		if robj, ok := receiver.(*Object); ok {
+			if prop := robj.self.getOwnPropStr(name); prop != nil {
+				if desc, ok := prop.(*valueProperty); ok {
+					if desc.accessor {
+						o.runtime.typeErrorResult(throw, "Receiver property %s is an accessor", name)
+						return false
 					}
-					return robj.self.defineOwnPropertyStr(name, PropertyDescriptor{Value: val}, throw)
-				} else {
-					return robj.self.defineOwnPropertyStr(name, PropertyDescriptor{
-						Value:        val,
-						Writable:     FLAG_TRUE,
-						Configurable: FLAG_TRUE,
-						Enumerable:   FLAG_TRUE,
-					}, throw)
+					if !desc.writable {
+						o.runtime.typeErrorResult(throw, "Cannot assign to read only property '%s'", name)
+						return false
+					}
 				}
-			} else {
-				o.runtime.typeErrorResult(throw, "Receiver is not an object: %v", receiver)
-				return false
+				return robj.self.defineOwnPropertyStr(name, PropertyDescriptor{Value: val}, throw)
 			}
-		} else {
-			return res
+
+			return robj.self.defineOwnPropertyStr(name, PropertyDescriptor{
+				Value:        val,
+				Writable:     FLAG_TRUE,
+				Configurable: FLAG_TRUE,
+				Enumerable:   FLAG_TRUE,
+			}, throw)
 		}
+
+		o.runtime.typeErrorResult(throw, "Receiver is not an object: %v", receiver)
+		return false
+	} else {
+		return res
 	}
 }
 
@@ -1551,75 +1566,73 @@ func (o *Object) setOwn(name Value, val Value, throw bool) bool {
 func (o *Object) setIdx(name valueInt, val, receiver Value, throw bool) bool {
 	if receiver == o {
 		return o.self.setOwnIdx(name, val, throw)
-	} else {
-		if res, ok := o.self.setForeignIdx(name, val, receiver, throw); !ok {
-			if robj, ok := receiver.(*Object); ok {
-				if prop := robj.self.getOwnPropIdx(name); prop != nil {
-					if desc, ok := prop.(*valueProperty); ok {
-						if desc.accessor {
-							o.runtime.typeErrorResult(throw, "Receiver property %s is an accessor", name)
-							return false
-						}
-						if !desc.writable {
-							o.runtime.typeErrorResult(throw, "Cannot assign to read only property '%s'", name)
-							return false
-						}
-					}
-					robj.self.defineOwnPropertyIdx(name, PropertyDescriptor{Value: val}, throw)
-				} else {
-					robj.self.defineOwnPropertyIdx(name, PropertyDescriptor{
-						Value:        val,
-						Writable:     FLAG_TRUE,
-						Configurable: FLAG_TRUE,
-						Enumerable:   FLAG_TRUE,
-					}, throw)
-				}
-			} else {
-				o.runtime.typeErrorResult(throw, "Receiver is not an object: %v", receiver)
-				return false
-			}
-		} else {
-			return res
-		}
 	}
-	return true
+
+	if res, ok := o.self.setForeignIdx(name, val, receiver, throw); !ok {
+		if robj, ok := receiver.(*Object); ok {
+			if prop := robj.self.getOwnPropIdx(name); prop != nil {
+				if desc, ok := prop.(*valueProperty); ok {
+					if desc.accessor {
+						o.runtime.typeErrorResult(throw, "Receiver property %s is an accessor", name)
+						return false
+					}
+					if !desc.writable {
+						o.runtime.typeErrorResult(throw, "Cannot assign to read only property '%s'", name)
+						return false
+					}
+				}
+				return robj.self.defineOwnPropertyIdx(name, PropertyDescriptor{Value: val}, throw)
+			}
+
+			return robj.self.defineOwnPropertyIdx(name, PropertyDescriptor{
+				Value:        val,
+				Writable:     FLAG_TRUE,
+				Configurable: FLAG_TRUE,
+				Enumerable:   FLAG_TRUE,
+			}, throw)
+		}
+
+		o.runtime.typeErrorResult(throw, "Receiver is not an object: %v", receiver)
+		return false
+	} else {
+		return res
+	}
 }
 
 func (o *Object) setSym(name *Symbol, val, receiver Value, throw bool) bool {
 	if receiver == o {
 		return o.self.setOwnSym(name, val, throw)
-	} else {
-		if res, ok := o.self.setForeignSym(name, val, receiver, throw); !ok {
-			if robj, ok := receiver.(*Object); ok {
-				if prop := robj.self.getOwnPropSym(name); prop != nil {
-					if desc, ok := prop.(*valueProperty); ok {
-						if desc.accessor {
-							o.runtime.typeErrorResult(throw, "Receiver property %s is an accessor", name)
-							return false
-						}
-						if !desc.writable {
-							o.runtime.typeErrorResult(throw, "Cannot assign to read only property '%s'", name)
-							return false
-						}
-					}
-					robj.self.defineOwnPropertySym(name, PropertyDescriptor{Value: val}, throw)
-				} else {
-					robj.self.defineOwnPropertySym(name, PropertyDescriptor{
-						Value:        val,
-						Writable:     FLAG_TRUE,
-						Configurable: FLAG_TRUE,
-						Enumerable:   FLAG_TRUE,
-					}, throw)
-				}
-			} else {
-				o.runtime.typeErrorResult(throw, "Receiver is not an object: %v", receiver)
-				return false
-			}
-		} else {
-			return res
-		}
 	}
-	return true
+
+	if res, ok := o.self.setForeignSym(name, val, receiver, throw); !ok {
+		if robj, ok := receiver.(*Object); ok {
+			if prop := robj.self.getOwnPropSym(name); prop != nil {
+				if desc, ok := prop.(*valueProperty); ok {
+					if desc.accessor {
+						o.runtime.typeErrorResult(throw, "Receiver property %s is an accessor", name)
+						return false
+					}
+					if !desc.writable {
+						o.runtime.typeErrorResult(throw, "Cannot assign to read only property '%s'", name)
+						return false
+					}
+				}
+				return robj.self.defineOwnPropertySym(name, PropertyDescriptor{Value: val}, throw)
+			}
+
+			return robj.self.defineOwnPropertySym(name, PropertyDescriptor{
+				Value:        val,
+				Writable:     FLAG_TRUE,
+				Configurable: FLAG_TRUE,
+				Enumerable:   FLAG_TRUE,
+			}, throw)
+		}
+
+		o.runtime.typeErrorResult(throw, "Receiver is not an object: %v", receiver)
+		return false
+	} else {
+		return res
+	}
 }
 
 func (o *Object) delete(n Value, throw bool) bool {
@@ -1644,22 +1657,11 @@ func (o *Object) defineOwnProperty(n Value, desc PropertyDescriptor, throw bool)
 	}
 }
 
-func (o *Object) getWeakRefs() map[weakMap]Value {
-	refs := o.weakRefs
-	if refs == nil {
-		refs = make(map[weakMap]Value)
-		o.weakRefs = refs
+func (o *Object) getWeakMapRefs(create bool) *weakMapRefs {
+	if o.weakMapRefs == nil && create {
+		o.weakMapRefs = newWeakMapRefs()
 	}
-	return refs
-}
-
-func (o *Object) getId() uint64 {
-	id := o.id
-	if id == 0 {
-		id = o.runtime.genId()
-		o.id = id
-	}
-	return id
+	return o.weakMapRefs
 }
 
 func (o *guardedObject) guard(props ...unistring.String) {
@@ -1838,4 +1840,44 @@ func (i *privateId) String() string {
 
 func (i *privateId) string() unistring.String {
 	return privateIdString(i.name)
+}
+
+type propNameSet struct {
+	stringProps map[unistring.String]struct{}
+	symbolProps map[*Symbol]struct{}
+}
+
+func (s *propNameSet) add(prop Value) {
+	if sym, ok := prop.(*Symbol); ok {
+		if s.symbolProps == nil {
+			s.symbolProps = make(map[*Symbol]struct{})
+		}
+		s.symbolProps[sym] = struct{}{}
+	} else {
+		if s.stringProps == nil {
+			s.stringProps = make(map[unistring.String]struct{})
+		}
+		s.stringProps[prop.string()] = struct{}{}
+	}
+}
+
+func (s *propNameSet) has(prop Value) bool {
+	if sym, ok := prop.(*Symbol); ok {
+		_, exists := s.symbolProps[sym]
+		return exists
+	}
+	_, exists := s.stringProps[prop.string()]
+	return exists
+}
+
+func (s *propNameSet) delete(prop Value) {
+	if sym, ok := prop.(*Symbol); ok {
+		delete(s.symbolProps, sym)
+	} else {
+		delete(s.stringProps, prop.string())
+	}
+}
+
+func (s *propNameSet) size() int {
+	return len(s.stringProps) + len(s.symbolProps)
 }

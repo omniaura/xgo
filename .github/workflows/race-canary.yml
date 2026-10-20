@@ -42,12 +42,12 @@ jobs:
             extra_flags: "--trap-all"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: xgo
 
       - name: Set up Go (latest stable release)
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: stable
 
@@ -126,7 +126,7 @@ jobs:
 
       # --- projects (serial; race is memory-heavy) ---
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: gin-gonic/gin
           path: gin-gonic/gin
@@ -136,7 +136,7 @@ jobs:
           EXTRA_FLAGS: ${{ matrix.extra_flags }}
         run: bash run-project.sh gin gin-gonic/gin
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: go-chi/chi
           path: go-chi/chi
@@ -146,7 +146,7 @@ jobs:
           EXTRA_FLAGS: ${{ matrix.extra_flags }}
         run: bash run-project.sh chi go-chi/chi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: labstack/echo
           path: labstack/echo
@@ -156,7 +156,7 @@ jobs:
           EXTRA_FLAGS: ${{ matrix.extra_flags }}
         run: bash run-project.sh echo labstack/echo
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: spf13/cobra
           path: spf13/cobra
@@ -196,7 +196,7 @@ jobs:
 
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: race-canary-${{ matrix.mode }}
           path: |

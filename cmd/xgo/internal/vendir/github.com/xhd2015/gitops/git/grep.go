@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-inspect/sh"
 )
 
 func GrepLines(dir string, ref string, options *model.GrepLineOptions) (lines map[string][]int, err error) {
@@ -34,6 +33,7 @@ func GrepLines(dir string, ref string, options *model.GrepLineOptions) (lines ma
 	//  origin/master:src/biz/batch_query_items_instalment_info_biz.go:683:InterestRate
 	//  origin/master:src/biz/batch_query_items_instalment_info_biz.go:683:InterestRate
 	var args []string
+	args = append(args, "grep")
 	if options.IgnoreCase {
 		args = append(args, "-i")
 	}
@@ -65,13 +65,9 @@ func GrepLines(dir string, ref string, options *model.GrepLineOptions) (lines ma
 
 	args = append(args, "--")
 	args = append(args, options.Files...)
-	arg := sh.Quotes(args...)
 
-	res, err := RunCommand(dir, func(commands []string) []string {
-		return append(commands, []string{
-			fmt.Sprintf("git grep %s || true", arg),
-		}...)
-	})
+	// argv form: ref/patterns never reach a shell. Exit 1 = no matches.
+	res, err := RunGitAllowExit(dir, []int{1}, args...)
 	if err != nil {
 		return nil, err
 	}

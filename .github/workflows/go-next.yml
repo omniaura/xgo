@@ -23,7 +23,7 @@ jobs:
         go: [ '1.28' ]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Set up Go
       # Install under $RUNNER_TEMP so GOROOT is outside the module tree.

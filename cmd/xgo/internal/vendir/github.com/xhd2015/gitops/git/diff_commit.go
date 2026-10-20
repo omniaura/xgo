@@ -341,34 +341,45 @@ func parseRenames(renamedFilesWithSummary string, fn func(newFile string, oldFil
 		}
 
 		bIdx := strings.Index(s, "{")
-		if bIdx < 0 {
-			continue
-		}
-		bEIdx := strings.LastIndex(s, "}")
-		if bEIdx < 0 {
-			continue
-		}
-		prefix := s[:bIdx]
-		var suffix string
-		if bEIdx+1 < len(s) {
-			suffix = s[bEIdx+1:]
-		}
-		s = s[bIdx+1 : bEIdx]
-		sep := " => "
-		toIdx := strings.Index(s, sep)
-		if toIdx < 0 {
-			continue
-		}
-		oldPath := s[:toIdx]
-		var newPath string
-		if toIdx+len(sep) < len(s) {
-			newPath = s[toIdx+len(sep):]
-		}
+		if bIdx >= 0 {
+			bEIdx := strings.LastIndex(s, "}")
+			if bEIdx < 0 {
+				continue
+			}
+			prefix := s[:bIdx]
+			var suffix string
+			if bEIdx+1 < len(s) {
+				suffix = s[bEIdx+1:]
+			}
+			s = s[bIdx+1 : bEIdx]
+			sep := " => "
+			toIdx := strings.Index(s, sep)
+			if toIdx < 0 {
+				continue
+			}
+			oldPath := s[:toIdx]
+			var newPath string
+			if toIdx+len(sep) < len(s) {
+				newPath = s[toIdx+len(sep):]
+			}
 
-		file := joinPath(prefix, newPath, suffix)
-		oldFile := joinPath(prefix, oldPath, suffix)
+			file := joinPath(prefix, newPath, suffix)
+			oldFile := joinPath(prefix, oldPath, suffix)
 
-		fn(file, oldFile, percent)
+			fn(file, oldFile, percent)
+		} else {
+			sep := " => "
+			toIdx := strings.Index(s, sep)
+			if toIdx < 0 {
+				continue
+			}
+			oldFile := s[:toIdx]
+			var newFile string
+			if toIdx+len(sep) < len(s) {
+				newFile = s[toIdx+len(sep):]
+			}
+			fn(newFile, oldFile, percent)
+		}
 	}
 }
 

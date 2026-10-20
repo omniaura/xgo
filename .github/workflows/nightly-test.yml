@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: xgo
       
@@ -54,7 +54,7 @@ jobs:
           EOF
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.22'
       
@@ -65,7 +65,7 @@ jobs:
           xgo exec --reset-instrument --log-debug go version
           xgo revision
       
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: gin-gonic/gin
           path:  gin-gonic/gin
@@ -77,7 +77,7 @@ jobs:
           cd gin-gonic/gin
           xgo test -v ./...
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: pocketbase/pocketbase
           path:  pocketbase/pocketbase
@@ -89,25 +89,25 @@ jobs:
           cd pocketbase/pocketbase
           xgo test -v ./...
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: gohugoio/hugo
           path: gohugoio/hugo
       # see hugo's github actions workflow for more details
       # https://github.com/gohugoio/hugo/blob/master/.github/workflows/test.yml
       - name: Install Ruby
-        uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854
+        uses: ruby/setup-ruby@824c0e29fdfc7d689c191c27acc969d2d04b7dd8 # v1.331.0
         with:
           ruby-version: "2.7"
           bundler-cache: true
       - name: Install Python
-        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.x"
       - name: Install Mage
         run: go install github.com/magefile/mage@v1.15.0
       - name: Install asciidoctor
-        uses: reitzig/actions-asciidoctor@c642db5eedd1d729bb8c92034770d0b2f769eda6
+        uses: reitzig/actions-asciidoctor@8834ac556f8cab579c3181e57d3a269db51a6055 # v2.0.6
       - name: Install docutils
         run: |
           pip install docutils
@@ -133,7 +133,7 @@ jobs:
           cd gohugoio/hugo
           xgo test -v ./...
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: kubernetes/kubernetes
           path: kubernetes/kubernetes

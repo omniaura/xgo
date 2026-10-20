@@ -13,6 +13,9 @@ type GitDiff struct {
 	oldCommit string
 	newCommit string
 
+	// pathPatterns are passed to git ls-files/diff as pathspec (e.g. "*.go", ":(exclude)vendor").
+	pathPatterns []string
+
 	oldGit *GitSnapshot
 	newGit *GitSnapshot
 
@@ -52,13 +55,23 @@ const (
 type FileDetail = model.FileDetail
 
 func NewGitDiff(dir string, oldCommit string, newCommit string) *GitDiff {
+	return NewGitDiffWithPatterns(dir, oldCommit, newCommit, nil)
+}
+
+// NewGitDiffWithPatterns is NewGitDiff plus git pathspec for DiffCommit / rename / update.
+func NewGitDiffWithPatterns(dir string, oldCommit string, newCommit string, pathPatterns []string) *GitDiff {
 	return &GitDiff{
-		dir:       dir,
-		oldCommit: oldCommit,
-		newCommit: newCommit,
-		oldGit:    NewSnapshot(dir, oldCommit),
-		newGit:    NewSnapshot(dir, newCommit),
+		dir:          dir,
+		oldCommit:    oldCommit,
+		newCommit:    newCommit,
+		pathPatterns: pathPatterns,
+		oldGit:       NewSnapshot(dir, oldCommit),
+		newGit:       NewSnapshot(dir, newCommit),
 	}
+}
+
+func (c *GitDiff) repo() *GitRepo {
+	return &GitRepo{Dir: c.dir, PathPatterns: c.pathPatterns}
 }
 
 func (c *GitDiff) AllFiles() ([]string, error) {
@@ -114,7 +127,11 @@ func (c *GitDiff) AllFilesDetails() (map[string]*FileDetail, error) {
 
 func (c *GitDiff) AllFilesDetailsV2() (map[string]*model.FileDetail, error) {
 	c.fileDetailsV2Once.Do(func() {
-		c.fileDetailsV2, c.fileDetailsV2Err = gitops.DiffCommit(c.dir, c.newCommit, c.oldCommit, nil)
+		var opts *gitops.DiffCommitOptions
+		if len(c.pathPatterns) > 0 {
+			opts = &gitops.DiffCommitOptions{PathPatterns: c.pathPatterns}
+		}
+		c.fileDetailsV2, c.fileDetailsV2Err = gitops.DiffCommit(c.dir, c.newCommit, c.oldCommit, opts)
 	})
 	return c.fileDetailsV2, c.fileDetailsV2Err
 }
@@ -148,14 +165,13 @@ func (c *GitDiff) GetUpdateAndRenames() (newToOld map[string]string, err error) 
 
 func (c *GitDiff) GetRenames() (newToOld map[string]string, err error) {
 	c.renameOnce.Do(func() {
-		c.renames, c.renameErr = FindRenames(c.dir, c.oldCommit, c.newCommit)
+		c.renames, c.renameErr = c.repo().FindRenames(c.oldCommit, c.newCommit)
 	})
 	return c.renames, c.renameErr
 }
 func (c *GitDiff) GetUpdates() ([]string, error) {
 	c.updateOnce.Do(func() {
-		repo := &GitRepo{Dir: c.dir}
-		updates, err := repo.FindUpdate(c.oldCommit, c.newCommit)
+		updates, err := c.repo().FindUpdate(c.oldCommit, c.newCommit)
 		if err != nil {
 			c.updateErr = err
 			return
@@ -166,8 +182,7 @@ func (c *GitDiff) GetUpdates() ([]string, error) {
 }
 func (c *GitDiff) GetNew() ([]string, error) {
 	c.addedOnce.Do(func() {
-		repo := &GitRepo{Dir: c.dir}
-		added, err := repo.FindAdded(c.oldCommit, c.newCommit)
+		added, err := c.repo().FindAdded(c.oldCommit, c.newCommit)
 		if err != nil {
 			c.addedErr = err
 			return
