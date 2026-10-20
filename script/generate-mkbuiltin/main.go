@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xhd2015/xgo/instrument/instrument_compiler"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/instrument_compiler"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func main() {

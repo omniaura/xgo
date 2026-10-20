@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	_ "github.com/xhd2015/xgo/runtime/trap"
+	_ "github.com/omniaura/xgo/runtime/trap"
 )
 
 var topClosure = func() {}

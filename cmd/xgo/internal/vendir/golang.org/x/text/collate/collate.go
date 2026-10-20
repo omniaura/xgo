@@ -14,8 +14,8 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/colltab"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/colltab"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
 )
 
 // Collator provides functionality for comparing strings for a given

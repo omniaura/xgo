@@ -3,12 +3,12 @@ package git
 import (
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/git"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/line"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/git"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/line"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/filter"
-	path_filter "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/path/filter"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/filter"
+	path_filter "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/path/filter"
 )
 
 type LoadLineChangesOptions = filter.Options

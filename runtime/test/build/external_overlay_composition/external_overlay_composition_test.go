@@ -3,7 +3,7 @@ package external_overlay_composition
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // The caller overlay replaces subject.go before xgo instruments it. The xgo

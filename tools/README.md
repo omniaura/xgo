@@ -100,7 +100,7 @@ Example:
                             "Children": [
                                 {
                                     "FuncInfo": {
-                                        "FullName": "github.com/xhd2015/xgo/runtime/pkg.Hello"
+                                        "FullName": "github.com/omniaura/xgo/runtime/pkg.Hello"
                                     },
                                     "Recv": null,
                                     "Args": [
@@ -110,7 +110,7 @@ Example:
                                     "Children": [
                                         {
                                             "FuncInfo": {
-                                                "FullName": "github.com/xhd2015/xgo/runtime/pkg.Mass.Print"
+                                                "FullName": "github.com/omniaura/xgo/runtime/pkg.Mass.Print"
                                             },
                                             "Recv": 1,
                                             "Args": [
@@ -120,7 +120,7 @@ Example:
                                             "Children": [
                                                 {
                                                     "FuncInfo": {
-                                                        "FullName": "github.com/xhd2015/xgo/runtime/pkg.(*Person).Greet"
+                                                        "FullName": "github.com/omniaura/xgo/runtime/pkg.(*Person).Greet"
                                                     },
                                                     "Recv": {
                                                         "Name": "test"
@@ -132,7 +132,7 @@ Example:
                                                     "Children": [
                                                         {
                                                             "FuncInfo": {
-                                                                "FullName": "github.com/xhd2015/xgo/runtime/pkg.Hello.func1"
+                                                                "FullName": "github.com/omniaura/xgo/runtime/pkg.Hello.func1"
                                                             }
                                                         }
                                                     ]

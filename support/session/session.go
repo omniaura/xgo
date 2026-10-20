@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/xhd2015/xgo/support/netutil"
+	"github.com/omniaura/xgo/support/netutil"
 )
 
 type SessionManager interface {

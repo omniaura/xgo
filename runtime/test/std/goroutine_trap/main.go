@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 var done chan struct{}

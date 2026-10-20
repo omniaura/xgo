@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/xhd2015/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/core"
 )
 
 func buildMockHandler(recvPtr interface{}, funcInfo *core.FuncInfo, replacer interface{}) func(fnInfo *core.FuncInfo, recvPtr interface{}, args []interface{}, results []interface{}) bool {

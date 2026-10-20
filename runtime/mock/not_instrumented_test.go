@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/trace"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 // Check during variable initialization, before this package's init functions.

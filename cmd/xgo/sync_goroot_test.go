@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/xhd2015/xgo/support/filecopy"
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/support/filecopy"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 // A repeated linked sync must only relink src/, keeping tools that setup

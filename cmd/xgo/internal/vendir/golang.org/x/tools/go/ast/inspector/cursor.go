@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/edge"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/edge"
 )
 
 // A Cursor represents an [ast.Node]. It is immutable.

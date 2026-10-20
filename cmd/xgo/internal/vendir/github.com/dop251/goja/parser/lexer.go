@@ -10,11 +10,11 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/rangetable"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/rangetable"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 )
 
 var (

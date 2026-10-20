@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 // check 'go help list'

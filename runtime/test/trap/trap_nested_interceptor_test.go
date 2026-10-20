@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/functab"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 func TestNestedTrapShouldBeAllowedBySpecifyingMapping(t *testing.T) {

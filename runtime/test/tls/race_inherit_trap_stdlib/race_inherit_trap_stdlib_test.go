@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/tls"
+	"github.com/omniaura/xgo/runtime/tls"
 )
 
 var inheritKey = tls.DeclareInherit("race_inherit_key")

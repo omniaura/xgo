@@ -4,11 +4,11 @@ import (
 	"go/token"
 	"path/filepath"
 
-	astutil "github.com/xhd2015/xgo/instrument/ast"
-	"github.com/xhd2015/xgo/instrument/compiler_extra"
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/instrument/edit"
-	"github.com/xhd2015/xgo/instrument/patch"
+	astutil "github.com/omniaura/xgo/instrument/ast"
+	"github.com/omniaura/xgo/instrument/compiler_extra"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/edit"
+	"github.com/omniaura/xgo/instrument/patch"
 )
 
 func RegisterFuncTab(fset *token.FileSet, file *edit.File, pkgPath string, stdlib bool, trimpath bool) {

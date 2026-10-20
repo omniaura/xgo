@@ -3,7 +3,7 @@ package marshal
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace"
 )
 
 // go run -tags dev ./cmd/xgo test --project-dir runtime/test/trace/marshal/exclue --mock-rule='{"pkg":"encoding/json","name":"newTypeEncoder","action":"exclude"}' -run TestMarshalFuncEvenActionExclude

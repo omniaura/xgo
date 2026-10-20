@@ -1,9 +1,9 @@
 package goja
 
 import (
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/vscode"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/vscode"
 )
 
 var gojaProgram = goja.MustCompile("diff_goja.js", vscode.DiffGojaCode, true)

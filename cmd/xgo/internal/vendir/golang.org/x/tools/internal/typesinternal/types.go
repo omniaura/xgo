@@ -25,7 +25,7 @@ import (
 	"iter"
 	"reflect"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/inspector"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/ast/inspector"
 )
 
 func SetUsesCgo(conf *types.Config) bool {

@@ -1,4 +1,4 @@
-module github.com/xhd2015/xgo/test/debug/reverse
+module github.com/omniaura/xgo/test/debug/reverse
 
 go 1.18
 

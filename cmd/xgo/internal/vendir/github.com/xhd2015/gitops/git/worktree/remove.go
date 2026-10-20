@@ -5,7 +5,7 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 func RemoveWorktree(dir string, worktreeDir string) error {

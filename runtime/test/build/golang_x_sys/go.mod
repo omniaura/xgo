@@ -1,4 +1,4 @@
-module github.com/xhd2015/xgo/runtime/test/build/golang_x_sys
+module github.com/omniaura/xgo/runtime/test/build/golang_x_sys
 
 go 1.17
 

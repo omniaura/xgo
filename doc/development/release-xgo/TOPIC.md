@@ -28,7 +28,7 @@ Operational runbook for cutting a new xgo version: tag `vX.Y.Z`, optional `runti
 | `runtime/core/version.go` | Runtime module version; kept in sync via generate / commit hooks when core fields change |
 | `cmd/xgo/asset/runtime_gen/core/version.go` | Generated mirror of runtime version constants |
 | Tag `vX.Y.Z` | Toolchain / root module tag (`go install …/cmd/xgo@v…`, GitHub release) |
-| Tag `runtime/vX.Y.Z` | Go module tag for `github.com/xhd2015/xgo/runtime` — **only when that module ships** |
+| Tag `runtime/vX.Y.Z` | Go module tag for `github.com/omniaura/xgo/runtime` — **only when that module ships** |
 | `xgo-release/X.Y.Z/*.tar.gz` + `SHASUMS256.txt` | Build output (not committed) |
 | GitHub **draft** release on `vX.Y.Z` | Human review before Publish |
 
@@ -151,13 +151,13 @@ To install `xgo` vX.Y.Z:
 
 ```sh
 # upgrade xgo
-go install github.com/xhd2015/xgo/cmd/xgo@vX.Y.Z
+go install github.com/omniaura/xgo/cmd/xgo@vX.Y.Z
 
 # update runtime
-go get github.com/xhd2015/xgo/runtime@vX.Y.Z
+go get github.com/omniaura/xgo/runtime@vX.Y.Z
 ```
 
-For documentation, see https://github.com/xhd2015/xgo.
+For documentation, see https://github.com/omniaura/xgo.
 
 ## What's Changed
 
@@ -182,12 +182,12 @@ Major feature:
 To install `xgo` vX.Y.Z:
 
 ```sh
-go install github.com/xhd2015/xgo/cmd/xgo@vX.Y.Z
+go install github.com/omniaura/xgo/cmd/xgo@vX.Y.Z
 ```
 
-Runtime need not be upgraded for this release (existing `github.com/xhd2015/xgo/runtime` at the previous core version remains compatible).
+Runtime need not be upgraded for this release (existing `github.com/omniaura/xgo/runtime` at the previous core version remains compatible).
 
-For documentation, see https://github.com/xhd2015/xgo.
+For documentation, see https://github.com/omniaura/xgo.
 
 ## What's Changed
 

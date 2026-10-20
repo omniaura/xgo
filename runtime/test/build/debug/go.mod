@@ -1,3 +1,3 @@
-module github.com/xhd2015/xgo/runtime/test/build/debug
+module github.com/omniaura/xgo/runtime/test/build/debug
 
 go 1.18

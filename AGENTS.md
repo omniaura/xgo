@@ -91,7 +91,7 @@ go run ./script/run-test ./...
 
 Each test module under `runtime/test/`:
 - Has its own `go.mod`
-- Has `replace github.com/xhd2015/xgo/runtime => ../../..` to use the local runtime
+- Has `replace github.com/omniaura/xgo/runtime => ../../..` to use the local runtime
 - Test files (in same package) provide the functions being tested
 - Interceptors/mocks are set up in test functions via `trap.AddInterceptor` etc.
 

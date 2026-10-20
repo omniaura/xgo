@@ -3,9 +3,9 @@ package compute
 import (
 	"fmt"
 
-	diff "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/vscode"
+	diff "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/vscode"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
 )
 
 func Changed_ForLineFromChanges(project *model.ProjectAnnotation) {

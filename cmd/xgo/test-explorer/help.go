@@ -33,6 +33,6 @@ Examples:
   xgo e                  open the test explorer in browser
   xgo e test             run all tests without opening the test explorer(used in CI)
 
-See https://github.com/xhd2015/xgo/blob/master/doc/test-explorer/README.md for documentation.
+See https://github.com/omniaura/xgo/blob/master/doc/test-explorer/README.md for documentation.
 
 `

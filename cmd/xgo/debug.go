@@ -1,51 +1,10 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
-
-func getVscodeDebugFile(tmpDir string, vscode string) (vscodeDebugFile string, suffix string, err error) {
-	const stdoutParamPrefix = "stdout?"
-	if vscode == "" {
-		f, err := os.Stat(".vscode")
-		if err == nil && f.IsDir() {
-			vscodeDebugFile = filepath.Join(".vscode", "launch.json")
-		}
-	} else if vscode == "stdout" || strings.HasPrefix(vscode, stdoutParamPrefix) {
-		vscodeDebugFile = filepath.Join(tmpDir, "vscode_launch.json")
-	} else {
-		f, statErr := os.Stat(vscode)
-		if statErr != nil {
-			if !errors.Is(statErr, os.ErrNotExist) {
-				return "", "", fmt.Errorf("check vscode debug flag: %w", statErr)
-
-			}
-			// treat as file
-		}
-		if f != nil && f.IsDir() {
-			vscodeDebugFile = filepath.Join(vscode, "launch.json")
-		} else {
-			vscodeDebugFile = vscode
-		}
-	}
-	// make abs
-	if vscodeDebugFile != "" {
-		var err error
-		vscodeDebugFile, err = filepath.Abs(vscodeDebugFile)
-		if err != nil {
-			return "", "", err
-		}
-	}
-	if strings.HasPrefix(vscode, stdoutParamPrefix) {
-		suffix = "?" + strings.TrimPrefix(vscode, stdoutParamPrefix)
-	}
-	return vscodeDebugFile, suffix, nil
-}
 
 func setupDevDir(goroot string, printDir bool) error {
 	cmdCompile := filepath.Join(goroot, "src", "cmd", "compile")
@@ -99,14 +58,4 @@ func setupDevDir(goroot string, printDir bool) error {
 		return fmt.Errorf("updating %s: %w", settingsFile, err)
 	}
 	return nil
-}
-
-func copyToStdout(srcFile string) error {
-	file, err := os.Open(srcFile)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	_, err = io.Copy(os.Stdout, file)
-	return err
 }

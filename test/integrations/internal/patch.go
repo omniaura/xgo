@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/xhd2015/xgo/instrument/instrument_compiler"
-	patches "github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/instrument_compiler"
+	patches "github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func ApplyFileBased(rootDir, origGoroot, goroot string, goVersion *goinfo.GoVersion) error {

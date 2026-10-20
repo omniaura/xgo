@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/test/patch/sub"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/test/patch/sub"
 )
 
 func TestPatchVarTest(t *testing.T) {
@@ -189,8 +189,8 @@ func TestPatchVarWrongTypeShouldErrorTest(t *testing.T) {
 	}
 }
 
-const pkgPath = "github.com/xhd2015/xgo/runtime/test/patch"
-const subPkgPath = "github.com/xhd2015/xgo/runtime/test/patch/sub"
+const pkgPath = "github.com/omniaura/xgo/runtime/test/patch"
+const subPkgPath = "github.com/omniaura/xgo/runtime/test/patch/sub"
 
 func TestPatchVarByNameTest(t *testing.T) {
 	before := a

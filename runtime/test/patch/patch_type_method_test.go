@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func TestPatchTypeMethodNoArg(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/hook"
-	"github.com/xhd2015/xgo/runtime/test/hook/id"
-	"github.com/xhd2015/xgo/runtime/test/hook/pkg"
+	"github.com/omniaura/xgo/runtime/hook"
+	"github.com/omniaura/xgo/runtime/test/hook/id"
+	"github.com/omniaura/xgo/runtime/test/hook/pkg"
 )
 
 var testMainID int

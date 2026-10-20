@@ -1,11 +1,11 @@
 package merge
 
 import (
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/code"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/cover"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/code"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/cover"
 
 	// diff "github.com/xhd2015/go-coverage/diff/myers"
-	diff "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/vscode"
+	diff "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/vscode"
 )
 
 func ComputeFileBlockMapping(oldFileName string, oldCode string, newFileName string, newCode string) (newToOldMapping map[int]int, err error) {

@@ -33,6 +33,6 @@ Examples:
     # load all
     $ xgo tool coverage load
 
-See https://github.com/xhd2015/xgo for documentation.
+See https://github.com/omniaura/xgo for documentation.
 
 `

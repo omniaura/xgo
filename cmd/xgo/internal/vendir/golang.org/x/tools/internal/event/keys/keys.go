@@ -9,7 +9,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event/label"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event/label"
 )
 
 // Value is a [label.Key] for untyped values.

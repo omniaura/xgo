@@ -3,9 +3,9 @@ package trap
 import (
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/internal/flags"
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
-	"github.com/xhd2015/xgo/runtime/internal/stack"
+	"github.com/omniaura/xgo/runtime/internal/flags"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/internal/stack"
 )
 
 func init() {

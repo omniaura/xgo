@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 // Diff compares two values, resulting in a human readable diff format.

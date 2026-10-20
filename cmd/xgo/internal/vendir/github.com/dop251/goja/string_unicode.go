@@ -14,12 +14,12 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/parser"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/cases"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/rangetable"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/parser"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/cases"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/rangetable"
 )
 
 const utf16IndexNaiveCrossover = 32

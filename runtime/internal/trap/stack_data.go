@@ -4,11 +4,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/functab"
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
-	"github.com/xhd2015/xgo/runtime/internal/stack"
-	"github.com/xhd2015/xgo/runtime/trace/stack_model"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/internal/stack"
+	"github.com/omniaura/xgo/runtime/trace/stack_model"
 )
 
 type dataKeyType struct{}

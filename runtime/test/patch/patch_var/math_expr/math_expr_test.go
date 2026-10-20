@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 var A = 10 * 20

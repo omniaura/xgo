@@ -1,7 +1,7 @@
 package filter
 
 import (
-	"github.com/xhd2015/xgo/support/pattern"
+	"github.com/omniaura/xgo/support/pattern"
 )
 
 // FileFilter

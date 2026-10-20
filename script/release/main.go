@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/script/build-release/revision"
+	"github.com/omniaura/xgo/script/build-release/revision"
 )
 
 const usage = `usage:
@@ -179,7 +179,7 @@ func release(bump string, opts releaseOptions) error {
 	for _, mod := range []string{"github.com/" + repo, "github.com/" + repo + "/runtime"} {
 		warmProxy(mod, tag)
 	}
-	fmt.Printf("released %s\n  replace github.com/xhd2015/xgo => github.com/%s %s\n  replace github.com/xhd2015/xgo/runtime => github.com/%s/runtime %s\n", tag, repo, tag, repo, tag)
+	fmt.Printf("released %s\n  go get github.com/%s@%s github.com/%s/runtime@%s\n", tag, repo, tag, repo, tag)
 	return nil
 }
 

@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/pkgbits"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/pkgbits"
 	// This package is dependency-restricted; see x/tools/go/gcexportdata.TestDeps.
 )
 

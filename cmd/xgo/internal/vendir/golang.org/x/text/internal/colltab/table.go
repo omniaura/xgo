@@ -7,7 +7,7 @@ package colltab
 import (
 	"unicode/utf8"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/norm"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/norm"
 )
 
 // Table holds all collation data for a given collation ordering.

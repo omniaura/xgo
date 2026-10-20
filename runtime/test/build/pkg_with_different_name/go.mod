@@ -1,10 +1,10 @@
-module github.com/xhd2015/xgo/runtime/test/build/pkg_with_different_name
+module github.com/omniaura/xgo/runtime/test/build/pkg_with_different_name
 
 go 1.18
 
 require github.com/rwynn/gtm/v2 v2.1.2
 
-require github.com/xhd2015/xgo/runtime v0.0.0
+require github.com/omniaura/xgo/runtime v0.0.0
 
 require (
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -22,4 +22,4 @@ require (
 	golang.org/x/text v0.3.5 // indirect
 )
 
-replace github.com/xhd2015/xgo/runtime => ../../..
+replace github.com/omniaura/xgo/runtime => ../../..

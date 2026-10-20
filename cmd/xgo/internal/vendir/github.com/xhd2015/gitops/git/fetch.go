@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git/fetch"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git/fetch"
 )
 
 type FetchOptions struct {

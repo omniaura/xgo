@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/gocommand"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/gocommand"
 )
 
 // determineRootDirs returns a mapping from absolute directories that could

@@ -3,7 +3,7 @@ package unexported
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_var/unexported/pkg"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_var/unexported/pkg"
 )
 
 var A = pkg.NewUnexported(1)

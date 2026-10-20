@@ -18,17 +18,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/coverage/cov_control"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
-	"github.com/xhd2015/xgo/cmd/xgo/test-explorer/icov"
-	"github.com/xhd2015/xgo/support/flag"
-	"github.com/xhd2015/xgo/support/pattern"
+	"github.com/omniaura/xgo/cmd/xgo/coverage/cov_control"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
+	"github.com/omniaura/xgo/cmd/xgo/test-explorer/icov"
+	"github.com/omniaura/xgo/support/flag"
+	"github.com/omniaura/xgo/support/pattern"
 
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/netutil"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/netutil"
 )
 
 type Options struct {
@@ -548,7 +548,7 @@ func autoUpdateXgo() {
 	// auto update
 	done := make(chan struct{})
 	go func() {
-		cmd.Debug().Run("go", "install", "github.com/xhd2015/xgo/cmd/xgo@latest")
+		cmd.Debug().Run("go", "install", "github.com/omniaura/xgo/cmd/xgo@latest")
 		close(done)
 	}()
 	// at most wait 2 second

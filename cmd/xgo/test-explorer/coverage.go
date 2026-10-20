@@ -3,9 +3,9 @@ package test_explorer
 import (
 	"net/http"
 
-	"github.com/xhd2015/xgo/cmd/xgo/coverage/serve"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
-	"github.com/xhd2015/xgo/cmd/xgo/test-explorer/icov"
+	"github.com/omniaura/xgo/cmd/xgo/coverage/serve"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
+	"github.com/omniaura/xgo/cmd/xgo/test-explorer/icov"
 )
 
 // see https://github.com/xhd2015/xgo/issues/215

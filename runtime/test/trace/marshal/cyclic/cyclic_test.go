@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/trace"
-	"github.com/xhd2015/xgo/runtime/trace/stack_model"
+	"github.com/omniaura/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace/stack_model"
 )
 
 type Ref struct {

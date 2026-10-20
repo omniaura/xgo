@@ -3,8 +3,8 @@ package mock
 import (
 	"context"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/trap"
 )
 
 type Interceptor func(ctx context.Context, fn *core.FuncInfo, args core.Object, results core.Object) error

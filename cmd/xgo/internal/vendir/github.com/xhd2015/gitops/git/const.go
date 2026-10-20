@@ -1,6 +1,6 @@
 package git
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
 
 // a special commit that referes to current working directory(a pseduo commit)
 const COMMIT_WORKING = model.COMMIT_WORKING

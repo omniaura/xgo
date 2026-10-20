@@ -8,11 +8,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	astutil "github.com/xhd2015/xgo/instrument/ast"
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/instrument/config/config_debug"
-	"github.com/xhd2015/xgo/instrument/edit"
-	"github.com/xhd2015/xgo/instrument/load"
+	astutil "github.com/omniaura/xgo/instrument/ast"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/instrument/config/config_debug"
+	"github.com/omniaura/xgo/instrument/edit"
+	"github.com/omniaura/xgo/instrument/load"
 )
 
 func CollectDecls(pkg *edit.Package) {

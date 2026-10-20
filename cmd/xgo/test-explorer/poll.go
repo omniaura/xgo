@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/netutil"
-	"github.com/xhd2015/xgo/support/session"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/netutil"
+	"github.com/omniaura/xgo/support/session"
 )
 
 func setupPollHandler(server *http.ServeMux, prefix string, projectDir string, getTestConfig func() (*TestConfig, error), runner func(ctx *RunContext) error) {

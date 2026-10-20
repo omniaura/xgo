@@ -2,7 +2,7 @@
 
 package language
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/tag"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/tag"
 
 // CLDRVersion is the CLDR version from which the tables in this package are derived.
 const CLDRVersion = "32"

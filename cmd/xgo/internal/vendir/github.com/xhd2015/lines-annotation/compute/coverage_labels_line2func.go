@@ -1,6 +1,6 @@
 package compute
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
 
 func EnsureCoverageLabels_Line2Func(project *model.ProjectAnnotation) {
 	if project.Has(model.AnnotationType_FuncCoverageLabels) {

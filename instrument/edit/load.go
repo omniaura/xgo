@@ -3,9 +3,9 @@ package edit
 import (
 	"sort"
 
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/instrument/load"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/instrument/load"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func (c *Packages) LoadPackage(pkgPath string) (*Package, bool, error) {

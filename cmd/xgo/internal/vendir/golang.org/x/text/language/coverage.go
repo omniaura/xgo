@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
 )
 
 // The Coverage interface is used to define the level of coverage of an

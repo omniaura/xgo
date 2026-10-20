@@ -3,7 +3,7 @@
     "Children": [
         {
             "FuncInfo": {
-                "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace",
+                "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace",
                 "IdentityName": "TestUpdateUserInfo",
                 "Name": "TestUpdateUserInfo",
                 "RecvType": "",
@@ -30,7 +30,7 @@
             "Children": [
                 {
                     "FuncInfo": {
-                        "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace",
+                        "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace",
                         "IdentityName": "UpdateUseInfo",
                         "Name": "UpdateUseInfo",
                         "RecvType": "",
@@ -60,7 +60,7 @@
                     "Children": [
                         {
                             "FuncInfo": {
-                                "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                 "IdentityName": "CheckUserName",
                                 "Name": "CheckUserName",
                                 "RecvType": "",
@@ -88,7 +88,7 @@
                         },
                         {
                             "FuncInfo": {
-                                "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                 "IdentityName": "GenerateUserName",
                                 "Name": "GenerateUserName",
                                 "RecvType": "",
@@ -117,7 +117,7 @@
                             "Children": [
                                 {
                                     "FuncInfo": {
-                                        "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                        "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                         "IdentityName": "randMD5",
                                         "Name": "randMD5",
                                         "RecvType": "",
@@ -142,7 +142,7 @@
                                     "Children": [
                                         {
                                             "FuncInfo": {
-                                                "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                                "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                                 "IdentityName": "generateID",
                                                 "Name": "generateID",
                                                 "RecvType": "",
@@ -172,7 +172,7 @@
                         },
                         {
                             "FuncInfo": {
-                                "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                 "IdentityName": "SaveUserName",
                                 "Name": "SaveUserName",
                                 "RecvType": "",
@@ -199,7 +199,7 @@
                             "Children": [
                                 {
                                     "FuncInfo": {
-                                        "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                        "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                         "IdentityName": "CheckUserName",
                                         "Name": "CheckUserName",
                                         "RecvType": "",
@@ -231,7 +231,7 @@
                 },
                 {
                     "FuncInfo": {
-                        "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace",
+                        "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace",
                         "IdentityName": "UpdateUseInfo",
                         "Name": "UpdateUseInfo",
                         "RecvType": "",
@@ -261,7 +261,7 @@
                     "Children": [
                         {
                             "FuncInfo": {
-                                "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                 "IdentityName": "CheckUserName",
                                 "Name": "CheckUserName",
                                 "RecvType": "",
@@ -289,7 +289,7 @@
                         },
                         {
                             "FuncInfo": {
-                                "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                 "IdentityName": "SaveUserName",
                                 "Name": "SaveUserName",
                                 "RecvType": "",
@@ -316,7 +316,7 @@
                             "Children": [
                                 {
                                     "FuncInfo": {
-                                        "Pkg": "github.com/xhd2015/xgo/runtime/test/stack_trace/user_info",
+                                        "Pkg": "github.com/omniaura/xgo/runtime/test/stack_trace/user_info",
                                         "IdentityName": "CheckUserName",
                                         "Name": "CheckUserName",
                                         "RecvType": "",

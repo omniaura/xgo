@@ -49,8 +49,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func MyFunc() string {
@@ -79,8 +79,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/mock"
 
 	"github.com/my/another_pkg"
 )
@@ -130,8 +130,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/mock"
 
 	"github.com/my/another_pkg"
 )
@@ -195,8 +195,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func ToString[T any](v T) string {
@@ -230,7 +230,7 @@ package patch_test
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func greet(s string) string {

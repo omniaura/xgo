@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/tls"
+	"github.com/omniaura/xgo/runtime/tls"
 )
 
 var a = tls.Declare("a")

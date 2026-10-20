@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/xhd2015/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace"
 )
 
 func main() {

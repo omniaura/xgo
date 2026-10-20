@@ -3,8 +3,8 @@ package trap
 import (
 	"context"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/trap"
 )
 
 // ErrMocked indicates the target function is mocked

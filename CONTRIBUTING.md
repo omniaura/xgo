@@ -4,7 +4,7 @@ Thanks for helping, this document helps you get started.
 # Development guide
 First, clone this repository:
 ```sh
-git clone https://github.com/xhd2015/xgo
+git clone https://github.com/omniaura/xgo
 cd xgo
 ```
 
@@ -204,7 +204,7 @@ xgo.helper setup-vscode /Users/xhd2015/.xgo/go-instrument-dev/go1.24.2_Us_xh_Pr_
 go run -tags=dev ./cmd/xgo test --with-goroot go-release/go1.24.2 --debug-compile=golang.org/x/example/hello/reverse --project-dir test/debug/reverse -v -a ./
 
 # or
-go run ./script/run-test --include go1.24.2 -tags=dev --log-debug --debug-compile=github.com/xhd2015/xgo/runtime/test/build/debug --debug-xgo ./runtime/test/build/debug
+go run ./script/run-test --include go1.24.2 -tags=dev --log-debug --debug-compile=github.com/omniaura/xgo/runtime/test/build/debug --debug-xgo ./runtime/test/build/debug
 ```
 
 # Debug target
@@ -216,7 +216,7 @@ Just clone the repository, and run:
 go install ./cmd/xgo
 ```
 
-It's totally the same as `go install github.com/xhd2015/xgo/cmd/xgo@latest`, but from local.
+It's totally the same as `go install github.com/omniaura/xgo/cmd/xgo@latest`, but from local.
 
 # Debug the go compiler
 First, build a package with `--debug-compile` flag:
@@ -258,7 +258,7 @@ Debug with IDEs:
 ```
 
 Following these instructions, using your favorite IDE like VSCode,GoLand or just terminal to debug:
-<img width="1792" alt="image" src="https://github.com/xhd2015/xgo/assets/14964938/673df393-6632-4eed-a004-400e0c70d0d1">
+<img width="1792" alt="image" src="https://github.com/omniaura/xgo/assets/14964938/673df393-6632-4eed-a004-400e0c70d0d1">
 
 # Release xgo
 Each new release will have two tags, for example: `v1.0.49` and `runtime/v1.0.49`.

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // Overlay maps helper.go only. --strace may rewrite main.go. Neither should

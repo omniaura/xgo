@@ -9,9 +9,9 @@ import (
 // these fields are automatically copied
 // from when running
 // `go run ./script/generate runtime/core/version.go`
-const VERSION = "1.3.0"
-const REVISION = "c732eac9be208b85ff91595999c3b9718dd3254d+1"
-const NUMBER = 698
+const VERSION = "1.4.0"
+const REVISION = "2f3b5fcd343acae359971153d341e14f65b64756+1"
+const NUMBER = 700
 
 // these fields will be filled by compiler when xgo builds with xgo/runtime
 // see CORE_VERSION in cmd/xgo/version.go
@@ -35,7 +35,7 @@ func checkVersion() error {
 	// xgoVersion, xgoRevision, xgoNumber := XGO_VERSION, XGO_REVISION, XGO_NUMBER
 	// _, _, _ = xgoVersion, xgoRevision, xgoNumber
 	if XGO_VERSION == "" {
-		return errors.New("failed to detect xgo version, consider install xgo: go install github.com/xhd2015/xgo/cmd/xgo@latest")
+		return errors.New("failed to detect xgo version, consider install xgo: go install github.com/omniaura/xgo/cmd/xgo@latest")
 	}
 	if XGO_VERSION == VERSION {
 		// if xgo version same with runtime version, then
@@ -57,7 +57,7 @@ func checkVersion() error {
 		msg = fmt.Sprintf("xgo v%s maybe incompatible with xgo/runtime v%s, consider run: %s", XGO_VERSION, VERSION, updateCmd)
 	} else {
 		// compatible: xgo >= runtime
-		updateCmd := "go get github.com/xhd2015/xgo/runtime@latest"
+		updateCmd := "go get github.com/omniaura/xgo/runtime@latest"
 		msg = fmt.Sprintf("xgo/runtime v%s can be upgraded to v%s, consider run: %s", VERSION, XGO_VERSION, updateCmd)
 	}
 	return errors.New(msg)

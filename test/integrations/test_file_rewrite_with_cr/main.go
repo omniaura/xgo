@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/edit/goedit"
+	"github.com/omniaura/xgo/support/edit/goedit"
 )
 
 func main() {

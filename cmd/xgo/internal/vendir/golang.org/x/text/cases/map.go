@@ -13,10 +13,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/norm"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/norm"
 )
 
 // A mapFunc takes a context set to the current rune and writes the mapped

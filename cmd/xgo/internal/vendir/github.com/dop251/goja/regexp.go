@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 )
 
 type regexp2MatchCache struct {

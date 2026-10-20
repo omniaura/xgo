@@ -18,7 +18,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2/syntax"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dlclark/regexp2/v2/syntax"
 )
 
 var (

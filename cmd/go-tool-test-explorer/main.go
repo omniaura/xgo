@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	test_explorer "github.com/xhd2015/xgo/cmd/xgo/test-explorer"
+	test_explorer "github.com/omniaura/xgo/cmd/xgo/test-explorer"
 )
 
 func main() {

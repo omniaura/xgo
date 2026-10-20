@@ -5,7 +5,7 @@
 #   B) xgo test -race --trap-all -count=1
 #
 # Gate: RED only when the race detector reports DATA RACE with xgo frames
-# (github.com/xhd2015/xgo, __xgo_*, runtime/internal/{trap,stack,runtime}).
+# (github.com/omniaura/xgo, __xgo_*, runtime/internal/{trap,stack,runtime}).
 # Third-party-only races, flakes, timeouts, and build failures are recorded
 # but do not fail the check.
 #
@@ -97,7 +97,7 @@ jobs:
             # __xgo_ symbols). Third-party-only races are recorded as warnings so
             # canary noise from gin/chi/echo/cobra does not red the job when xgo
             # did not participate in the race stacks.
-            if grep -qE 'github\.com/xhd2015/xgo|/runtime/internal/(trap|stack|runtime)|__xgo_|xgo_trap' "$log"; then
+            if grep -qE 'github\.com/omniaura/xgo|/runtime/internal/(trap|stack|runtime)|__xgo_|xgo_trap' "$log"; then
               echo race > "$status_file"
               echo "::error title=DATA RACE xgo (${name})::Race detector reported DATA RACE with xgo frames in ${name}"
             else

@@ -2,7 +2,7 @@
 
 package compact
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
 
 // CLDRVersion is the CLDR version from which the tables in this package are derived.
 const CLDRVersion = "32"

@@ -241,7 +241,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/types/objectpath"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/types/objectpath"
 	// This package is dependency-restricted; see x/tools/go/gcexportdata.TestDeps.
 )
 

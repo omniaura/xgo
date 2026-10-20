@@ -9,10 +9,10 @@ import (
 
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/coverage"
-	"github.com/xhd2015/xgo/support/netutil"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/coverage"
+	"github.com/omniaura/xgo/support/netutil"
 )
 
 //go:embed index.html

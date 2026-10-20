@@ -5,11 +5,11 @@ import (
 
 	"go/ast"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/cover"
-	ast_load "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/ast"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/coverage"
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/cover"
+	ast_load "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/ast"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/coverage"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 func CollectBlockProfilesNoModPath(astInfo ast_load.LoadInfo) (coverage.BinaryProfile, error) {

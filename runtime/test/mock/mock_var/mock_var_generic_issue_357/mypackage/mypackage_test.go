@@ -7,8 +7,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/test/mock/mock_var/mock_var_generic_issue_357/mypackage"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/test/mock/mock_var/mock_var_generic_issue_357/mypackage"
 )
 
 func TestDo(t *testing.T) {

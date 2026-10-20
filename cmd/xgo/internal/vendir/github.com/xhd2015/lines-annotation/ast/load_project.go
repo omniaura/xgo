@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/xhd2015/xgo/support/goinfo"
+import "github.com/omniaura/xgo/support/goinfo"
 
 func LoadProject(dir string, args []string) (LoadInfo, error) {
 	files, err := goinfo.ListRelativeFiles(dir, args)

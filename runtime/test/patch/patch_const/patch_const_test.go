@@ -6,12 +6,12 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_const/sub"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_const/sub"
 )
 
-const pkgPath = "github.com/xhd2015/xgo/runtime/test/patch_const"
-const subPkgPath = "github.com/xhd2015/xgo/runtime/test/patch_const/sub"
+const pkgPath = "github.com/omniaura/xgo/runtime/test/patch_const"
+const subPkgPath = "github.com/omniaura/xgo/runtime/test/patch_const/sub"
 const testVersion = "1.0"
 
 const N = 50

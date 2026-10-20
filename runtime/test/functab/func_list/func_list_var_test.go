@@ -3,10 +3,9 @@ package func_list
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/functab"
-	"github.com/xhd2015/xgo/runtime/internal/legacy"
-	"github.com/xhd2015/xgo/runtime/test/functab/func_list/sub"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/test/functab/func_list/sub"
 )
 
 const a int = 10
@@ -35,16 +34,9 @@ func TestFuncListVar(t *testing.T) {
 	}
 
 	fnbPtr := functab.Info(testPkgPath, "*b")
-	if !legacy.V1_0_0 {
-		if fnbPtr != nil {
-			t.Fatalf("expect bptr to be nil, actual: %v", fnbPtr)
-		}
-	} else {
-		if fnbPtr.Kind != core.Kind_VarPtr {
-			t.Fatalf("expect bptr.Kind to be %v, actual: %v", core.Kind_VarPtr, fnbPtr.Kind)
-		}
+	if fnbPtr != nil {
+		t.Fatalf("expect bptr to be nil, actual: %v", fnbPtr)
 	}
-
 }
 
 var _ = sub.A

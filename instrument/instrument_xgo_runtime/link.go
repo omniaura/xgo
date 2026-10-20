@@ -6,20 +6,19 @@ import (
 	"go/token"
 	"os"
 
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/instrument/edit"
-	"github.com/xhd2015/xgo/instrument/instrument_func"
-	"github.com/xhd2015/xgo/instrument/load"
-	"github.com/xhd2015/xgo/instrument/overlay"
-	"github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/edit"
+	"github.com/omniaura/xgo/instrument/instrument_func"
+	"github.com/omniaura/xgo/instrument/load"
+	"github.com/omniaura/xgo/instrument/overlay"
+	"github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 var ErrLinkFileNotFound = errors.New("xgo: link file not found")
 var ErrLinkFileNotRequired = errors.New("xgo: link file not required")
-var ErrRuntimeVersionDeprecated = errors.New("runtime version deprecated")
 
 type LinkOptions struct {
 	Fset                *token.FileSet
@@ -97,7 +96,6 @@ func LinkXgoRuntime(goroot string, projectDir string, xgoRuntimeModuleDir string
 	var foundTrap bool
 	var foundFunctabPkg bool
 	var traceFile *edit.File
-	var runtimeCoreVersion string
 
 	// find version first
 	var corePkg *edit.Package
@@ -124,16 +122,7 @@ func LinkXgoRuntime(goroot string, projectDir string, xgoRuntimeModuleDir string
 	if versionFile != nil {
 		content := versionFile.File.Content
 		absFile := overlay.AbsFile(versionFile.File.AbsPath)
-		var err error
-		runtimeCoreVersion, err = ParseCoreVersion(strutil.ToReadonlyString(content))
-		if err != nil {
-			return nil, err
-		}
-		if isDeprecatedCoreVersion(runtimeCoreVersion) {
-			return nil, fmt.Errorf("%w: %s", ErrRuntimeVersionDeprecated, runtimeCoreVersion)
-		}
 		versionContent := ReplaceActualXgoVersion(strutil.ToReadonlyString(content), xgoVersion, xgoRevision, xgoNumber)
-		versionContent = checkBypassVersionCheck(versionContent, runtimeCoreVersion)
 		overrideContent(absFile, versionContent)
 	}
 

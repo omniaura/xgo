@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/xhd2015/xgo/instrument/config"
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/instrument/config"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 func setupDebugLog(logDebugOption *string) (func(), error) {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/coverage"
+	"github.com/omniaura/xgo/support/coverage"
 )
 
 func Main(args []string) {

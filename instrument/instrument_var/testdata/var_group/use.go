@@ -3,7 +3,7 @@ package simple
 import (
 	"fmt"
 
-	"github.com/xhd2015/xgo/instrument/instrument_var/testdata/var_group/pkg"
+	"github.com/omniaura/xgo/instrument/instrument_var/testdata/var_group/pkg"
 )
 
 func UseVar() {

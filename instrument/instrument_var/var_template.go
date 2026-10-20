@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xhd2015/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/constants"
 )
 
 func genCode(fileIndex int, varPrefix string, varName string, infoVar string, varType string) string {

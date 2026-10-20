@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event/keys"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event/label"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event/keys"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event/label"
 )
 
 // A Runner will run go command invocations and serialize

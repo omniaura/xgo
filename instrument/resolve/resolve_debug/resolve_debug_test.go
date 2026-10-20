@@ -4,10 +4,10 @@ import (
 	"go/token"
 	"testing"
 
-	"github.com/xhd2015/xgo/instrument/edit"
-	"github.com/xhd2015/xgo/instrument/instrument_var"
-	"github.com/xhd2015/xgo/instrument/load"
-	"github.com/xhd2015/xgo/instrument/resolve"
+	"github.com/omniaura/xgo/instrument/edit"
+	"github.com/omniaura/xgo/instrument/instrument_var"
+	"github.com/omniaura/xgo/instrument/load"
+	"github.com/omniaura/xgo/instrument/resolve"
 )
 
 func TestDebugResolve(t *testing.T) {

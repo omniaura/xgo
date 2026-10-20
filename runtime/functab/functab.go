@@ -8,8 +8,8 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
 )
 
 // all func infos
@@ -146,7 +146,7 @@ var errType = reflect.TypeOf((*error)(nil)).Elem()
 var ctxType = reflect.TypeOf((*context.Context)(nil)).Elem()
 
 // Deprecated: now xgo can make package automatically depends
-// on this package(github.com/xhd2015/xgo/runtime/functab),
+// on this package(github.com/omniaura/xgo/runtime/functab),
 // so we don't need to do struct inspection here anymore.
 func registerFuncInfo(fnInfo interface{}) {
 	rv := reflect.ValueOf(fnInfo)

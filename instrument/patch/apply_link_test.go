@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/xhd2015/xgo/support/filecopy"
+	"github.com/omniaura/xgo/support/filecopy"
 )
 
 // TestApplyPatches_HardLinkedGorootKeepsOriginal checks that applying patches

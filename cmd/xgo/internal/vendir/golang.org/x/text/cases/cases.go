@@ -8,8 +8,8 @@
 package cases // import "golang.org/x/text/cases"
 
 import (
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
 )
 
 // References:

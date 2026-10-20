@@ -3,7 +3,7 @@ package git
 import (
 	"os/exec"
 
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 func Contains(dir string, head string, prev string) (bool, error) {

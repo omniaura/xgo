@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/functab"
 )
 
 var SomeVar int
@@ -48,21 +48,21 @@ func TestFuncTab(t *testing.T) {
 	expectFullNames := []TestCase{
 		{
 			WantKind:         core.Kind_Var,
-			WantFullName:     "github.com/xhd2015/xgo/runtime/test/functab.SomeVar",
+			WantFullName:     "github.com/omniaura/xgo/runtime/test/functab.SomeVar",
 			WantName:         "SomeVar",
 			WantIdentityName: "SomeVar",
 			WantVar:          &SomeVar,
 		},
 		{
 			WantKind:         core.Kind_Var,
-			WantFullName:     "github.com/xhd2015/xgo/runtime/test/functab.SomeVarWithoutType",
+			WantFullName:     "github.com/omniaura/xgo/runtime/test/functab.SomeVarWithoutType",
 			WantName:         "SomeVarWithoutType",
 			WantIdentityName: "SomeVarWithoutType",
 			WantVar:          &SomeVarWithoutType,
 		},
 		{
 			WantKind:         core.Kind_Func,
-			WantFullName:     "github.com/xhd2015/xgo/runtime/test/functab.SomeFunc",
+			WantFullName:     "github.com/omniaura/xgo/runtime/test/functab.SomeFunc",
 			WantName:         "SomeFunc",
 			WantIdentityName: "SomeFunc",
 			WantPC:           getPC(SomeFunc),
@@ -70,21 +70,21 @@ func TestFuncTab(t *testing.T) {
 		},
 		{
 			WantKind:         core.Kind_Func,
-			WantFullName:     "github.com/xhd2015/xgo/runtime/test/functab.SomeType.ValueMethod",
+			WantFullName:     "github.com/omniaura/xgo/runtime/test/functab.SomeType.ValueMethod",
 			WantName:         "ValueMethod",
 			WantIdentityName: "SomeType.ValueMethod",
 			WantPC:           getPC(SomeType.ValueMethod),
 		},
 		{
 			WantKind:         core.Kind_Func,
-			WantFullName:     "github.com/xhd2015/xgo/runtime/test/functab.(*SomeType).PtrMethod",
+			WantFullName:     "github.com/omniaura/xgo/runtime/test/functab.(*SomeType).PtrMethod",
 			WantName:         "PtrMethod",
 			WantIdentityName: "(*SomeType).PtrMethod",
 			WantPC:           getPC((*SomeType).PtrMethod),
 		},
 		{
 			WantKind:         core.Kind_Func,
-			WantFullName:     "github.com/xhd2015/xgo/runtime/test/functab.TestFuncTab",
+			WantFullName:     "github.com/omniaura/xgo/runtime/test/functab.TestFuncTab",
 			WantName:         "TestFuncTab",
 			WantIdentityName: "TestFuncTab",
 			WantPC:           getPC(TestFuncTab),
@@ -96,7 +96,7 @@ func TestFuncTab(t *testing.T) {
 	if IS_GO_25_OR_LATER {
 		expectFullNames = append([]TestCase{{
 			WantKind:         core.Kind_Func,
-			WantFullName:     "github.com/xhd2015/xgo/runtime/trace.Trace",
+			WantFullName:     "github.com/omniaura/xgo/runtime/trace.Trace",
 			WantName:         "Trace",
 			WantIdentityName: "Trace",
 			SkipPCCheck:      true,

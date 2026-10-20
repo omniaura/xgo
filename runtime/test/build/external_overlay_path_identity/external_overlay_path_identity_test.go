@@ -86,8 +86,8 @@ func writeSubjectModule(t *testing.T) string {
 	mustWrite(t, filepath.Join(dir, "go.mod"), ""+
 		"module example.com/overlay-path-identity\n\n"+
 		"go 1.18\n\n"+
-		"require github.com/xhd2015/xgo/runtime v0.0.0\n\n"+
-		"replace github.com/xhd2015/xgo/runtime => "+runtimeReplacePath(t)+"\n",
+		"require github.com/omniaura/xgo/runtime v0.0.0\n\n"+
+		"replace github.com/omniaura/xgo/runtime => "+runtimeReplacePath(t)+"\n",
 	)
 	mustWrite(t, filepath.Join(dir, "subject.go"), ""+
 		"package pathid\n\n"+
@@ -101,7 +101,7 @@ func writeSubjectModule(t *testing.T) string {
 		"package pathid\n\n"+
 		"import (\n"+
 		"\t\"testing\"\n\n"+
-		"\t\"github.com/xhd2015/xgo/runtime/mock\"\n"+
+		"\t\"github.com/omniaura/xgo/runtime/mock\"\n"+
 		")\n\n"+
 		"func TestValueAndMock(t *testing.T) {\n"+
 		"\tif got, want := Value(), \"caller replacement\"; got != want {\n"+
@@ -158,7 +158,7 @@ func isXgoMainModule(goMod []byte) bool {
 	// Exact main module path only — not runtime/test/... submodules.
 	for _, line := range bytes.Split(goMod, []byte("\n")) {
 		line = bytes.TrimSpace(line)
-		if bytes.Equal(line, []byte("module github.com/xhd2015/xgo")) {
+		if bytes.Equal(line, []byte("module github.com/omniaura/xgo")) {
 			return true
 		}
 	}

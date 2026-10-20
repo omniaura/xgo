@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/test/trap/third"
+	"github.com/omniaura/xgo/runtime/test/trap/third"
 )
 
 var ints [3]int

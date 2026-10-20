@@ -7,12 +7,12 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/parser"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/collate"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/norm"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/parser"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/collate"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/norm"
 )
 
 func (r *Runtime) collator() *collate.Collator {

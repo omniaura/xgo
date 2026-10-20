@@ -7,9 +7,9 @@ package collate
 import (
 	"sort"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/colltab"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/norm"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/colltab"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/unicode/norm"
 )
 
 // newCollator creates a new collator with default options configured.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/instrument/patch"
+	"github.com/omniaura/xgo/instrument/patch"
 )
 
 func TestAbsFileKeyUnifiesSlashAndNative(t *testing.T) {

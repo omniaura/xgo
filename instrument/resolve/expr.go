@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/xhd2015/xgo/instrument/resolve/types"
+	"github.com/omniaura/xgo/instrument/resolve/types"
 )
 
 func (ctx *Scope) traverseExprs(nodes []ast.Expr) {

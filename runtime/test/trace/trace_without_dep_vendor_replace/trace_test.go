@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/test/trace_without_dep_vendor_replace/lib"
+	"github.com/omniaura/xgo/runtime/test/trace_without_dep_vendor_replace/lib"
 )
 
 const traceFile = "TestGreet.json"

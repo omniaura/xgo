@@ -6,8 +6,8 @@ package service
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_var/generic_return/third"
-	"github.com/xhd2015/xgo/runtime/test/patch/patch_var/generic_return/third/fn2"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_var/generic_return/third"
+	"github.com/omniaura/xgo/runtime/test/patch/patch_var/generic_return/third/fn2"
 )
 
 var Tree = third.MustBuild[int](1)

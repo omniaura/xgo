@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // --strace prep and -overlay must compose: caller replacement body is built,

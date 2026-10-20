@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // The type of timeout is resolved from its initializer in the scope of

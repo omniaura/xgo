@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/goparse"
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/goparse"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
 func GetCommitHash(dir string, ref string) (string, error) {

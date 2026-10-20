@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 func TestPersistentAfterBuild(t *testing.T) {

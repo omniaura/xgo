@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/script/generate/gen_defs"
-	"github.com/xhd2015/xgo/support/filecopy"
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/script/generate/gen_defs"
+	"github.com/omniaura/xgo/support/filecopy"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 func genXgoRuntime(rootDir string, needCopyTrace bool, genName string) error {

@@ -1,10 +1,10 @@
-module github.com/xhd2015/xgo/runtime/test/patch/real_world/kusia_ipc
+module github.com/omniaura/xgo/runtime/test/patch/real_world/kusia_ipc
 
 go 1.18
 
 require (
 	github.com/apache/arrow/go/v13 v13.0.0
-	github.com/xhd2015/xgo/runtime v1.1.0
+	github.com/omniaura/xgo/runtime v1.1.0
 )
 
 require (
@@ -25,3 +25,5 @@ require (
 	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
+
+replace github.com/omniaura/xgo/runtime => ../../../..

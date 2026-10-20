@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/functab"
 )
 
 func Hello(s string) string {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/git"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/sh"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/git"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/sh"
 )
 
 func MergeGit(old Profile, new Profile, modPrefix string, dir string, oldCommit string, newCommit string) (Profile, error) {

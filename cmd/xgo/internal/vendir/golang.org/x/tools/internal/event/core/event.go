@@ -10,7 +10,7 @@ import (
 	"iter"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event/label"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/internal/event/label"
 )
 
 // Event holds the information about an event of note that occurred.

@@ -3,11 +3,11 @@ package main
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func TestAddBlankImport(t *testing.T) {
-	importStr := `import _ "github.com/xhd2015/xgo/runtime/trace"`
+	importStr := `import _ "github.com/omniaura/xgo/runtime/trace"`
 
 	tests := []struct {
 		name    string

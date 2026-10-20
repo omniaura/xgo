@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 func TestNewGoroutineShouldInheritInterceptor(t *testing.T) {

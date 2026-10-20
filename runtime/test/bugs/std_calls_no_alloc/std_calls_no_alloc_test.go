@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // xgo test lists the predefined std packages (time, os, net/http...) to load

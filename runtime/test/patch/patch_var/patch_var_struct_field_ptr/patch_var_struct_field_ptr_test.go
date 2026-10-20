@@ -3,7 +3,7 @@ package patch_var_struct_field_ptr
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func TestGetProvider(t *testing.T) {

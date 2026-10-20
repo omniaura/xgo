@@ -63,9 +63,9 @@ func TestMethodShouldHaveFMSuffix(t *testing.T) {
 	// t.Logf("stName: %s", stName)
 
 	// NOTE: method values have -fm suffix
-	explgname := "github.com/xhd2015/xgo/test/xgo_test/method_fm_suffix.large.String-fm"
-	expsmName := "github.com/xhd2015/xgo/test/xgo_test/method_fm_suffix.small.String-fm"
-	expstName := "github.com/xhd2015/xgo/test/xgo_test/method_fm_suffix.(*struct_).String-fm"
+	explgname := "github.com/omniaura/xgo/test/xgo_test/method_fm_suffix.large.String-fm"
+	expsmName := "github.com/omniaura/xgo/test/xgo_test/method_fm_suffix.small.String-fm"
+	expstName := "github.com/omniaura/xgo/test/xgo_test/method_fm_suffix.(*struct_).String-fm"
 
 	if lgName != explgname {
 		t.Fatalf("expect lgName to be %s, actual: %s", explgname, lgName)
@@ -85,9 +85,9 @@ func TestMethodShouldHaveFMSuffix(t *testing.T) {
 	// t.Logf("smProtoName: %s", smProtoName)
 	// t.Logf("stProtoName: %s", stProtoName)
 
-	explgProtoName := "github.com/xhd2015/xgo/test/xgo_test/method_fm_suffix.large.String"
-	expsmProtoName := "github.com/xhd2015/xgo/test/xgo_test/method_fm_suffix.small.String"
-	expstProtoName := "github.com/xhd2015/xgo/test/xgo_test/method_fm_suffix.(*struct_).String"
+	explgProtoName := "github.com/omniaura/xgo/test/xgo_test/method_fm_suffix.large.String"
+	expsmProtoName := "github.com/omniaura/xgo/test/xgo_test/method_fm_suffix.small.String"
+	expstProtoName := "github.com/omniaura/xgo/test/xgo_test/method_fm_suffix.(*struct_).String"
 
 	if lgProtoName != explgProtoName {
 		t.Fatalf("expect lgProtoName to be %s, actual: %s", explgProtoName, lgProtoName)

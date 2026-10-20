@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/apache/arrow/go/v13/arrow/flight"
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 // source: https://github.com/secretflow/kuscia

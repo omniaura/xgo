@@ -1,3 +1,3 @@
-module github.com/xhd2015/xgo/runtime/test/build/nosplit
+module github.com/omniaura/xgo/runtime/test/build/nosplit
 
 go 1.18

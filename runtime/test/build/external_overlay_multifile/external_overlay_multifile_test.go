@@ -3,7 +3,7 @@ package external_overlay_multifile
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func TestMultiFileOverlayComposesAndMocks(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 // Prior to xgo v1.0.1, explicit trap.Skip()

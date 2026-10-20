@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func TestPatchUnmatchSignature(t *testing.T) {
@@ -43,7 +43,7 @@ func TestPatchMethodByNameUnmatchSignature(t *testing.T) {
 	}
 
 	s2 := capturePanic(func() {
-		mock.PatchByName("github.com/xhd2015/xgo/runtime/test/patch", "(*struct_).greet", func() string {
+		mock.PatchByName("github.com/omniaura/xgo/runtime/test/patch", "(*struct_).greet", func() string {
 			return ""
 		})
 	})

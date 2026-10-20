@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-inspect/sh/process"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-inspect/sh/process"
 )
 
 func RunBash(cmdList []string, verbose bool) error {

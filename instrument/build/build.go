@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 func BuildNativeBinary(goroot string, dir string, flags []string, outputDir string, outputName string, arg string) (string, error) {

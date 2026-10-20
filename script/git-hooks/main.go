@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/script/build-release/revision"
-	"github.com/xhd2015/xgo/script/generate/gen_defs"
-	"github.com/xhd2015/xgo/support/cmd"
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/git"
+	"github.com/omniaura/xgo/script/build-release/revision"
+	"github.com/omniaura/xgo/script/generate/gen_defs"
+	"github.com/omniaura/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/git"
 )
 
 // usage:

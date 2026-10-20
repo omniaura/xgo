@@ -4,7 +4,7 @@
 
 package collate
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/colltab"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/colltab"
 
 const blockSize = 64
 

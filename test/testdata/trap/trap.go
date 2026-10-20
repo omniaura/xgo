@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 var hasInstruments = os.Getenv("XGO_TEST_HAS_INSTRUMENT") != "false"

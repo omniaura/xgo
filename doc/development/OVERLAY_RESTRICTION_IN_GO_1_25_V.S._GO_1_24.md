@@ -110,7 +110,7 @@ This is inserted into the `trace.go` overlay/disk copy.
 
 ### Step 5: On go1.25, Blank Import Forces Compilation
 
-`addBlankImports()` (`trace.go:515-583`) adds `import _ "github.com/xhd2015/xgo/runtime/trace"` to test source files. This blank import forces `runtime/trace` to be compiled and linked into the test binary. The instrumented `init()` runs, calling `XgoRegister(&TraceInfo)` which registers `Trace` in functab.
+`addBlankImports()` (`trace.go:515-583`) adds `import _ "github.com/omniaura/xgo/runtime/trace"` to test source files. This blank import forces `runtime/trace` to be compiled and linked into the test binary. The instrumented `init()` runs, calling `XgoRegister(&TraceInfo)` which registers `Trace` in functab.
 
 ### Step 6: On go1.24, No Blank Import → No Compilation
 

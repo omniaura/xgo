@@ -3,7 +3,7 @@ package resolve
 import (
 	"go/ast"
 
-	"github.com/xhd2015/xgo/instrument/resolve/types"
+	"github.com/omniaura/xgo/instrument/resolve/types"
 )
 
 // something[A,B]

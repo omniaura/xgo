@@ -38,10 +38,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ast"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/ast"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 )
 
 // A Mode value is a set of flags (or 0). They control optional parser functionality.

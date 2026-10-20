@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/xhd2015/xgo/cmd/xgo/upgrade"
+	"github.com/omniaura/xgo/cmd/xgo/upgrade"
 )
 
 func handleUpgrade(args []string) error {

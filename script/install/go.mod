@@ -1,3 +1,3 @@
-module github.com/xhd2015/xgo/script/install
+module github.com/omniaura/xgo/script/install
 
 go 1.14

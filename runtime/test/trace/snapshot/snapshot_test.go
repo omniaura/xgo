@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xhd2015/xgo/runtime/trace"
-	"github.com/xhd2015/xgo/support/assert"
+	"github.com/omniaura/xgo/runtime/trace"
+	"github.com/omniaura/xgo/support/assert"
 )
 
 // NOTE: do not run with -cover, because
@@ -89,7 +89,7 @@ const snapshotExpect = `{
         {
             "FuncInfo": {
                 "Kind": "func",
-                "Pkg": "github.com/xhd2015/xgo/runtime/test/trace/snapshot",
+                "Pkg": "github.com/omniaura/xgo/runtime/test/trace/snapshot",
                 "IdentityName": "test.func2",
                 "Name": "",
                 "RecvType": "",
@@ -117,7 +117,7 @@ const snapshotExpect = `{
                 {
                     "FuncInfo": {
                         "Kind": "func",
-                        "Pkg": "github.com/xhd2015/xgo/runtime/test/trace/snapshot",
+                        "Pkg": "github.com/omniaura/xgo/runtime/test/trace/snapshot",
                         "IdentityName": "handleL1",
                         "Name": "handleL1",
                         "RecvType": "",
@@ -152,7 +152,7 @@ const snapshotExpect = `{
                         {
                             "FuncInfo": {
                                 "Kind": "func",
-                                "Pkg": "github.com/xhd2015/xgo/runtime/test/trace/snapshot",
+                                "Pkg": "github.com/omniaura/xgo/runtime/test/trace/snapshot",
                                 "IdentityName": "handleL2",
                                 "Name": "handleL2",
                                 "RecvType": "",
@@ -192,7 +192,7 @@ const snapshotExpect = `{
                                 {
                                     "FuncInfo": {
                                         "Kind": "func",
-                                        "Pkg": "github.com/xhd2015/xgo/runtime/test/trace/snapshot",
+                                        "Pkg": "github.com/omniaura/xgo/runtime/test/trace/snapshot",
                                         "IdentityName": "handleL3",
                                         "Name": "handleL3",
                                         "RecvType": "",
@@ -249,7 +249,7 @@ const noSnapshotExpect = `{
         {
             "FuncInfo": {
                 "Kind": "func",
-                "Pkg": "github.com/xhd2015/xgo/runtime/test/trace/snapshot",
+                "Pkg": "github.com/omniaura/xgo/runtime/test/trace/snapshot",
                 "IdentityName": "test.func2",
                 "Name": "",
                 "RecvType": "",
@@ -276,7 +276,7 @@ const noSnapshotExpect = `{
                 {
                     "FuncInfo": {
                         "Kind": "func",
-                        "Pkg": "github.com/xhd2015/xgo/runtime/test/trace/snapshot",
+                        "Pkg": "github.com/omniaura/xgo/runtime/test/trace/snapshot",
                         "IdentityName": "handleL1",
                         "Name": "handleL1",
                         "RecvType": "",
@@ -310,7 +310,7 @@ const noSnapshotExpect = `{
                         {
                             "FuncInfo": {
                                 "Kind": "func",
-                                "Pkg": "github.com/xhd2015/xgo/runtime/test/trace/snapshot",
+                                "Pkg": "github.com/omniaura/xgo/runtime/test/trace/snapshot",
                                 "IdentityName": "handleL2",
                                 "Name": "handleL2",
                                 "RecvType": "",
@@ -349,7 +349,7 @@ const noSnapshotExpect = `{
                                 {
                                     "FuncInfo": {
                                         "Kind": "func",
-                                        "Pkg": "github.com/xhd2015/xgo/runtime/test/trace/snapshot",
+                                        "Pkg": "github.com/omniaura/xgo/runtime/test/trace/snapshot",
                                         "IdentityName": "handleL3",
                                         "Name": "handleL3",
                                         "RecvType": "",

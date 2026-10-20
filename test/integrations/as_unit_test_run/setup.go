@@ -31,8 +31,8 @@ func resolveRootDir() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("read go.mod: %w", err)
 	}
-	if !strings.HasPrefix(string(content), "module github.com/xhd2015/xgo") {
-		return "", fmt.Errorf("go.mod does not start with 'module github.com/xhd2015/xgo', wrong dir: %s", dir)
+	if !strings.HasPrefix(string(content), "module github.com/omniaura/xgo") {
+		return "", fmt.Errorf("go.mod does not start with 'module github.com/omniaura/xgo', wrong dir: %s", dir)
 	}
 	return dir, nil
 }

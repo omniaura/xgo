@@ -3,7 +3,7 @@ package debug
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/mock"
 )
 
 func TestDebug(t *testing.T) {

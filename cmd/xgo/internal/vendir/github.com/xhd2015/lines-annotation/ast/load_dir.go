@@ -5,8 +5,8 @@ import (
 	"io/fs"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/path/filter"
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/path/filter"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 // LoadDir scans a given directory

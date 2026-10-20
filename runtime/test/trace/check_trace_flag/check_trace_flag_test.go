@@ -5,7 +5,7 @@ package check_trace_flag
 import (
 	"testing"
 
-	_ "github.com/xhd2015/xgo/runtime/trace"
+	_ "github.com/omniaura/xgo/runtime/trace"
 )
 
 // check if 'xgo test --strace' would actually work

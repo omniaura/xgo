@@ -10,10 +10,10 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load"
-	ann_model "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
-	coverage_model "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/coverage"
-	"github.com/xhd2015/xgo/support/coverage"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load"
+	ann_model "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+	coverage_model "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/coverage"
+	"github.com/omniaura/xgo/support/coverage"
 )
 
 func LoadCoverageProfileFiles(modPath string, files []string, excludePrefix []string) (*ann_model.ProjectAnnotation, error) {

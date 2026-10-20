@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 // IsClean reports whether the worktree has no tracked differences vs HEAD

@@ -3,22 +3,19 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/xhd2015/xgo/cmd/xgo/asset"
-	embedutil "github.com/xhd2015/xgo/instrument/embed"
-	"github.com/xhd2015/xgo/instrument/instrument_compiler"
-	"github.com/xhd2015/xgo/instrument/patch"
-	"github.com/xhd2015/xgo/support/filecopy"
-	"github.com/xhd2015/xgo/support/fileutil"
-	"github.com/xhd2015/xgo/support/goinfo"
-	"github.com/xhd2015/xgo/support/osinfo"
+	"github.com/omniaura/xgo/cmd/xgo/asset"
+	embedutil "github.com/omniaura/xgo/instrument/embed"
+	"github.com/omniaura/xgo/instrument/instrument_compiler"
+	"github.com/omniaura/xgo/instrument/patch"
+	"github.com/omniaura/xgo/support/filecopy"
+	"github.com/omniaura/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/osinfo"
 )
 
 // patchRuntime applies the file-based patches for goVersion to goroot.
@@ -207,116 +204,6 @@ func copyGorootSrc(goroot string, instrumentGoroot string) error {
 func statNoErr(f string) bool {
 	_, err := os.Stat(f)
 	return err == nil
-}
-
-// Deprecated:
-func buildInstrumentTool(goroot string, xgoSrc string, compilerBin string, compilerBuildIDFile string, execToolBin string, xgoBin string, debugPkg string, logCompile bool, noSetup bool, debugWithDlv bool) (compilerChanged bool, toolExecFlag string, err error) {
-	var execToolCmd []string
-	if !noSetup {
-		// build the instrumented compiler
-		err = buildCompiler(goroot, compilerBin)
-		if err != nil {
-			return false, "", err
-		}
-		compilerChanged, err = compareAndUpdateCompilerID(compilerBin, compilerBuildIDFile)
-		if err != nil {
-			return false, "", err
-		}
-
-		if false {
-			actualExecToolBin := execToolBin
-			if isDevelopment {
-				err := buildExecTool(filepath.Join(xgoSrc, "cmd"), execToolBin)
-				if err != nil {
-					return false, "", err
-				}
-			} else {
-				actualExecToolBin, err = findBuiltExecTool()
-				if err != nil {
-					return false, "", err
-				}
-			}
-			// unused any more
-			execToolCmd = []string{actualExecToolBin, "--enable"}
-			_ = execToolCmd
-		}
-	}
-	execToolCmd = []string{xgoBin, "exec_tool", "--enable"}
-
-	if logCompile {
-		execToolCmd = append(execToolCmd, "--log-compile")
-	}
-	if debugPkg != "" {
-		execToolCmd = append(execToolCmd, "--debug="+debugPkg)
-	}
-	if debugWithDlv {
-		execToolCmd = append(execToolCmd, "--debug-with-dlv")
-	}
-	// always add trailing '--' to mark exec tool flags end
-	execToolCmd = append(execToolCmd, "--")
-
-	toolExecFlag = "-toolexec=" + strings.Join(execToolCmd, " ")
-	return compilerChanged, toolExecFlag, nil
-}
-
-// find exec_tool, first try the same dir with xgo,
-// but if that is not found, we can fallback to ~/.xgo/bin/exec_tool
-// because exec_tool changes rarely, so it is safe to use
-// an older version.
-// we may add version to check if exec_tool is compatible
-// Deprecated: xgo itself embed exec tool
-func findBuiltExecTool() (string, error) {
-	dirName := filepath.Dir(os.Args[0])
-	absDirName, err := filepath.Abs(dirName)
-	if err != nil {
-		return "", err
-	}
-	exeSuffix := osinfo.EXE_SUFFIX
-	execToolBin := filepath.Join(absDirName, "exec_tool"+exeSuffix)
-	_, statErr := os.Stat(execToolBin)
-	if statErr == nil {
-		return execToolBin, nil
-	}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("exec_tool not found in %s", dirName)
-	}
-	execToolBin = filepath.Join(homeDir, ".xgo", "bin", "exec_tool"+exeSuffix)
-	_, statErr = os.Stat(execToolBin)
-	if statErr == nil {
-		return execToolBin, nil
-	}
-	return "", fmt.Errorf("exec_tool not found in %s and ~/.xgo/bin", dirName)
-}
-
-func compareAndUpdateCompilerID(compilerFile string, compilerIDFile string) (changed bool, err error) {
-	prevData, statErr := fileutil.ReadFile(compilerIDFile)
-	if statErr != nil {
-		if !errors.Is(statErr, os.ErrNotExist) {
-			return false, statErr
-		}
-	}
-	prevID := string(prevData)
-	curID, err := getBuildID(compilerFile)
-	if err != nil {
-		return false, err
-	}
-	if prevID != "" && prevID == curID {
-		return false, nil
-	}
-	err = ioutil.WriteFile(compilerIDFile, []byte(curID), 0755)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func getBuildID(file string) (string, error) {
-	data, err := exec.Command(getNakedGo(), "tool", "buildid", file).Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSuffix(string(data), "\n"), nil
 }
 
 func mkbuiltinHandler(kind string, extraEnv map[string]string) error {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/mock"
-	"github.com/xhd2015/xgo/runtime/test/mock/mock_rule_include_as_main_module/app"
-	"github.com/xhd2015/xgo/runtime/test/mock/mock_rule_include_as_main_module/other"
+	"github.com/omniaura/xgo/runtime/mock"
+	"github.com/omniaura/xgo/runtime/test/mock/mock_rule_include_as_main_module/app"
+	"github.com/omniaura/xgo/runtime/test/mock/mock_rule_include_as_main_module/other"
 )
 
 // Baseline: main_module-only rules, no include-as.

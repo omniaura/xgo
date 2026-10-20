@@ -1,6 +1,6 @@
 package merge
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/profile"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/profile"
 
 type Profile interface {
 	GetCounters(pkgFile string) Counters // return nil to indicate not-existent

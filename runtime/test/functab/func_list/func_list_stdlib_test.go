@@ -10,7 +10,7 @@ import (
 	"testing"
 	_ "time"
 
-	"github.com/xhd2015/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/functab"
 )
 
 // go run ./cmd/xgo test --project-dir runtime -run TestListStdlib -v ./test/func_list

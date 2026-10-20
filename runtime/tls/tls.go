@@ -7,7 +7,7 @@ package tls
 import (
 	"sync"
 
-	"github.com/xhd2015/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/internal/runtime"
 )
 
 var mut sync.Mutex

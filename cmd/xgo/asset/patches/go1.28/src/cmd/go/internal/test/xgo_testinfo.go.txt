@@ -10,7 +10,7 @@ import (
 )
 
 const xgoUnifiedPkgName = "testunified"
-const xgoUnifiedPackage = "github.com/xhd2015/xgo/runtime/" + xgoUnifiedPkgName
+const xgoUnifiedPackage = "github.com/omniaura/xgo/runtime/" + xgoUnifiedPkgName
 
 var xgoTmpDir string
 

@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/xhd2015/xgo/support/cmd"
-	debug_util "github.com/xhd2015/xgo/support/debug"
-	"github.com/xhd2015/xgo/support/netutil"
+	"github.com/omniaura/xgo/support/cmd"
+	debug_util "github.com/omniaura/xgo/support/debug"
+	"github.com/omniaura/xgo/support/netutil"
 )
 
 type DebugRequest struct {

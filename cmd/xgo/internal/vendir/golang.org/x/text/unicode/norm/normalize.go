@@ -12,7 +12,7 @@ package norm // import "golang.org/x/text/unicode/norm"
 import (
 	"unicode/utf8"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
 )
 
 // A Form denotes a canonical representation of Unicode code points.

@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/xhd2015/xgo/instrument/constants"
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/instrument/constants"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 var PREDEFINED_STD_PKGS = []string{

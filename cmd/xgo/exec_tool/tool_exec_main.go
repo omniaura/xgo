@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/exec_tool/inject"
+	"github.com/omniaura/xgo/cmd/xgo/exec_tool/inject"
 )
 
 const ToolExecMainHelp = `

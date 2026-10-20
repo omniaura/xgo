@@ -271,7 +271,7 @@ func resolveTests(tests []*TestConfig, defaultTest *TestConfig, args []string) [
 	return results
 }
 
-var xgoModule = []string{"github.com", "xhd2015", "xgo"}
+var xgoModule = []string{"github.com", "omniaura", "xgo"}
 
 func resolveTestConfig(tests []*TestConfig, fullArg string) (path string, test *TestConfig) {
 	rootTest := findTest(tests, "")

@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/test/build/modules_without_trap_all/service/pkg"
-	"github.com/xhd2015/xgo/runtime/trace"
-	"github.com/xhd2015/xgo/runtime/trace/stack_model"
+	"github.com/omniaura/xgo/runtime/test/build/modules_without_trap_all/service/pkg"
+	"github.com/omniaura/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace/stack_model"
 )
 
 func TestTrace(t *testing.T) {

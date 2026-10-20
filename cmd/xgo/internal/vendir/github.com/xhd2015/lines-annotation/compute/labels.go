@@ -1,6 +1,6 @@
 package compute
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
 
 // LabelsOnTheFly
 // on the fly because these processes are lightweight

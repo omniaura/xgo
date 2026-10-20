@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	internal_trap "github.com/xhd2015/xgo/runtime/internal/trap"
-	"github.com/xhd2015/xgo/runtime/trap"
+	"github.com/omniaura/xgo/runtime/core"
+	internal_trap "github.com/omniaura/xgo/runtime/internal/trap"
+	"github.com/omniaura/xgo/runtime/trap"
 )
 
 type Config struct {

@@ -10,11 +10,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/coverage"
-	"github.com/xhd2015/xgo/cmd/xgo/test-explorer/icov"
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/git"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/load/loadcov"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model/coverage"
+	"github.com/omniaura/xgo/cmd/xgo/test-explorer/icov"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 func New(projectDir string, args []string, diffBase string, profile string) (icov.Controller, error) {

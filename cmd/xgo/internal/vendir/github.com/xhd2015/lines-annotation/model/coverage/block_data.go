@@ -1,6 +1,6 @@
 package coverage
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
 
 // BlockData provide a general way to process block stats.
 type BlockData struct {

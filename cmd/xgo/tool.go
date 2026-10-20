@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/coverage"
-	test_explorer "github.com/xhd2015/xgo/cmd/xgo/test-explorer"
-	"github.com/xhd2015/xgo/cmd/xgo/trace"
-	"github.com/xhd2015/xgo/support/cmd"
+	"github.com/omniaura/xgo/cmd/xgo/coverage"
+	test_explorer "github.com/omniaura/xgo/cmd/xgo/test-explorer"
+	"github.com/omniaura/xgo/cmd/xgo/trace"
+	"github.com/omniaura/xgo/support/cmd"
 )
 
 const toolHelp = `
@@ -32,7 +32,7 @@ Examples:
     xgo tool test-explorer                open test explorer UI
     xgo tool coverage serve cover.out     visualize incremental coverage of cover.out
 
-See https://github.com/xhd2015/xgo for documentation.
+See https://github.com/omniaura/xgo for documentation.
 
 `
 

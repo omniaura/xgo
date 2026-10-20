@@ -1,3 +1,3 @@
-module github.com/xhd2015/xgo
+module github.com/omniaura/xgo
 
 go 1.27.0

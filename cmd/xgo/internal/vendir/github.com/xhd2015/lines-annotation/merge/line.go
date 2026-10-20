@@ -1,6 +1,6 @@
 package merge
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
 
 func MergeLines(dst model.LineAnnotationMapping, src model.LineAnnotationMapping) {
 	for lineNum, srcAnn := range src {

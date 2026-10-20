@@ -9,9 +9,9 @@ node types are concerned) and may change in the future.
 package ast
 
 import (
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/file"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/token"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 )
 
 type PropertyKind string

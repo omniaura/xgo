@@ -3,7 +3,7 @@ package instrument_xgo_runtime
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 // runtime/internal/runtime/xgo_trap_template.go is linked into GOROOT as is,

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
 )
 
 // ValueError is returned by any of the parsing functions when the

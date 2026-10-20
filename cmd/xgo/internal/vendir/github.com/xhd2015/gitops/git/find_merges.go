@@ -3,9 +3,9 @@ package git
 import (
 	"fmt"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/sh"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/sh"
 
-	git "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
+	git "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/gitops/model"
 )
 
 // method 1:

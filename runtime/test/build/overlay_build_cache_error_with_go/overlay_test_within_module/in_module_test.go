@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/test/build/overlay_build_cache_error_with_go/pkg"
+	"github.com/omniaura/xgo/runtime/test/build/overlay_build_cache_error_with_go/pkg"
 )
 
 func TestOverlay(t *testing.T) {

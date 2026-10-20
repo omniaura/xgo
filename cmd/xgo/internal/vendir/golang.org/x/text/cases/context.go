@@ -4,7 +4,7 @@
 
 package cases
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/transform"
 
 // A context is used for iterating over source bytes, fetching case info and
 // writing to a destination buffer.

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 // TODO: use generate to ensure options sync

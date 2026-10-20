@@ -3,11 +3,11 @@ package func_list
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/functab"
 )
 
-const testPkgPath = "github.com/xhd2015/xgo/runtime/test/functab/func_list"
+const testPkgPath = "github.com/omniaura/xgo/runtime/test/functab/func_list"
 
 var addExtraPkgsAssert func(m map[string]bool)
 

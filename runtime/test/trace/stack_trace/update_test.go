@@ -3,7 +3,7 @@ package stack_trace
 import (
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/trace"
+	"github.com/omniaura/xgo/runtime/trace"
 )
 
 // xgo test -run TestUpdateUserInfo -v ./test/stack_trace

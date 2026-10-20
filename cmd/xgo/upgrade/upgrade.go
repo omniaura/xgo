@@ -13,12 +13,12 @@ import (
 
 	"time"
 
-	"github.com/xhd2015/xgo/support/github"
-	"github.com/xhd2015/xgo/support/httputil"
-	"github.com/xhd2015/xgo/support/strutil"
+	"github.com/omniaura/xgo/support/github"
+	"github.com/omniaura/xgo/support/httputil"
+	"github.com/omniaura/xgo/support/strutil"
 )
 
-const latestURL = "https://github.com/xhd2015/xgo/releases/latest"
+const latestURL = "https://github.com/omniaura/xgo/releases/latest"
 
 func Upgrade(installDir string) error {
 	ctx := context.Background()
@@ -167,7 +167,7 @@ func cmdXgoVersion() (string, error) {
 	return version, nil
 }
 func cmdInstallXgo() error {
-	cmd := exec.Command("go", "install", "github.com/xhd2015/xgo/cmd/xgo@latest")
+	cmd := exec.Command("go", "install", "github.com/omniaura/xgo/cmd/xgo@latest")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	return cmd.Run()

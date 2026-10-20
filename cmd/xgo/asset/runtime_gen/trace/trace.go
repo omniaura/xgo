@@ -1,9 +1,9 @@
 package trace
 
 import (
-	"github.com/xhd2015/xgo/runtime/core"
-	_ "github.com/xhd2015/xgo/runtime/internal/trap"
-	"github.com/xhd2015/xgo/runtime/trace/stack_model"
+	"github.com/omniaura/xgo/runtime/core"
+	_ "github.com/omniaura/xgo/runtime/internal/trap"
+	"github.com/omniaura/xgo/runtime/trace/stack_model"
 )
 
 // NOTE: don't add more functions to this file,

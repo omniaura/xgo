@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/instrument/constants"
+	"github.com/omniaura/xgo/instrument/constants"
 )
 
 type PkgNames struct {

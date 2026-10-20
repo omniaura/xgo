@@ -8,7 +8,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/text/internal/language"
 )
 
 // A MatchOption configures a Matcher.

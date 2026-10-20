@@ -6,9 +6,9 @@ import (
 	"go/token"
 	"strings"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/packages"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/golang.org/x/tools/go/packages"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/ast"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/ast"
 )
 
 func CollectEmptyLines(ctx context.Context, dir string, args []string, buildFlags []string) (map[string][]int, error) {

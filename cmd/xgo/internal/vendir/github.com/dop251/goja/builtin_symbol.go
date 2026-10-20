@@ -1,6 +1,6 @@
 package goja
 
-import "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
+import "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/dop251/goja/unistring"
 
 var (
 	SymAsyncIterator      = newSymbol(asciiString("Symbol.asyncIterator"))

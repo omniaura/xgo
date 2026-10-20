@@ -3,7 +3,7 @@ package simple
 import (
 	"fmt"
 
-	"github.com/xhd2015/xgo/instrument/instrument_var/testdata/simple/pkg"
+	"github.com/omniaura/xgo/instrument/instrument_var/testdata/simple/pkg"
 )
 
 var localVar int

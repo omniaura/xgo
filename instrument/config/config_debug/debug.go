@@ -6,7 +6,7 @@ import (
 	"go/printer"
 	"go/token"
 
-	"github.com/xhd2015/xgo/instrument/edit"
+	"github.com/omniaura/xgo/instrument/edit"
 )
 
 func Debugpoint() {}
@@ -120,7 +120,7 @@ func OnResolveInfo(pkgPath string, fileName string, expr ast.Expr) {
 	if fileName == "math_expr_test.go" && DebugExprStr(expr) == "C" {
 		Debugpoint()
 	}
-	if pkgPath == "github.com/xhd2015/xgo/runtime/test/mock/mock_var/mock_var_generic" {
+	if pkgPath == "github.com/omniaura/xgo/runtime/test/mock/mock_var/mock_var_generic" {
 		exprDebug := DebugExprStr(expr)
 		// println(exprDebug)
 		if exprDebug == "&instance" {

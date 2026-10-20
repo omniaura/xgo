@@ -13,7 +13,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/sh"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/sh"
 )
 
 // a special commit that referes to current working directory(a pseduo commit)

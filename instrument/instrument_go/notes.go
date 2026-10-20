@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xhd2015/xgo/support/edit/goedit"
+	"github.com/omniaura/xgo/support/edit/goedit"
 )
 
 // AddEditsNotes adds notes to the content to indicate the edits made to the file.

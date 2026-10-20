@@ -3,7 +3,7 @@ package merge
 import (
 	"fmt"
 
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/lines-annotation/model"
 )
 
 func MergeAnnotations(annotations ...*model.ProjectAnnotation) *model.ProjectAnnotation {

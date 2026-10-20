@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xhd2015/xgo/support/goinfo"
+	"github.com/omniaura/xgo/support/goinfo"
 )
 
 func GenerateOverlay(dir string, overlayFile string, pkg string, file string, replacedFile string) error {

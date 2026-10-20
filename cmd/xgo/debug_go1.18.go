@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/xhd2015/xgo/support/fileutil"
+	"github.com/omniaura/xgo/support/fileutil"
 )
 
 func patchJSONPretty(settingsFile string, fn func(settings *map[string]interface{}) error) error {

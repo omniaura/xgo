@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	diff "github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/myers"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/git"
-	"github.com/xhd2015/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/model"
+	diff "github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/diff/myers"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/git"
+	"github.com/omniaura/xgo/cmd/xgo/internal/vendir/github.com/xhd2015/go-coverage/model"
 )
 
 // type ChangeType string

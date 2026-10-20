@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xhd2015/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/core"
 )
 
 func TestPlainCtxArgCanBeRecognized(t *testing.T) {

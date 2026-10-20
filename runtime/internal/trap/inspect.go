@@ -6,10 +6,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/xhd2015/xgo/runtime/core"
-	"github.com/xhd2015/xgo/runtime/functab"
-	"github.com/xhd2015/xgo/runtime/internal/generic"
-	xgo_runtime "github.com/xhd2015/xgo/runtime/internal/runtime"
+	"github.com/omniaura/xgo/runtime/core"
+	"github.com/omniaura/xgo/runtime/functab"
+	"github.com/omniaura/xgo/runtime/internal/generic"
+	xgo_runtime "github.com/omniaura/xgo/runtime/internal/runtime"
 )
 
 const methodSuffix = "-fm"
@@ -47,7 +47,7 @@ func Inspect(f interface{}) (recvPtr interface{}, funcInfo *core.FuncInfo, funcP
 	// for go1.18, go1.19, generic implementation
 	// is implemented as closure, so we need to distinguish
 	// between true closure and generic function
-	// full name example: github.com/xhd2015/xgo/runtime/test/trap/inspect.TestInspectGeneric.func1
+	// full name example: github.com/omniaura/xgo/runtime/test/trap/inspect.TestInspectGeneric.func1
 	// where TestInspectGeneric is the function that uses the generic
 	var origFullName string
 	var needRecv bool

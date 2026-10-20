@@ -4,7 +4,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/xhd2015/xgo/runtime/internal/trap"
+	"github.com/omniaura/xgo/runtime/internal/trap"
 )
 
 func TestInspectFunc(t *testing.T) {
