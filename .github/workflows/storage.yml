@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@v7
         with:
           go-version: '1.27.1'
@@ -32,8 +34,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@v7
         with:
           go-version: '1.27.1'
-      - name: Native disk and ownership checks; session lease liveness
-        run: go test ./cmd/xgo -run 'TestWindowsStorage|TestStorageSessionLeaseLivenessFallback' -count=1
+      - name: Native preflight disk and ownership checks
+        run: go test ./cmd/xgo -run 'TestWindowsStorage' -count=1

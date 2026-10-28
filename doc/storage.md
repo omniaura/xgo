@@ -49,6 +49,10 @@ xgo --config ./ci.yaml cache status
 ```
 
 `cache status` is read-only and prints JSON with effective policy and usage.
+`skipped_unverified_ownership` reports directories excluded because they could
+not be verified as owned by the current account; enforcement also warns once
+when it observes exclusions. Their bytes are outside the account's measured
+budget, while available-space checks still apply to the volume.
 `cache gc` reclaims abandoned sessions, then evicts unused managed directories
 in last-use order as needed for the budget/reserve. It fails if protected work
 prevents reclamation. Existing age/count-based cache collection remains active.
@@ -103,9 +107,9 @@ Only future managed sessions are automatically reclaimable. Symlink targets,
 unrelated directory names and other users' storage are never reclaimed.
 
 The free-space guard, process-group termination and inherited leases are
-supported and tested on macOS and Linux. Windows uses native available-space
-and owner-SID checks, with session
-leases instead of Unix process-group liveness; it does not provide the same
-orphan-process guarantees. Other unsupported platforms refuse the reserve check
+supported and tested on macOS and Linux. Windows uses native available-space and owner-SID checks for preflight/status
+only. It retains the legacy build lifecycle: the new runtime supervisor and
+automatic reclamation are not enabled without process-tree/lease guarantees.
+`runtime_guard_supported` in status makes this capability explicit. Other unsupported platforms refuse the reserve check
 unless it is explicitly disabled with `--cache-min-free=0`, and never reclaim
 storage whose ownership cannot be verified.

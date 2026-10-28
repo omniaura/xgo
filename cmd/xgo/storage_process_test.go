@@ -5,6 +5,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -245,5 +246,17 @@ func TestStorageFinalEnforcementPreservesChildFailure(t *testing.T) {
 	code, stderr := parseErr(err)
 	if code != 7 || !strings.Contains(string(stderr), "budget exceeded") {
 		t.Fatalf("lost CLI diagnostics: %d %s", code, stderr)
+	}
+}
+
+func TestStorageWrappedProcessErrorRetainsCapturedStderr(t *testing.T) {
+	_, err := exec.Command("sh", "-c", "echo captured-child-diagnostic >&2; exit 7").Output()
+	if err == nil {
+		t.Fatal("child unexpectedly succeeded")
+	}
+	combined := errors.Join(fmt.Errorf("worker: %w", err), errors.New("storage context"))
+	code, diagnostic := parseErr(combined)
+	if code != 7 || strings.Count(string(diagnostic), "captured-child-diagnostic") != 1 || !strings.Contains(string(diagnostic), "storage context") {
+		t.Fatalf("lost or duplicated diagnostics: %d %s", code, diagnostic)
 	}
 }

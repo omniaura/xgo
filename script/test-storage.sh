@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Inherited policy must never redirect this destructive smoke test to a real cache.
+unset XGO_CONFIG XGO_CACHE_DIR XGO_CACHE_MAX_SIZE XGO_CACHE_MIN_FREE
+unset XGO_TEMP_MAX_AGE XGO_DISK_CHECK_INTERVAL XGO_FLAGS XGO_BUILD_CACHE_DIR
+unset XGO_STORAGE_SESSION XGO_STORAGE_ROOT XGO_STORAGE_TEMP
+export GOCACHEPROG=""
+
 # Every writable path belongs to this test. Never pressure-test the user's
 # real cache or delete global legacy Go temporary directories.
 test_root="$(mktemp -d)"
@@ -54,7 +60,8 @@ if "$test_root/xgo" exec --xgo-home "$test_root/home" --project-dir "$test_root/
 fi
 grep -q 'low disk space' "$test_root/refusal"
 # A completed build must not leave a session containing compiler/test data.
-if find "$test_root/cache" \( -name 'run-*' -o -name 'pool-*' \) -type d | grep -q .; then
+find "$test_root/cache" \( -name 'run-*' -o -name 'pool-*' \) -type d > "$test_root/remaining-temp-dirs"
+if test -s "$test_root/remaining-temp-dirs"; then
     echo 'completed build left a temporary session or pool' >&2
     exit 1
 fi

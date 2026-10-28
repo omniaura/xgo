@@ -229,9 +229,24 @@ func handleBuild(cmd string, args []string) error {
 
 	// The supervisor owns this leased session, including all Go temporary
 	// work. It survives a killed wrapper until the entire job is gone.
-	sessionTmpDir := os.Getenv("XGO_STORAGE_SESSION")
-	if sessionTmpDir == "" {
-		return fmt.Errorf("build requires a supervised storage session")
+	var sessionTmpDir string
+	if storageProcessGroups {
+		sessionTmpDir = os.Getenv("XGO_STORAGE_SESSION")
+		if sessionTmpDir == "" {
+			return fmt.Errorf("build requires a supervised storage session")
+		}
+	} else {
+		// Retain the legacy internal temporary-directory lifecycle on platforms
+		// without the process-tree guarantees needed for automatic reclamation.
+		localTmp := filepath.Join(localXgoGenDir, "tmp")
+		if err = os.MkdirAll(localTmp, 0755); err != nil {
+			return err
+		}
+		sessionTmpDir, err = os.MkdirTemp(localTmp, cmd)
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(sessionTmpDir)
 	}
 
 	// build the exec tool
@@ -1171,7 +1186,11 @@ func parseErr(err error) (code int, stderr []byte) {
 		if err == exitErr {
 			return exitErr.ExitCode(), exitErr.Stderr
 		}
-		return exitErr.ExitCode(), []byte(err.Error())
+		diagnostic := err.Error()
+		if len(exitErr.Stderr) > 0 && !strings.Contains(diagnostic, strings.TrimSpace(string(exitErr.Stderr))) {
+			diagnostic += "\n" + string(exitErr.Stderr)
+		}
+		return exitErr.ExitCode(), []byte(diagnostic)
 	}
 	return 1, []byte(err.Error())
 }

@@ -31,11 +31,14 @@ type storageEntry struct {
 	temporary bool
 }
 type storageManager struct {
-	policy        storagePolicy
-	roots         []storageRoot
-	free          func(string) (int64, error)
-	sizeCacheFile string
-	onJobDone     func()
+	policy           storagePolicy
+	roots            []storageRoot
+	free             func(string) (int64, error)
+	sizeCacheFile    string
+	onJobDone        func()
+	skippedOwnership int
+	warnedOwnership  bool
+	ownerCheck       func(string, os.FileInfo) bool
 }
 
 func newStorageManager(p storagePolicy, xgoHome string) (*storageManager, error) {
@@ -87,6 +90,11 @@ func newStorageManager(p storagePolicy, xgoHome string) (*storageManager, error)
 func (m *storageManager) entries() ([]storageEntry, error) { return m.readEntries(false) }
 
 func (m *storageManager) readEntries(cached bool) ([]storageEntry, error) {
+	m.skippedOwnership = 0
+	owned := m.ownerCheck
+	if owned == nil {
+		owned = storageOwned
+	}
 	memo := map[string]storageSizeRecord{}
 	if cached && m.sizeCacheFile != "" {
 		data, err := os.ReadFile(m.sizeCacheFile)
@@ -99,8 +107,9 @@ func (m *storageManager) readEntries(cached bool) ([]storageEntry, error) {
 	}
 	next := map[string]storageSizeRecord{}
 	changed := false
+	complete := false
 	defer func() {
-		if changed && m.sizeCacheFile != "" {
+		if complete && changed && m.sizeCacheFile != "" {
 			m.saveSizes(next)
 		}
 	}()
@@ -130,7 +139,8 @@ func (m *storageManager) readEntries(cached bool) ([]storageEntry, error) {
 				}
 				return nil, err
 			}
-			if !storageOwned(dir, info) {
+			if !owned(dir, info) {
+				m.skippedOwnership++
 				continue
 			}
 			var size int64
@@ -160,6 +170,7 @@ func (m *storageManager) readEntries(cached bool) ([]storageEntry, error) {
 			entries = append(entries, storageEntry{dir, size, used, root.sessions, root.temporary})
 		}
 	}
+	complete = true
 	return entries, nil
 }
 
@@ -313,6 +324,7 @@ func (m *storageManager) removeIf(e storageEntry, eligible func(string) bool) bo
 
 func (m *storageManager) enforce() error {
 	entries, err := m.readEntries(true)
+	m.reportOwnershipExclusions()
 	if err != nil {
 		return err
 	}
@@ -335,11 +347,11 @@ func (m *storageManager) enforce() error {
 	if !errors.As(pressure, &shortage) {
 		return pressure
 	}
+	var total int64
+	for _, current := range entries {
+		total += current.size
+	}
 	for _, e := range entries {
-		var total int64
-		for _, current := range entries {
-			total += current.size
-		}
 		var free int64
 		if m.policy.MinFreeBytes > 0 {
 			var err error
@@ -359,6 +371,10 @@ func (m *storageManager) enforce() error {
 			entries, err = m.readEntries(true)
 			if err != nil {
 				return err
+			}
+			total = 0
+			for _, current := range entries {
+				total += current.size
 			}
 			if m.pressure(entries) == nil {
 				return nil
@@ -408,6 +424,32 @@ func superviseBuild(cmdName string, args []string) error {
 	m, err := newStorageManager(p, opts.xgoHome)
 	if err != nil {
 		return err
+	}
+	if !storageProcessGroups {
+		entries, err := m.readEntries(true)
+		if err != nil {
+			return err
+		}
+		m.reportOwnershipExclusions()
+		if err = m.pressure(entries); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "xgo: runtime disk guard and automatic reclamation are supported on macOS/Linux; using preflight checks only")
+		oldRoot, hadRoot := os.LookupEnv("XGO_STORAGE_ROOT")
+		oldSession, hadSession := os.LookupEnv("XGO_STORAGE_SESSION")
+		os.Setenv("XGO_STORAGE_ROOT", m.policy.CacheDir)
+		os.Unsetenv("XGO_STORAGE_SESSION")
+		defer func() {
+			if hadRoot {
+				os.Setenv("XGO_STORAGE_ROOT", oldRoot)
+			} else {
+				os.Unsetenv("XGO_STORAGE_ROOT")
+			}
+			if hadSession {
+				os.Setenv("XGO_STORAGE_SESSION", oldSession)
+			}
+		}()
+		return handleBuild(cmdName, args)
 	}
 	if err = m.enforce(); err != nil {
 		return err
@@ -801,4 +843,11 @@ func recordStorageGroup(dir string, pid int) (string, error) {
 		return "", err
 	}
 	return record.Identity, os.Rename(f.Name(), filepath.Join(dir, ".process-group"))
+}
+
+func (m *storageManager) reportOwnershipExclusions() {
+	if m.skippedOwnership > 0 && !m.warnedOwnership {
+		fmt.Fprintf(os.Stderr, "xgo: %d managed directories excluded from this account's byte budget because ownership was not verified; see xgo cache status\n", m.skippedOwnership)
+		m.warnedOwnership = true
+	}
 }

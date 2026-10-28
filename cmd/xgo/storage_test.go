@@ -1,3 +1,5 @@
+//go:build darwin || linux
+
 package main
 
 import (
@@ -419,4 +421,51 @@ func TestStorageDisabledReserveNeverQueriesFreeSpace(t *testing.T) {
 		t.Fatal(err)
 	}
 	storageExists(t, dir, false)
+}
+
+func TestStorageReportsExcludedOwnership(t *testing.T) {
+	m := testStorageManager(t)
+	dir, lease := storageFixture(t, m, 0, "go-unverified", 2<<20, time.Hour)
+	lease.close()
+	m.ownerCheck = func(string, os.FileInfo) bool { return false }
+	for i := 0; i < 2; i++ {
+		entries, err := m.entries()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 0 || m.skippedOwnership != 1 {
+			t.Fatalf("ownership exclusions: counted %d skipped %d", len(entries), m.skippedOwnership)
+		}
+	}
+	if err := m.enforce(); err != nil {
+		t.Fatal(err)
+	}
+	storageExists(t, dir, true)
+}
+
+func TestStorageIncompleteScanPreservesSizeMemo(t *testing.T) {
+	m := testStorageManager(t)
+	m.sizeCacheFile = filepath.Join(t.TempDir(), "usage.json")
+	m.saveSizes(map[string]storageSizeRecord{"prior-record": {Bytes: 123, Scanned: time.Now()}})
+	before, err := os.ReadFile(m.sizeCacheFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, lease := storageFixture(t, m, 0, "go-missing-memo", 100, time.Hour)
+	lease.close()
+	bad := filepath.Join(t.TempDir(), "not-a-directory")
+	if err = os.WriteFile(bad, []byte("file"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	m.roots[1].dir = bad
+	if _, err = m.readEntries(true); err == nil {
+		t.Fatal("expected a later scan failure")
+	}
+	after, err := os.ReadFile(m.sizeCacheFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(before) != string(after) {
+		t.Fatal("incomplete scan replaced existing memo")
+	}
 }

@@ -24,6 +24,9 @@ func newRootCommand() *cobra.Command {
 		root.AddCommand(c)
 	}
 	root.AddCommand(&cobra.Command{Use: "__storage-worker", Hidden: true, DisableFlagParsing: true, RunE: func(c *cobra.Command, args []string) error {
+		if !storageProcessGroups {
+			return fmt.Errorf("runtime supervisor is supported on macOS/Linux")
+		}
 		if len(args) == 0 || os.Getenv("XGO_STORAGE_SESSION") == "" {
 			return fmt.Errorf("internal storage worker requires a supervised session")
 		}
@@ -87,6 +90,9 @@ func newRootCommand() *cobra.Command {
 				return err
 			}
 			if name == "gc" {
+				if !storageProcessGroups {
+					return fmt.Errorf("automatic reclamation is supported on macOS/Linux; cache status is available on this platform")
+				}
 				if err = m.enforce(); err != nil {
 					return err
 				}
@@ -100,10 +106,12 @@ func newRootCommand() *cobra.Command {
 				total += e.size
 			}
 			return storageJSON(struct {
-				Policy      storagePolicy `json:"policy"`
-				Bytes       int64         `json:"bytes"`
-				Directories int           `json:"directories"`
-			}{m.policy, total, len(entries)})
+				Policy           storagePolicy `json:"policy"`
+				Bytes            int64         `json:"bytes"`
+				Directories      int           `json:"directories"`
+				SkippedOwnership int           `json:"skipped_unverified_ownership"`
+				RuntimeGuard     bool          `json:"runtime_guard_supported"`
+			}{m.policy, total, len(entries), m.skippedOwnership, storageProcessGroups})
 		}}
 		addStorageFlags(c)
 		c.Flags().String("project-dir", "", "Project directory for config discovery")
