@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -495,10 +496,16 @@ func TestStorageGCLocksAreNotTrackedForInheritance(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer gc.close()
-	cacheLeasesMu.Lock()
-	tracked := cacheLeases[gc]
-	cacheLeasesMu.Unlock()
-	if tracked {
-		t.Fatal("collector-only lease is eligible for child inheritance")
+	child := exec.Command("sh", "-c", ":")
+	inheritActiveCacheLeases(child)
+	if len(child.ExtraFiles) != 0 {
+		t.Fatal("collector-only lease was passed to a child")
+	}
+	_, live := storageFixture(t, testStorageManager(t), 0, "go-live", 10, time.Hour)
+	defer live.close()
+	reader := exec.Command("sh", "-c", ":")
+	inheritActiveCacheLeases(reader)
+	if len(reader.ExtraFiles) != 1 {
+		t.Fatal("normal reader lease was not passed to a child")
 	}
 }
