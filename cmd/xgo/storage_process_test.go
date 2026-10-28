@@ -260,3 +260,49 @@ func TestStorageWrappedProcessErrorRetainsCapturedStderr(t *testing.T) {
 		t.Fatalf("lost or duplicated diagnostics: %d %s", code, diagnostic)
 	}
 }
+
+func TestStorageOrphanAcrossConfiguredRoots(t *testing.T) {
+	m := testStorageManager(t)
+	cache, lease := storageFixture(t, m, 0, "go-shared", 2<<20, time.Hour)
+	lease.close()
+	// Another project uses this shared toolchain but stores its sessions elsewhere.
+	session := filepath.Join(t.TempDir(), "run-other-project")
+	if err := os.Mkdir(session, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(session, ".process-group"), []byte(strconv.Itoa(syscall.Getpgrp())), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("XGO_STORAGE_SESSION", session)
+	if err := recordStorageResource(cache); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.enforce(); err == nil {
+		t.Fatal("shared cache of another live project was reclaimed")
+	}
+	storageExists(t, cache, true)
+	if err := os.RemoveAll(session); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.enforce(); err != nil {
+		t.Fatal(err)
+	}
+	storageExists(t, cache, false)
+}
+
+func TestStorageMalformedCrossRootReferencePreservesCache(t *testing.T) {
+	m := testStorageManager(t)
+	cache, lease := storageFixture(t, m, 0, "go-shared", 2<<20, time.Hour)
+	lease.close()
+	registry := cacheLockPath(cache) + ".sessions"
+	if err := os.Mkdir(registry, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(registry, "corrupt"), []byte("relative-session"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.enforce(); err == nil {
+		t.Fatal("unreadable ownership must fail closed")
+	}
+	storageExists(t, cache, true)
+}

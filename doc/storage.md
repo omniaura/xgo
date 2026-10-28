@@ -84,7 +84,9 @@ commands inherit cache leases. A killed wrapper therefore does not make its
 live child's storage eligible for deletion. Session cleanup also checks the
 recorded process group in case a compiler outlives its parent. Linux boot/start
 identity and macOS process start time distinguish reused group-leader PIDs;
-surviving descendants remain protected after their leader exits.
+surviving descendants remain protected after their leader exits. References beside
+each shared resource lock preserve this protection across different project
+cache/session roots, including a shared instrumented toolchain.
 
 When reclamation cannot satisfy the budget/reserve, xgo refuses new work or
 stops its own process group and returns an error. It never terminates another

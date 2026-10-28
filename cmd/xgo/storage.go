@@ -314,6 +314,9 @@ func (m *storageManager) removeIf(e storageEntry, eligible func(string) bool) bo
 		}
 		return removeStorageDir(e.dir)
 	}
+	if resourceHasLiveReference(leaseDir) {
+		return false
+	}
 	for _, root := range m.roots {
 		if root.sessions && resourceInLiveSession(leaseDir, root.dir) {
 			return false
@@ -665,6 +668,9 @@ func recordStorageResource(dir string) error {
 	if err != nil {
 		return err
 	}
+	if err = recordResourceReference(absolute, session); err != nil {
+		return err
+	}
 	if resources[absolute] {
 		return nil
 	}
@@ -729,6 +735,9 @@ func resourceInLiveSession(dir, root string) bool {
 }
 
 func cacheInLiveSession(dir string) bool {
+	if resourceHasLiveReference(dir) {
+		return true
+	}
 	base := os.Getenv("XGO_STORAGE_ROOT")
 	if base == "" {
 		tmp, err := getStableTmpDir()
@@ -850,4 +859,68 @@ func (m *storageManager) reportOwnershipExclusions() {
 		fmt.Fprintf(os.Stderr, "xgo: %d managed directories excluded from this account's byte budget because ownership was not verified; see xgo cache status\n", m.skippedOwnership)
 		m.warnedOwnership = true
 	}
+}
+
+// A resource may be shared by projects with different cache/session roots.
+// References live beside its stable lock, so every collector can find orphan
+// process groups without knowing the other projects' configuration. Writers
+// hold the resource lease; collectors hold its exclusive lease while inspecting.
+func recordResourceReference(resource, session string) error {
+	session, err := filepath.Abs(session)
+	if err != nil {
+		return err
+	}
+	registry := cacheLockPath(resource) + ".sessions"
+	if err = os.MkdirAll(registry, 0700); err != nil {
+		return err
+	}
+	info, err := os.Lstat(registry)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() || !storageOwned(registry, info) {
+		return fmt.Errorf("unverified resource session registry: %s", registry)
+	}
+	reference := filepath.Join(registry, fmt.Sprintf("%x", sha256.Sum256([]byte(session))))
+	if info, err := os.Lstat(reference); err == nil {
+		if !info.Mode().IsRegular() || !storageOwned(reference, info) {
+			return fmt.Errorf("unverified resource session reference: %s", reference)
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	return os.WriteFile(reference, []byte(session), 0600)
+}
+
+func resourceHasLiveReference(resource string) bool {
+	registry := cacheLockPath(resource) + ".sessions"
+	info, err := os.Lstat(registry)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil || !info.IsDir() || !storageOwned(registry, info) {
+		return true
+	}
+	entries, err := os.ReadDir(registry)
+	if err != nil {
+		return true
+	}
+	for _, entry := range entries {
+		reference := filepath.Join(registry, entry.Name())
+		info, err := os.Lstat(reference)
+		if err != nil || !info.Mode().IsRegular() || !storageOwned(reference, info) || info.Size() > 1<<20 {
+			return true
+		}
+		data, err := os.ReadFile(reference)
+		if err != nil || !filepath.IsAbs(string(data)) {
+			return true
+		}
+		if sessionGroupAlive(string(data)) {
+			return true
+		}
+		// A dead group's reference is disposable metadata; never remove the session
+		// here because its lease may still be held by another invocation.
+		_ = os.Remove(reference)
+	}
+	return false
 }
