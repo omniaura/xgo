@@ -4,11 +4,12 @@ package main
 
 import (
 	"errors"
-	"golang.org/x/sys/unix"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 func storageOwned(info os.FileInfo) bool {

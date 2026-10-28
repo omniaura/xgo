@@ -43,6 +43,8 @@ grep -q '(cached)' "$test_root/warm"
 "$test_root/xgo" run --xgo-home "$test_root/home" --project-dir "$test_root/project" . --cache-max-size=program-argument > "$test_root/run"
 grep -q -- '--cache-max-size=program-argument' "$test_root/run"
 "$test_root/xgo" exec --xgo-home "$test_root/home" --project-dir "$test_root/project" go version
+printf 'stdin-ok\n' | "$test_root/xgo" exec --xgo-home "$test_root/home" --project-dir "$test_root/project" sh -c 'read value; printf "%s" "$value"' > "$test_root/stdin"
+grep -q 'stdin-ok' "$test_root/stdin"
 "$test_root/xgo" cache status --project-dir "$test_root/project" --xgo-home "$test_root/home" > "$test_root/status"
 # Explicitly impossible reserve: must fail before starting the child.
 if "$test_root/xgo" exec --xgo-home "$test_root/home" --project-dir "$test_root/project" --cache-min-free=9223372036854775807 sh -c 'exit 42' > "$test_root/refusal" 2>&1; then
@@ -55,4 +57,4 @@ if find "$test_root/cache" -name 'run-*' -type d | grep -q .; then
     echo 'completed build left a temporary session' >&2
     exit 1
 fi
-echo 'storage smoke passed: cold/warm test, run args, exec, reserve refusal, session cleanup'
+echo 'storage smoke passed: cold/warm test, run args, exec/stdin, reserve refusal, session cleanup'

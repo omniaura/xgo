@@ -908,6 +908,7 @@ func handleBuild(cmd string, args []string) error {
 		execCmd.Dir = projectDir
 	}
 	execCmd.Env = execCmdEnv
+	execCmd.Stdin = os.Stdin
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
 	logDebug("command executable path: %v", execCmd.Path)

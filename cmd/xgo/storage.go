@@ -266,7 +266,7 @@ func (m *storageManager) remove(e storageEntry) bool {
 		return false
 	}
 	for _, root := range m.roots {
-		if root.sessions && resourceInLiveSession(e.dir, root.dir) {
+		if root.sessions && resourceInLiveSession(leaseDir, root.dir) {
 			return false
 		}
 	}

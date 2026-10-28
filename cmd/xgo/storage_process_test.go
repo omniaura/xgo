@@ -110,24 +110,35 @@ func TestStorageReserveGuardStopsRunningJob(t *testing.T) {
 }
 
 func TestStorageOrphanCompilerGroupProtectsItsCaches(t *testing.T) {
-	m := testStorageManager(t)
-	cache, lease := storageFixture(t, m, 0, "go-cache", 2<<20, time.Hour)
-	lease.close()
-	session, lease := storageFixture(t, m, 1, "run-orphan", 1, time.Hour)
-	lease.close()
-	os.WriteFile(filepath.Join(session, ".process-group"), []byte(strconv.Itoa(syscall.Getpgrp())), 0600)
-	t.Setenv("XGO_STORAGE_SESSION", session)
-	if err := recordStorageResource(cache); err != nil {
-		t.Fatal(err)
+	for _, tomb := range []bool{false, true} {
+		t.Run(map[bool]string{false: "cache", true: "renamed-tomb"}[tomb], func(t *testing.T) {
+			m := testStorageManager(t)
+			cache, lease := storageFixture(t, m, 0, "go-cache", 2<<20, time.Hour)
+			lease.close()
+			owned := cache
+			if tomb {
+				owned = filepath.Join(filepath.Dir(cache), gcTombPrefix+filepath.Base(cache))
+				if err := os.Rename(cache, owned); err != nil {
+					t.Fatal(err)
+				}
+			}
+			session, lease := storageFixture(t, m, 1, "run-orphan", 1, time.Hour)
+			lease.close()
+			os.WriteFile(filepath.Join(session, ".process-group"), []byte(strconv.Itoa(syscall.Getpgrp())), 0600)
+			t.Setenv("XGO_STORAGE_SESSION", session)
+			if err := recordStorageResource(cache); err != nil {
+				t.Fatal(err)
+			}
+			// No cache reader holds a lease. The surviving job group still owns it.
+			if err := m.enforce(); err == nil {
+				t.Fatal("orphan compiler ownership was ignored")
+			}
+			storageExists(t, owned, true)
+			os.Remove(filepath.Join(session, ".process-group"))
+			if err := m.enforce(); err != nil {
+				t.Fatal(err)
+			}
+			storageExists(t, owned, false)
+		})
 	}
-	// No cache reader holds a lease now. The surviving job group still owns it.
-	if err := m.enforce(); err == nil {
-		t.Fatal("orphan compiler ownership was ignored")
-	}
-	storageExists(t, cache, true)
-	os.Remove(filepath.Join(session, ".process-group"))
-	if err := m.enforce(); err != nil {
-		t.Fatal(err)
-	}
-	storageExists(t, cache, false)
 }
