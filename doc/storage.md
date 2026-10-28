@@ -55,7 +55,7 @@ prevents reclamation. Existing age/count-based cache collection remains active.
 
 The budget counts the selected cache/session root, xgo-managed toolchains under
 the selected `--xgo-home` (default `~/.xgo`), and namespaces beneath
-`XGO_BUILD_CACHE_DIR` when set. It includes both normal and development caches.
+`XGO_BUILD_CACHE_DIR` when set. It includes both normal and development caches and the leased temporary pool.
 It counts logical file sizes conservatively, without following symlinks; APFS
 clones and sparse files can occupy less physical storage than the reported
 usage. Explicit overlapping storage roots are rejected. Separate configured
@@ -67,12 +67,20 @@ the Go build/test/run/exec command. Free-space checks run at least every 500 ms
 (or the shorter configured interval), independently of slow usage scans.
 Mutable cache sizes are sampled at most five seconds apart; immutable published
 toolchain sizes are reused until their publication identity changes. Temporary
-sessions are always measured live. Accounting snapshots amortize scans across
-warm CLI invocations. Every invocation gets a leased session;
-`TMPDIR`, `TMP`, `TEMP` and `GOTMPDIR` point there. Setup commands and child Go
+sessions and the temporary pool are always measured live. Accounting snapshots amortize scans across
+warm CLI invocations. Every invocation gets a leased metadata session.
+`TMPDIR`, `TMP`, `TEMP` and `GOTMPDIR` point at a stable pool under the cache root,
+protected by shared leases from all its jobs. Stable environment paths preserve
+Go test-cache reuse for `t.TempDir()` and `os.TempDir()` users. An empty pool is
+removed after its last job exits. Nonempty unused pools become eligible through
+retention or budget pressure; fresh explicit `go -work` output is preserved.
+Cleanup never removes the pool while a job lease or surviving process group
+uses it. Setup commands and child Go
 commands inherit cache leases. A killed wrapper therefore does not make its
 live child's storage eligible for deletion. Session cleanup also checks the
-recorded process group in case a compiler outlives its parent.
+recorded process group in case a compiler outlives its parent. Linux boot/start
+identity and macOS process start time distinguish reused group-leader PIDs;
+surviving descendants remain protected after their leader exits.
 
 When reclamation cannot satisfy the budget/reserve, xgo refuses new work or
 stops its own process group and returns an error. It never terminates another

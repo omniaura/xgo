@@ -1166,8 +1166,12 @@ func parseErr(err error) (code int, stderr []byte) {
 	if err == nil {
 		return 0, nil
 	}
-	if err, ok := err.(*exec.ExitError); ok {
-		return err.ExitCode(), err.Stderr
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		if err == exitErr {
+			return exitErr.ExitCode(), exitErr.Stderr
+		}
+		return exitErr.ExitCode(), []byte(err.Error())
 	}
 	return 1, []byte(err.Error())
 }

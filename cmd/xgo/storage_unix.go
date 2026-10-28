@@ -32,11 +32,17 @@ func storageFreeBytes(dir string) (int64, error) {
 
 func isolateStorageCommand(cmd *exec.Cmd) { cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} }
 func stopStorageCommand(cmd *exec.Cmd) {
-	if cmd.Process != nil {
+	if cmd.Process != nil && cmd.Process.Pid > 1 {
 		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
 }
 func storageGroupAlive(pid int) bool {
+	// kill(-1, ...) means all permitted processes, not process group 1.
+	// Supervised children have IDs > 1; unknown/legacy init-group records
+	// must remain protected rather than probing the wrong group.
+	if pid <= 1 {
+		return true
+	}
 	err := syscall.Kill(-pid, 0)
 	return err == nil || !errors.Is(err, syscall.ESRCH)
 }
@@ -55,3 +61,5 @@ func storageForeground(cmd *exec.Cmd) func() {
 	}
 	return func() { _ = unix.IoctlSetPointerInt(fd, unix.TIOCSPGRP, previous); signal.Reset(syscall.SIGTTOU) }
 }
+
+func storageLeaderGone(pid int) bool { return errors.Is(syscall.Kill(pid, 0), syscall.ESRCH) }

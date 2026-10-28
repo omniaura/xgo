@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strconv"
 
 	test_explorer "github.com/omniaura/xgo/cmd/xgo/test-explorer"
 	"github.com/spf13/cobra"
@@ -35,9 +33,18 @@ func newRootCommand() *cobra.Command {
 			return err
 		}
 		defer lease.close()
-		if err = os.WriteFile(filepath.Join(session, ".process-group"), []byte(strconv.Itoa(os.Getpid())), 0600); err != nil {
+		if _, err = recordStorageGroup(session, os.Getpid()); err != nil {
 			return err
 		}
+		pool := os.Getenv("XGO_STORAGE_TEMP")
+		if pool == "" {
+			return fmt.Errorf("internal storage worker requires a managed temporary pool")
+		}
+		poolLease, err := lockCache(pool, false, true)
+		if err != nil {
+			return err
+		}
+		defer poolLease.close()
 		return handleBuild(args[0], args[1:])
 	}})
 	root.AddCommand(&cobra.Command{Use: "version", Short: "Print xgo version", Args: cobra.NoArgs, Run: func(c *cobra.Command, args []string) { fmt.Fprintln(c.OutOrStdout(), VERSION) }})

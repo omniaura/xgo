@@ -21,18 +21,21 @@ import (
 type storageRoot struct {
 	dir, prefix string
 	sessions    bool
+	temporary   bool
 }
 type storageEntry struct {
-	dir      string
-	size     int64
-	used     time.Time
-	sessions bool
+	dir       string
+	size      int64
+	used      time.Time
+	sessions  bool
+	temporary bool
 }
 type storageManager struct {
 	policy        storagePolicy
 	roots         []storageRoot
 	free          func(string) (int64, error)
 	sizeCacheFile string
+	onJobDone     func()
 }
 
 func newStorageManager(p storagePolicy, xgoHome string) (*storageManager, error) {
@@ -51,16 +54,17 @@ func newStorageManager(p storagePolicy, xgoHome string) (*storageManager, error)
 	p.CacheDir = base
 	m := &storageManager{policy: p, free: storageFreeBytes}
 	for _, suffix := range []string{"", "-dev"} {
-		m.roots = append(m.roots, storageRoot{filepath.Join(base, "go-instrument"+suffix), "go", false}, storageRoot{filepath.Join(home, "go-instrument"+suffix), "go", false})
+		m.roots = append(m.roots, storageRoot{filepath.Join(base, "go-instrument"+suffix), "go", false, false}, storageRoot{filepath.Join(home, "go-instrument"+suffix), "go", false, false})
 	}
 	if override := os.Getenv(XGO_BUILD_CACHE_DIR); override != "" {
 		dir, err := filepath.Abs(override)
 		if err != nil {
 			return nil, err
 		}
-		m.roots = append(m.roots, storageRoot{dir, "go", false})
+		m.roots = append(m.roots, storageRoot{dir, "go", false, false})
 	}
-	m.roots = append(m.roots, storageRoot{filepath.Join(base, fmt.Sprintf("sessions-%d", os.Getuid())), "run-", true})
+	m.roots = append(m.roots, storageRoot{dir: filepath.Join(base, fmt.Sprintf("temps-%d", os.Getuid())), prefix: "pool-", temporary: true})
+	m.roots = append(m.roots, storageRoot{filepath.Join(base, fmt.Sprintf("sessions-%d", os.Getuid())), "run-", true, true})
 	for i, a := range m.roots {
 		for j, b := range m.roots {
 			if i == j || a.dir == b.dir {
@@ -133,12 +137,12 @@ func (m *storageManager) readEntries(cached bool) ([]storageEntry, error) {
 			signature := storageImmutableSignature(dir)
 			record, ok := memo[dir]
 			age := time.Since(record.Scanned)
-			if !root.sessions && ok && record.Bytes >= 0 && age >= 0 && (signature != "" && signature == record.Signature || age < 5*time.Second) {
+			if !root.sessions && !root.temporary && ok && record.Bytes >= 0 && age >= 0 && (signature != "" && signature == record.Signature || age < 5*time.Second) {
 				size = record.Bytes
 				next[dir] = record
 			} else {
 				size, err = storageDirSize(dir)
-				if cached && !root.sessions && err == nil {
+				if cached && !root.sessions && !root.temporary && err == nil {
 					next[dir] = storageSizeRecord{Bytes: size, Scanned: time.Now(), Signature: signature}
 					changed = true
 				}
@@ -153,7 +157,7 @@ func (m *storageManager) readEntries(cached bool) ([]storageEntry, error) {
 			if !ok {
 				used = info.ModTime()
 			}
-			entries = append(entries, storageEntry{dir, size, used, root.sessions})
+			entries = append(entries, storageEntry{dir, size, used, root.sessions, root.temporary})
 		}
 	}
 	return entries, nil
@@ -243,13 +247,33 @@ func sessionGroupAlive(dir string) bool {
 	if err != nil {
 		return true
 	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
-	return err != nil || pid <= 0 || storageGroupAlive(pid)
+	var record storageGroupRecord
+	if json.Unmarshal(data, &record) != nil {
+		// Pre-release/legacy PID-only records remain conservative.
+		pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+		return err != nil || pid <= 0 || storageGroupAlive(pid)
+	}
+	if record.PID <= 0 {
+		return true
+	}
+	if !storageGroupAlive(record.PID) {
+		return false
+	}
+	if record.Identity == "" {
+		return true
+	}
+	actual, err := storageProcessIdentity(record.PID)
+	// The leader may have exited while descendants still own its group.
+	if err != nil {
+		return true
+	}
+	return actual == record.Identity
 }
 
 // A lock, not age/PID alone, establishes abandonment. Never delete unowned
 // system go-build*/go-link* directories: legacy Go processes have no leases.
-func (m *storageManager) remove(e storageEntry) bool {
+func (m *storageManager) remove(e storageEntry) bool { return m.removeIf(e, nil) }
+func (m *storageManager) removeIf(e storageEntry, eligible func(string) bool) bool {
 	leaseDir := e.dir
 	if strings.HasPrefix(filepath.Base(e.dir), gcTombPrefix) {
 		leaseDir = filepath.Join(filepath.Dir(e.dir), strings.TrimPrefix(filepath.Base(e.dir), gcTombPrefix))
@@ -266,6 +290,9 @@ func (m *storageManager) remove(e storageEntry) bool {
 	defer lease.close()
 	info, err := os.Lstat(e.dir)
 	if err != nil || !info.IsDir() || !storageOwned(e.dir, info) {
+		return false
+	}
+	if eligible != nil && !eligible(e.dir) {
 		return false
 	}
 	if e.sessions {
@@ -291,7 +318,7 @@ func (m *storageManager) enforce() error {
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].used.Before(entries[j].used) })
 	for _, e := range entries {
-		if e.sessions && time.Since(e.used) >= m.policy.TempMaxAge {
+		if (e.sessions || e.temporary) && time.Since(e.used) >= m.policy.TempMaxAge {
 			m.remove(e)
 		}
 	}
@@ -313,9 +340,13 @@ func (m *storageManager) enforce() error {
 		for _, current := range entries {
 			total += current.size
 		}
-		free, err := m.free(existingStorageAncestor(filepath.Dir(e.dir)))
-		if err != nil {
-			return err
+		var free int64
+		if m.policy.MinFreeBytes > 0 {
+			var err error
+			free, err = m.free(existingStorageAncestor(filepath.Dir(e.dir)))
+			if err != nil {
+				return err
+			}
 		}
 		if total <= m.policy.MaxBytes && free >= m.policy.MinFreeBytes {
 			continue
@@ -394,12 +425,24 @@ func superviseBuild(cmdName string, args []string) error {
 			_ = os.RemoveAll(dir)
 		}
 	}()
+	pool, poolLease, err := m.prepareTempPool()
+	if err != nil {
+		return err
+	}
+	cleanupPool := func() {
+		markTempPoolUsed(pool)
+		poolLease.close()
+		m.removeIf(storageEntry{dir: pool, temporary: true}, emptyTempPool)
+	}
+	defer cleanupPool()
+	m.onJobDone = cleanupPool
 	executable, err := os.Executable()
 	if err != nil {
 		return err
 	}
 	child := exec.Command(executable, append([]string{"__storage-worker", cmdName}, args...)...)
-	child.Env = append(os.Environ(), "XGO_STORAGE_SESSION="+dir, "XGO_STORAGE_ROOT="+filepath.Dir(m.roots[len(m.roots)-1].dir), "GOTMPDIR="+dir, "TMPDIR="+dir, "TMP="+dir, "TEMP="+dir)
+	child.Env = append(os.Environ(), "XGO_STORAGE_SESSION="+dir, "XGO_STORAGE_ROOT="+filepath.Dir(m.roots[len(m.roots)-1].dir), "XGO_STORAGE_TEMP="+pool, "GOTMPDIR="+pool, "TMPDIR="+pool, "TMP="+pool, "TEMP="+pool)
+	inheritStorageLease(child, poolLease)
 	child.Stdin = os.Stdin
 	child.Stdout = os.Stdout
 	child.Stderr = os.Stderr
@@ -418,10 +461,24 @@ func (m *storageManager) runCommand(child *exec.Cmd, dir string, lease *cacheLoc
 	}
 	// If the supervisor dies, the child's lease and process group still
 	// protect the session, including compilers that outlive the xgo worker.
-	if err = os.WriteFile(filepath.Join(dir, ".process-group"), []byte(strconv.Itoa(child.Process.Pid)), 0600); err != nil {
+	identity, recordErr := recordStorageGroup(dir, child.Process.Pid)
+	if recordErr != nil {
 		stopStorageCommand(child)
 		_ = child.Wait()
-		return err
+		return recordErr
+	}
+	stopJob := func() {
+		if storageProcessGroups {
+			actual, lookupErr := storageProcessIdentity(child.Process.Pid)
+			if lookupErr == nil && actual != identity {
+				return
+			}
+			if lookupErr != nil && !storageLeaderGone(child.Process.Pid) {
+				_ = child.Process.Kill()
+				return
+			}
+		}
+		stopStorageCommand(child)
 	}
 	restoreTerminal := storageForeground(child)
 	defer restoreTerminal()
@@ -444,22 +501,26 @@ func (m *storageManager) runCommand(child *exec.Cmd, dir string, lease *cacheLoc
 			<-scanned
 		}
 	}()
-	abort := func(err error) error { stopStorageCommand(child); <-done; return err }
+	abort := func(err error) error { stopJob(); <-done; return err }
 	for {
 		select {
 		case sig := <-interrupts:
-			stopStorageCommand(child)
+			stopJob()
 			<-done
+			stopJob()
 			return fmt.Errorf("xgo build interrupted: %s", sig)
 		case err = <-done:
 			// Reap background descendants owned by this invocation too.
-			stopStorageCommand(child)
+			stopJob()
 			if scanning {
 				<-scanned
 				scanning = false
 			}
+			if m.onJobDone != nil {
+				m.onJobDone()
+			}
 			if checkErr := m.enforce(); checkErr != nil {
-				return checkErr
+				return errors.Join(err, checkErr)
 			}
 			return err
 		case <-freeTicker.C:
@@ -657,4 +718,87 @@ func removeStorageDir(dir string) bool {
 		}
 	}
 	return os.RemoveAll(tomb) == nil
+}
+
+// Stable environment paths preserve Go's test-input hashes (notably t.TempDir).
+// Individual Go work directories remain random within this pool. A shared
+// lease protects every live job; reclamation needs all leases and groups gone.
+func (m *storageManager) prepareTempPool() (string, *cacheLock, error) {
+	var dir string
+	for _, root := range m.roots {
+		if root.temporary && !root.sessions {
+			dir = filepath.Join(root.dir, "pool-v1")
+			break
+		}
+	}
+	if dir == "" {
+		return "", nil, fmt.Errorf("missing managed temporary pool")
+	}
+	// Reap a prior abandoned pool only when exclusive ownership can be proven.
+	m.removeIf(storageEntry{dir: dir, temporary: true}, emptyTempPool)
+	lease, err := lockCache(dir, false, true)
+	if err != nil {
+		return "", nil, err
+	}
+	if err = os.MkdirAll(dir, 0700); err != nil {
+		lease.close()
+		return "", nil, err
+	}
+	markTempPoolUsed(dir)
+	return dir, lease, nil
+}
+
+// Preserve fresh explicit Go -work output and program-created temp files until
+// retention/budget collection. Test cache hits don't depend on pool inode times.
+func emptyTempPool(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		if entry.Name() != gcMarkFile {
+			return false
+		}
+	}
+	return true
+}
+
+func markTempPoolUsed(dir string) {
+	now := time.Now()
+	markUsed(dir, now)
+	// Retention can be shorter than markUsed's hourly cache-mark throttle.
+	_ = os.Chtimes(filepath.Join(dir, gcMarkFile), now, now)
+}
+
+type storageGroupRecord struct {
+	PID      int    `json:"pid"`
+	Identity string `json:"identity,omitempty"`
+}
+
+func recordStorageGroup(dir string, pid int) (string, error) {
+	record := storageGroupRecord{PID: pid}
+	var err error
+	if storageProcessGroups {
+		record.Identity, err = storageProcessIdentity(pid)
+		if err != nil {
+			return "", err
+		}
+	}
+	data, err := json.Marshal(record)
+	if err != nil {
+		return "", err
+	}
+	f, err := os.CreateTemp(dir, ".group-*")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(f.Name())
+	if _, err = f.Write(data); err != nil {
+		f.Close()
+		return "", err
+	}
+	if err = f.Close(); err != nil {
+		return "", err
+	}
+	return record.Identity, os.Rename(f.Name(), filepath.Join(dir, ".process-group"))
 }

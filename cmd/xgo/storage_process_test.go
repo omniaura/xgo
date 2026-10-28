@@ -3,6 +3,8 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -71,7 +73,12 @@ func TestStorageInheritedLeaseSurvivesParentDescriptorClose(t *testing.T) {
 	if err := child.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer func() { stopStorageCommand(child); child.Wait() }()
+	defer func() {
+		if child.ProcessState == nil {
+			stopStorageCommand(child)
+			child.Wait()
+		}
+	}()
 	// Simulate abrupt parent death: close without explicit LOCK_UN.
 	lease.file.Close()
 	lease.file = nil
@@ -164,5 +171,79 @@ func TestStorageUninstrumentedSessionDoesNotBlockCacheReclamation(t *testing.T) 
 			storageExists(t, cache, corrupt)
 			storageExists(t, session, true)
 		})
+	}
+}
+
+func TestStorageTempPoolProtectsOrphanProcessGroups(t *testing.T) {
+	m := testStorageWithPool(t)
+	pool, lease, err := m.prepareTempPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	lease.close()
+	old := time.Now().Add(-3 * time.Hour)
+	os.Chtimes(filepath.Join(pool, gcMarkFile), old, old)
+	session, lease := storageFixture(t, m, 2, "run-orphan", 1, time.Hour)
+	lease.close()
+	os.WriteFile(filepath.Join(session, ".process-group"), []byte(strconv.Itoa(syscall.Getpgrp())), 0600)
+	t.Setenv("XGO_STORAGE_SESSION", session)
+	if err = recordStorageResource(pool); err != nil {
+		t.Fatal(err)
+	}
+	if err = m.enforce(); err != nil {
+		t.Fatal(err)
+	}
+	storageExists(t, pool, true)
+	os.Remove(filepath.Join(session, ".process-group"))
+	if err = m.enforce(); err != nil {
+		t.Fatal(err)
+	}
+	storageExists(t, pool, false)
+}
+
+func TestStorageRejectsRecycledGroupLeaderIdentity(t *testing.T) {
+	dir := t.TempDir()
+	child := exec.Command("sh", "-c", "sleep 60")
+	isolateStorageCommand(child)
+	if err := child.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { stopStorageCommand(child); child.Wait() }()
+	identity, err := recordStorageGroup(dir, child.Process.Pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if identity == "" || !storageGroupAlive(child.Process.Pid) || !sessionGroupAlive(dir) {
+		t.Fatal("live recorded group was not protected")
+	}
+	data, err := json.Marshal(storageGroupRecord{PID: child.Process.Pid, Identity: identity + "-recycled"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(dir, ".process-group"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if sessionGroupAlive(dir) {
+		t.Fatal("unrelated process identity kept an abandoned session alive")
+	}
+}
+
+func TestStorageFinalEnforcementPreservesChildFailure(t *testing.T) {
+	m := testStorageManager(t)
+	m.policy.CheckInterval = time.Hour
+	dir, lease, err := m.newSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lease.close()
+	child := exec.Command("sh", "-c", `dd if=/dev/zero of="$1/data" bs=1048576 count=2 2>/dev/null; exit 7`, "sh", dir)
+	err = m.runCommand(child, dir, lease)
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 7 || !strings.Contains(err.Error(), "budget exceeded") {
+		t.Fatalf("lost child or enforcement failure: %v", err)
+	}
+	code, stderr := parseErr(err)
+	if code != 7 || !strings.Contains(string(stderr), "budget exceeded") {
+		t.Fatalf("lost CLI diagnostics: %d %s", code, stderr)
 	}
 }

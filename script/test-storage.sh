@@ -22,9 +22,10 @@ package main
 import ("flag"; "os"; "strings"; "testing")
 var programArgument = flag.String("cache-max-size", "", "test passthrough flag")
 func TestManagedTemp(t *testing.T) {
-    if !strings.Contains(os.TempDir(), "sessions-") { t.Fatal(os.TempDir()) }
+    if !strings.Contains(os.TempDir(), "temps-") { t.Fatal(os.TempDir()) }
     if *programArgument != "program-argument" { t.Fatal(os.Args) }
 }
+func TestTempDirCache(t *testing.T) { _ = t.TempDir(); _ = os.TempDir() }
 func TestPure(t *testing.T) { if 2+2 != 4 { t.Fatal("arithmetic") } }
 EOF
 cat > "$test_root/project/.xgo.yaml" <<'EOF'
@@ -37,8 +38,8 @@ export XGO_BUILD_CACHE_DIR="$test_root/shared-build-cache"
 "$test_root/xgo" --help > "$test_root/help"
 grep -q 'completion' "$test_root/help"
 "$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -v ./... -args --cache-max-size=program-argument
-"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -run TestPure -v ./... > "$test_root/warm-seed"
-"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -run TestPure -v ./... > "$test_root/warm"
+"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -run 'TestPure|TestTempDirCache' -v ./... > "$test_root/warm-seed"
+"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -run 'TestPure|TestTempDirCache' -v ./... > "$test_root/warm"
 grep -q '(cached)' "$test_root/warm"
 "$test_root/xgo" run --xgo-home "$test_root/home" --project-dir "$test_root/project" . --cache-max-size=program-argument > "$test_root/run"
 grep -q -- '--cache-max-size=program-argument' "$test_root/run"
@@ -53,8 +54,12 @@ if "$test_root/xgo" exec --xgo-home "$test_root/home" --project-dir "$test_root/
 fi
 grep -q 'low disk space' "$test_root/refusal"
 # A completed build must not leave a session containing compiler/test data.
-if find "$test_root/cache" -name 'run-*' -type d | grep -q .; then
-    echo 'completed build left a temporary session' >&2
+if find "$test_root/cache" \( -name 'run-*' -o -name 'pool-*' \) -type d | grep -q .; then
+    echo 'completed build left a temporary session or pool' >&2
     exit 1
 fi
-echo 'storage smoke passed: cold/warm test, run args, exec/stdin, reserve refusal, session cleanup'
+"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -work -run TestPure . > "$test_root/kept-work" 2>&1
+kept_work="$(sed -n 's/^WORK=//p' "$test_root/kept-work" | head -1)"
+test -n "$kept_work"
+test -d "$kept_work"
+echo 'storage smoke passed: cold/warm test, run args, exec/stdin, reserve refusal, session cleanup, kept-work preservation'

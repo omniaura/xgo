@@ -34,6 +34,7 @@ func TestStorageEvictionUsesAgeRatherThanDirectoryName(t *testing.T) {
 
 func TestStorageStatFailureDoesNotEvict(t *testing.T) {
 	m := testStorageManager(t)
+	m.policy.MinFreeBytes = 100
 	dir, lease := storageFixture(t, m, 0, "go-old", 2<<20, time.Hour)
 	lease.close()
 	m.free = func(string) (int64, error) { return 0, fmt.Errorf("statfs unavailable") }
@@ -101,7 +102,7 @@ func TestStorageAccountingRefreshesSessionsAndExpiredCaches(t *testing.T) {
 
 func testStorageManager(t *testing.T) *storageManager {
 	t.Helper()
-	return &storageManager{policy: storagePolicy{MaxBytes: 1 << 20, TempMaxAge: time.Hour, CheckInterval: 100 * time.Millisecond}, roots: []storageRoot{{t.TempDir(), "go", false}, {t.TempDir(), "run-", true}}, free: func(string) (int64, error) { return 1 << 40, nil }}
+	return &storageManager{policy: storagePolicy{MaxBytes: 1 << 20, TempMaxAge: time.Hour, CheckInterval: 100 * time.Millisecond}, roots: []storageRoot{{t.TempDir(), "go", false, false}, {t.TempDir(), "run-", true, true}}, free: func(string) (int64, error) { return 1 << 40, nil }}
 }
 
 func storageFixture(t *testing.T, m *storageManager, root int, name string, size int64, age time.Duration) (string, *cacheLock) {
@@ -320,4 +321,102 @@ func TestStorageRelativeCacheRootRespectsValueSource(t *testing.T) {
 	if p.CacheDir != filepath.Join(project, "from-flag") {
 		t.Fatal(p.CacheDir)
 	}
+}
+
+func testStorageWithPool(t *testing.T) *storageManager {
+	m := testStorageManager(t)
+	m.roots = append(m.roots[:1], storageRoot{dir: t.TempDir(), prefix: "pool-", temporary: true}, m.roots[1])
+	return m
+}
+
+func TestStorageTempPoolPreservesFreshOutputsAndActiveJobs(t *testing.T) {
+	m := testStorageWithPool(t)
+	pool, first, err := m.prepareTempPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer first.close()
+	file := filepath.Join(pool, "kept-work")
+	if err = os.WriteFile(file, []byte("preserve this"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	again, second, err := m.prepareTempPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer second.close()
+	if again != pool {
+		t.Fatal("temporary environment path is unstable")
+	}
+	first.close()
+	if m.remove(storageEntry{dir: pool, temporary: true}) {
+		t.Fatal("removed a pool used by another job")
+	}
+	second.close()
+	if m.removeIf(storageEntry{dir: pool, temporary: true}, emptyTempPool) {
+		t.Fatal("discarded fresh kept work")
+	}
+	storageExists(t, file, true)
+	_, third, err := m.prepareTempPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer third.close()
+	old := time.Now().Add(-3 * time.Hour)
+	if err = os.Chtimes(filepath.Join(pool, gcMarkFile), old, old); err != nil {
+		t.Fatal(err)
+	}
+	if err = m.enforce(); err != nil {
+		t.Fatal(err)
+	}
+	storageExists(t, file, true)
+	third.close()
+	if err = m.enforce(); err != nil {
+		t.Fatal(err)
+	}
+	storageExists(t, pool, false)
+}
+
+func TestStorageTempPoolUsageIsAlwaysLive(t *testing.T) {
+	m := testStorageWithPool(t)
+	m.sizeCacheFile = filepath.Join(t.TempDir(), "usage.json")
+	pool, lease, err := m.prepareTempPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lease.close()
+	file := filepath.Join(pool, "data")
+	if err = os.WriteFile(file, []byte("one"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = m.readEntries(true); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(file, make([]byte, 500), 0600); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := m.readEntries(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.dir == pool && entry.size != 500 {
+			t.Fatalf("pooled temporary usage was cached: %d", entry.size)
+		}
+	}
+}
+
+func TestStorageDisabledReserveNeverQueriesFreeSpace(t *testing.T) {
+	m := testStorageManager(t)
+	m.policy.MinFreeBytes = 0
+	dir, lease := storageFixture(t, m, 0, "go-old", 2<<20, time.Hour)
+	lease.close()
+	m.free = func(string) (int64, error) {
+		t.Error("disabled reserve queried the filesystem")
+		return 0, fmt.Errorf("unsupported")
+	}
+	if err := m.enforce(); err != nil {
+		t.Fatal(err)
+	}
+	storageExists(t, dir, false)
 }
