@@ -41,9 +41,11 @@ func openCacheLock(dir string, exclusive, wait, record bool) (*cacheLock, error)
 		}
 	}
 	lease := &cacheLock{file: f}
-	cacheLeasesMu.Lock()
-	cacheLeases[lease] = true
-	cacheLeasesMu.Unlock()
+	if record {
+		cacheLeasesMu.Lock()
+		cacheLeases[lease] = true
+		cacheLeasesMu.Unlock()
+	}
 	return lease, nil
 }
 

@@ -10,6 +10,9 @@ import (
 
 func newRootCommand() *cobra.Command {
 	root := &cobra.Command{Use: "xgo", Short: "Instrument Go builds, tests, and programs", Example: "  xgo test --cache-max-size 20GiB ./...\n  xgo run . program-arguments\n  xgo cache status", SilenceUsage: true, SilenceErrors: true}
+	root.RunE = func(c *cobra.Command, args []string) error {
+		return fmt.Errorf("xgo command required; run xgo --help")
+	}
 	addStorageFlags(root)
 	root.PersistentFlags().AddFlagSet(root.Flags())
 	for _, name := range []string{"build", "test", "run", "exec", "setup"} {

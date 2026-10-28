@@ -478,3 +478,27 @@ func TestStorageExplicitEmptyFlagsFailClosed(t *testing.T) {
 		}
 	}
 }
+
+func TestStorageBareCLIRequiresCommand(t *testing.T) {
+	root := newRootCommand()
+	root.SetArgs([]string{})
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "command required") {
+		t.Fatalf("missing-command status lost: %v", err)
+	}
+}
+
+func TestStorageGCLocksAreNotTrackedForInheritance(t *testing.T) {
+	dir, lease := storageFixture(t, testStorageManager(t), 0, "go-idle", 10, time.Hour)
+	lease.close()
+	gc, err := lockCacheForGC(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer gc.close()
+	cacheLeasesMu.Lock()
+	tracked := cacheLeases[gc]
+	cacheLeasesMu.Unlock()
+	if tracked {
+		t.Fatal("collector-only lease is eligible for child inheritance")
+	}
+}
