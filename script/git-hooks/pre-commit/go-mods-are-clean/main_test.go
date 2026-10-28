@@ -153,3 +153,16 @@ func TestCheckGoModContent_OnlyWhitespace(t *testing.T) {
 		t.Fatalf("whitespace-only file should be clean, got: %v", err)
 	}
 }
+
+func TestCLIRuntimeModuleBoundaries(t *testing.T) {
+	for _, module := range []string{"github.com/omniaura/xgo/runtime", "github.com/omniaura/xgo/runtime/submodule"} {
+		if err := checkCLIGoModContent("require " + module + " v1.0.0"); err == nil {
+			t.Fatalf("accepted %s", module)
+		}
+	}
+	for _, line := range []string{"require github.com/omniaura/xgo/runtimeclient v1.0.0", "require example.com/foo v1.0.0 // github.com/omniaura/xgo/runtime"} {
+		if err := checkCLIGoModContent(line); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

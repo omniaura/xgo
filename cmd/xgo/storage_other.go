@@ -26,4 +26,4 @@ func stopStorageCommand(cmd *exec.Cmd) {
 }
 func storageGroupAlive(pid int) bool { return false }
 
-func storageForeground(cmd *exec.Cmd) func() { return func() {} }
+func storageForeground(cmd *exec.Cmd) (func(), error) { return func() {}, nil }

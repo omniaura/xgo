@@ -48,5 +48,5 @@ func stopStorageCommand(cmd *exec.Cmd) {
 		_ = cmd.Process.Kill()
 	}
 }
-func storageGroupAlive(pid int) bool         { return false }
-func storageForeground(cmd *exec.Cmd) func() { return func() {} }
+func storageGroupAlive(pid int) bool                  { return false }
+func storageForeground(cmd *exec.Cmd) (func(), error) { return func() {}, nil }

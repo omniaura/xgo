@@ -83,6 +83,9 @@ func loadStoragePolicy(projectDir string, flags map[string]string) (storagePolic
 	}
 	for _, key := range storageKeys {
 		if val, ok := flags[key]; ok {
+			if strings.TrimSpace(val) == "" {
+				return storagePolicy{}, fmt.Errorf("%s must not be empty", key)
+			}
 			v.Set(key, val)
 		}
 	}

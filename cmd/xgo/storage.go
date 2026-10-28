@@ -525,7 +525,12 @@ func (m *storageManager) runCommand(child *exec.Cmd, dir string, lease *cacheLoc
 		}
 		stopStorageCommand(child)
 	}
-	restoreTerminal := storageForeground(child)
+	restoreTerminal, terminalErr := storageForeground(child)
+	if terminalErr != nil {
+		stopJob()
+		_ = child.Wait()
+		return terminalErr
+	}
 	defer restoreTerminal()
 	done := make(chan error, 1)
 	go func() { done <- child.Wait() }()

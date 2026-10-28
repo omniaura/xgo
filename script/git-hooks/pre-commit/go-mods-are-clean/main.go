@@ -103,8 +103,10 @@ func checkCLIGoModContent(content string) error {
 		case "replace", "exclude", "retract":
 			return fmt.Errorf("CLI go.mod forbids %q", fields[0])
 		}
-		if strings.Contains(strings.SplitN(scanner.Text(), "//", 2)[0], "github.com/omniaura/xgo/runtime") {
-			return fmt.Errorf("CLI must embed the runtime, not depend on its published module")
+		for _, field := range strings.Fields(strings.SplitN(scanner.Text(), "//", 2)[0]) {
+			if field == "github.com/omniaura/xgo/runtime" || strings.HasPrefix(field, "github.com/omniaura/xgo/runtime/") {
+				return fmt.Errorf("CLI must embed the runtime, not depend on its published module")
+			}
 		}
 	}
 	return scanner.Err()

@@ -469,3 +469,12 @@ func TestStorageIncompleteScanPreservesSizeMemo(t *testing.T) {
 		t.Fatal("incomplete scan replaced existing memo")
 	}
 }
+
+func TestStorageExplicitEmptyFlagsFailClosed(t *testing.T) {
+	t.Setenv("XGO_CACHE_DIR", t.TempDir())
+	for _, key := range storageKeys {
+		if _, err := loadStoragePolicy(t.TempDir(), map[string]string{key: ""}); err == nil || !strings.Contains(err.Error(), "must not be empty") {
+			t.Fatalf("empty %s silently replaced policy: %v", key, err)
+		}
+	}
+}
