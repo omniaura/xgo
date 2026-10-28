@@ -23,7 +23,7 @@ func main() {
 
 	hasError := false
 	for _, modFile := range modFiles {
-		if err := checkGoMod(modFile); err != nil {
+		if err := checkGoMod(rootDir, modFile); err != nil {
 			fmt.Fprintf(os.Stderr, "go-mods-are-clean: %v\n", err)
 			hasError = true
 		}
@@ -49,7 +49,7 @@ var dirtyDirectives = map[string]bool{
 	"retract": true,
 }
 
-func checkGoMod(filePath string) error {
+func checkGoMod(rootDir string, filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -57,7 +57,18 @@ func checkGoMod(filePath string) error {
 		}
 		return err
 	}
-	return checkGoModContent(filepath.Base(filePath), string(data))
+	relative, err := filepath.Rel(rootDir, filePath)
+	if err != nil {
+		return err
+	}
+	switch filepath.ToSlash(relative) {
+	case "go.mod":
+		return checkCLIGoModContent(string(data))
+	case "runtime/go.mod":
+		return checkGoModContent("runtime/go.mod", string(data))
+	default:
+		return fmt.Errorf("unexpected module path %s", relative)
+	}
 }
 
 func checkGoModContent(fileName string, content string) error {
@@ -78,4 +89,25 @@ func checkGoModContent(fileName string, content string) error {
 		return err
 	}
 	return nil
+}
+
+// CLI dependencies are deliberate; runtime consumers must not inherit them.
+func checkCLIGoModContent(content string) error {
+	scanner := bufio.NewScanner(strings.NewReader(content))
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) == 0 {
+			continue
+		}
+		switch fields[0] {
+		case "replace", "exclude", "retract":
+			return fmt.Errorf("CLI go.mod forbids %q", fields[0])
+		}
+		for _, field := range strings.Fields(strings.SplitN(scanner.Text(), "//", 2)[0]) {
+			if field == "github.com/omniaura/xgo/runtime" || strings.HasPrefix(field, "github.com/omniaura/xgo/runtime/") {
+				return fmt.Errorf("CLI must embed the runtime, not depend on its published module")
+			}
+		}
+	}
+	return scanner.Err()
 }

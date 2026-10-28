@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Inherited policy must never redirect this destructive smoke test to a real cache.
+unset XGO_CONFIG XGO_CACHE_DIR XGO_CACHE_MAX_SIZE XGO_CACHE_MIN_FREE
+unset XGO_TEMP_MAX_AGE XGO_DISK_CHECK_INTERVAL XGO_FLAGS XGO_BUILD_CACHE_DIR
+unset XGO_STORAGE_SESSION XGO_STORAGE_ROOT XGO_STORAGE_TEMP
+export GOCACHEPROG=""
+
+# Every writable path belongs to this test. Never pressure-test the user's
+# real cache or delete global legacy Go temporary directories.
+test_root="$(mktemp -d)"
+trap 'rm -rf "$test_root"' EXIT
+mkdir -p "$test_root/home" "$test_root/project"
+go build -o "$test_root/xgo" ./cmd/xgo
+cat > "$test_root/project/go.mod" <<'EOF'
+module example.com/xgo-storage-smoke
+
+go 1.27.0
+EOF
+cat > "$test_root/project/main.go" <<'EOF'
+package main
+import ("fmt"; "os")
+func main() { fmt.Print(os.Args[1]) }
+EOF
+cat > "$test_root/project/main_test.go" <<'EOF'
+package main
+import ("flag"; "os"; "strings"; "testing")
+var programArgument = flag.String("cache-max-size", "", "test passthrough flag")
+func TestManagedTemp(t *testing.T) {
+    if !strings.Contains(os.TempDir(), "temps-") { t.Fatal(os.TempDir()) }
+    if *programArgument != "program-argument" { t.Fatal(os.Args) }
+}
+func TestTempDirCache(t *testing.T) { _ = t.TempDir(); _ = os.TempDir() }
+func TestPure(t *testing.T) { if 2+2 != 4 { t.Fatal("arithmetic") } }
+EOF
+cat > "$test_root/project/.xgo.yaml" <<'EOF'
+cache-dir: ../cache
+cache-max-size: 20GiB
+cache-min-free: 1MiB
+EOF
+export GOFLAGS=-trimpath XGO_FLAGS=""
+export XGO_BUILD_CACHE_DIR="$test_root/shared-build-cache"
+"$test_root/xgo" --help > "$test_root/help"
+grep -q 'completion' "$test_root/help"
+"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -v ./... -args --cache-max-size=program-argument
+"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -run 'TestPure|TestTempDirCache' -v ./... > "$test_root/warm-seed"
+"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -run 'TestPure|TestTempDirCache' -v ./... > "$test_root/warm"
+grep -q '(cached)' "$test_root/warm"
+"$test_root/xgo" run --xgo-home "$test_root/home" --project-dir "$test_root/project" . --cache-max-size=program-argument > "$test_root/run"
+grep -q -- '--cache-max-size=program-argument' "$test_root/run"
+"$test_root/xgo" exec --xgo-home "$test_root/home" --project-dir "$test_root/project" go version
+printf 'stdin-ok\n' | "$test_root/xgo" exec --xgo-home "$test_root/home" --project-dir "$test_root/project" sh -c 'read value; printf "%s" "$value"' > "$test_root/stdin"
+grep -q 'stdin-ok' "$test_root/stdin"
+"$test_root/xgo" cache status --project-dir "$test_root/project" --xgo-home "$test_root/home" > "$test_root/status"
+# Explicitly impossible reserve: must fail before starting the child.
+if "$test_root/xgo" exec --xgo-home "$test_root/home" --project-dir "$test_root/project" --cache-min-free=9223372036854775807 sh -c 'exit 42' > "$test_root/refusal" 2>&1; then
+    echo 'disk reserve did not refuse the command' >&2
+    exit 1
+fi
+grep -q 'low disk space' "$test_root/refusal"
+# A completed build must not leave a session containing compiler/test data.
+find "$test_root/cache" \( -name 'run-*' -o -name 'pool-*' \) -type d > "$test_root/remaining-temp-dirs"
+if test -s "$test_root/remaining-temp-dirs"; then
+    echo 'completed build left a temporary session or pool' >&2
+    exit 1
+fi
+"$test_root/xgo" test --xgo-home "$test_root/home" --project-dir "$test_root/project" -work -run TestPure . > "$test_root/kept-work" 2>&1
+kept_work="$(sed -n 's/^WORK=//p' "$test_root/kept-work" | head -1)"
+test -n "$kept_work"
+test -d "$kept_work"
+echo 'storage smoke passed: cold/warm test, run args, exec/stdin, reserve refusal, session cleanup, kept-work preservation'

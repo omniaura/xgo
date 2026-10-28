@@ -97,12 +97,12 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 				if err != nil || now.Sub(info.ModTime()) < staleSetupAge {
 					continue
 				}
-				lease, err := lockCache(stage, true, false)
+				lease, err := lockCacheForGC(stage)
 				if err == nil {
 					// Recheck after acquiring the lease; active stages retain
 					// an exclusive lease through publication or cleanup.
 					info, err := os.Stat(stage)
-					removed := err == nil && now.Sub(info.ModTime()) >= staleSetupAge && os.RemoveAll(stage) == nil
+					removed := err == nil && now.Sub(info.ModTime()) >= staleSetupAge && !cacheInLiveSession(stage) && os.RemoveAll(stage) == nil
 					lease.close()
 					if removed {
 						os.Remove(cacheLockPath(stage))
@@ -112,9 +112,11 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 			}
 			if e.IsDir() && strings.HasPrefix(e.Name(), gcTombPrefix) {
 				original := filepath.Join(parent, strings.TrimPrefix(e.Name(), gcTombPrefix))
-				lease, err := lockCache(original, true, false)
+				lease, err := lockCacheForGC(original)
 				if err == nil {
-					os.RemoveAll(filepath.Join(parent, e.Name()))
+					if !cacheInLiveSession(original) {
+						os.RemoveAll(filepath.Join(parent, e.Name()))
+					}
 					lease.close()
 				}
 				continue
@@ -158,12 +160,17 @@ func gcStaleCaches(units []gcUnit, now time.Time) {
 // that is known. A live invocation holds a shared lease until its Go child
 // exits, so recheck under the exclusive lease before renaming.
 func removeCacheDir(dir string, removable func() bool) {
-	lease, err := lockCache(dir, true, false)
+	// An old, unleased cache may still belong to an old xgo process.
+	// Do not manufacture evidence of abandonment by creating its first lock.
+	if !hasStorageLease(dir) {
+		return
+	}
+	lease, err := lockCacheForGC(dir)
 	if err != nil {
 		return
 	}
 	defer lease.close()
-	if !removable() {
+	if !removable() || cacheInLiveSession(dir) {
 		return
 	}
 	tomb := filepath.Join(filepath.Dir(dir), gcTombPrefix+filepath.Base(dir))

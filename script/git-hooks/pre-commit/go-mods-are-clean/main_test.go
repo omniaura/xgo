@@ -1,9 +1,48 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestCheckoutNamedRuntimeStillClassifiesModulesByRelativePath(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "runtime")
+	if err := os.MkdirAll(filepath.Join(root, "runtime"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	cli := filepath.Join(root, "go.mod")
+	rt := filepath.Join(root, "runtime", "go.mod")
+	dependency := []byte("module example.com/test\ngo 1.27.0\nrequire github.com/spf13/cobra v1.10.2\n")
+	if err := os.WriteFile(cli, dependency, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(rt, dependency, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkGoMod(root, cli); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkGoMod(root, rt); err == nil {
+		t.Fatal("runtime accepted tooling dependencies")
+	}
+}
+
+func TestCLIToolingDependenciesDoNotLeakIntoRuntime(t *testing.T) {
+	tooling := "module github.com/omniaura/xgo\ngo 1.27.0\nrequire github.com/spf13/cobra v1.10.2\n"
+	if err := checkCLIGoModContent(tooling); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkGoModContent("runtime/go.mod", tooling); err == nil {
+		t.Fatal("runtime accepted CLI dependencies")
+	}
+	for _, directive := range []string{"replace foo => ../foo", "exclude foo v1.0.0", "require github.com/omniaura/xgo/runtime v1.6.0"} {
+		if err := checkCLIGoModContent(tooling + directive + "\n"); err == nil {
+			t.Fatalf("CLI accepted %s", directive)
+		}
+	}
+}
 
 func TestCheckGoModContent_Clean(t *testing.T) {
 	cases := []string{
@@ -112,5 +151,18 @@ func TestCheckGoModContent_OnlyWhitespace(t *testing.T) {
 	err := checkGoModContent("go.mod", "\n\n  \n\t\n")
 	if err != nil {
 		t.Fatalf("whitespace-only file should be clean, got: %v", err)
+	}
+}
+
+func TestCLIRuntimeModuleBoundaries(t *testing.T) {
+	for _, module := range []string{"github.com/omniaura/xgo/runtime", "github.com/omniaura/xgo/runtime/submodule"} {
+		if err := checkCLIGoModContent("require " + module + " v1.0.0"); err == nil {
+			t.Fatalf("accepted %s", module)
+		}
+	}
+	for _, line := range []string{"require github.com/omniaura/xgo/runtimeclient v1.0.0", "require example.com/foo v1.0.0 // github.com/omniaura/xgo/runtime"} {
+		if err := checkCLIGoModContent(line); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

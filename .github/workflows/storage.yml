@@ -1,0 +1,43 @@
+name: Storage safety
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  storage:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27.1'
+      - name: Storage, CLI, lease, and setup regression tests
+        run: go test -race ./cmd/xgo ./instrument/patch ./support/cmd ./script/git-hooks/pre-commit/go-mods-are-clean
+      - name: Real instrumented builds, CLI passthrough, and disk refusal
+        run: bash script/test-storage.sh
+
+  windows-native:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27.1'
+      - name: Native preflight disk and ownership checks
+        run: go test ./cmd/xgo -run 'TestWindowsStorage' -count=1

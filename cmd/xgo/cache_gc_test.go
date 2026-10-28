@@ -30,6 +30,11 @@ func TestGCStaleCaches(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
+		lease, err := lockCache(dir, false, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lease.close()
 		return dir
 	}
 	old := now.Add(-staleBuildCacheAge - time.Hour)
@@ -98,6 +103,11 @@ func TestGCUnmarkedInstrumentDir(t *testing.T) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatal(err)
 		}
+		lease, err := lockCache(dir, false, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lease.close()
 		if err := os.Chtimes(dir, at, at); err != nil {
 			t.Fatal(err)
 		}
@@ -162,6 +172,11 @@ func TestGCCapsBuildCaches(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
+		lease, err := lockCache(dir, false, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lease.close()
 		return dir
 	}
 	// a daily scan just ran: only a fresh in-use cache triggers another
