@@ -30,7 +30,7 @@ EOF
 cat > "$test_root/project/.xgo.yaml" <<'EOF'
 cache-dir: ../cache
 cache-max-size: 20GiB
-cache-min-free: 1GiB
+cache-min-free: 1MiB
 EOF
 export GOFLAGS=-trimpath XGO_FLAGS=""
 export XGO_BUILD_CACHE_DIR="$test_root/shared-build-cache"

@@ -14,7 +14,7 @@ import (
 
 const storageProcessGroups = true
 
-func storageOwned(info os.FileInfo) bool {
+func storageOwned(_ string, info os.FileInfo) bool {
 	s, ok := info.Sys().(*syscall.Stat_t)
 	return ok && int(s.Uid) == os.Getuid()
 }

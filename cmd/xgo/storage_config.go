@@ -90,8 +90,10 @@ func loadStoragePolicy(projectDir string, flags map[string]string) (storagePolic
 	p.CacheDir = v.GetString("cache-dir")
 	if p.CacheDir != "" && !filepath.IsAbs(p.CacheDir) {
 		base := projectDir
-		if used := v.ConfigFileUsed(); used != "" {
-			base = filepath.Dir(used)
+		_, fromFlag := flags["cache-dir"]
+		fromEnv := os.Getenv("XGO_CACHE_DIR") != ""
+		if !fromFlag && !fromEnv && v.InConfig("cache-dir") {
+			base = filepath.Dir(v.ConfigFileUsed())
 		}
 		p.CacheDir, err = filepath.Abs(filepath.Join(base, p.CacheDir))
 		if err != nil {

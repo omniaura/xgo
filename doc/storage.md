@@ -27,7 +27,7 @@ cache-max-size: 20GiB
 cache-min-free: 10GiB
 temp-max-age: 24h
 disk-check-interval: 2s
-# Optional. Relative paths resolve from the configuration file's directory.
+# Optional. Config-relative paths resolve from this file's directory.
 # cache-dir: .xgo/cache
 ```
 
@@ -36,7 +36,8 @@ Precedence is explicit CLI flags, environment, project file, defaults.
 its values. Discovery begins at `--project-dir` (or the working directory),
 walks upward to the nearest module boundary, and uses the closest `.xgo.yaml`.
 An explicit `--config`/`XGO_CONFIG` can select Viper-supported YAML, TOML or JSON
-files; relative explicit file names resolve from the working directory. An
+files; relative explicit file names resolve from the working directory. Relative flag and environment `cache-dir` values resolve from `--project-dir`
+(or the working directory); configuration-file values resolve from that file. An
 explicit missing or malformed file, unknown key or invalid value is an error.
 
 ```sh
@@ -94,5 +95,9 @@ Only future managed sessions are automatically reclaimable. Symlink targets,
 unrelated directory names and other users' storage are never reclaimed.
 
 The free-space guard, process-group termination and inherited leases are
-supported and tested on macOS and Linux. Other platforms retain cache policy
-parsing/counting, but do not provide the same disk/process safety guarantees.
+supported and tested on macOS and Linux. Windows uses native available-space
+and owner-SID checks, with session
+leases instead of Unix process-group liveness; it does not provide the same
+orphan-process guarantees. Other unsupported platforms refuse the reserve check
+unless it is explicitly disabled with `--cache-min-free=0`, and never reclaim
+storage whose ownership cannot be verified.

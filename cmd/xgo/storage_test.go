@@ -290,3 +290,34 @@ func TestStorageSessionLeaseLivenessFallback(t *testing.T) {
 		t.Fatal("released session retained forever")
 	}
 }
+
+func TestStorageRelativeCacheRootRespectsValueSource(t *testing.T) {
+	project := t.TempDir()
+	configDir := t.TempDir()
+	config := filepath.Join(configDir, "policy.yaml")
+	if err := os.WriteFile(config, []byte("cache-dir: from-file\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	p, err := loadStoragePolicy(project, map[string]string{"config": config})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.CacheDir != filepath.Join(configDir, "from-file") {
+		t.Fatal(p.CacheDir)
+	}
+	t.Setenv("XGO_CACHE_DIR", "from-env")
+	p, err = loadStoragePolicy(project, map[string]string{"config": config})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.CacheDir != filepath.Join(project, "from-env") {
+		t.Fatal(p.CacheDir)
+	}
+	p, err = loadStoragePolicy(project, map[string]string{"config": config, "cache-dir": "from-flag"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.CacheDir != filepath.Join(project, "from-flag") {
+		t.Fatal(p.CacheDir)
+	}
+}

@@ -1,9 +1,33 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestCheckoutNamedRuntimeStillClassifiesModulesByRelativePath(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "runtime")
+	if err := os.MkdirAll(filepath.Join(root, "runtime"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	cli := filepath.Join(root, "go.mod")
+	rt := filepath.Join(root, "runtime", "go.mod")
+	dependency := []byte("module example.com/test\ngo 1.27.0\nrequire github.com/spf13/cobra v1.10.2\n")
+	if err := os.WriteFile(cli, dependency, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(rt, dependency, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkGoMod(root, cli); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkGoMod(root, rt); err == nil {
+		t.Fatal("runtime accepted tooling dependencies")
+	}
+}
 
 func TestCLIToolingDependenciesDoNotLeakIntoRuntime(t *testing.T) {
 	tooling := "module github.com/omniaura/xgo\ngo 1.27.0\nrequire github.com/spf13/cobra v1.10.2\n"

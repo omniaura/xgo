@@ -23,7 +23,7 @@ func main() {
 
 	hasError := false
 	for _, modFile := range modFiles {
-		if err := checkGoMod(modFile); err != nil {
+		if err := checkGoMod(rootDir, modFile); err != nil {
 			fmt.Fprintf(os.Stderr, "go-mods-are-clean: %v\n", err)
 			hasError = true
 		}
@@ -49,7 +49,7 @@ var dirtyDirectives = map[string]bool{
 	"retract": true,
 }
 
-func checkGoMod(filePath string) error {
+func checkGoMod(rootDir string, filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -57,10 +57,18 @@ func checkGoMod(filePath string) error {
 		}
 		return err
 	}
-	if filepath.Base(filepath.Dir(filePath)) != "runtime" {
-		return checkCLIGoModContent(string(data))
+	relative, err := filepath.Rel(rootDir, filePath)
+	if err != nil {
+		return err
 	}
-	return checkGoModContent(filepath.Base(filePath), string(data))
+	switch filepath.ToSlash(relative) {
+	case "go.mod":
+		return checkCLIGoModContent(string(data))
+	case "runtime/go.mod":
+		return checkGoModContent("runtime/go.mod", string(data))
+	default:
+		return fmt.Errorf("unexpected module path %s", relative)
+	}
 }
 
 func checkGoModContent(fileName string, content string) error {

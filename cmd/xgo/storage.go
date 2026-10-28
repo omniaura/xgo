@@ -126,7 +126,7 @@ func (m *storageManager) readEntries(cached bool) ([]storageEntry, error) {
 				}
 				return nil, err
 			}
-			if !storageOwned(info) {
+			if !storageOwned(dir, info) {
 				continue
 			}
 			var size int64
@@ -210,6 +210,9 @@ func (m *storageManager) pressure(entries []storageEntry) error {
 	var low error
 	seen := map[string]bool{}
 	for _, root := range m.roots {
+		if m.policy.MinFreeBytes == 0 {
+			break
+		}
 		dir := existingStorageAncestor(root.dir)
 		if seen[dir] {
 			continue
@@ -262,7 +265,7 @@ func (m *storageManager) remove(e storageEntry) bool {
 	}
 	defer lease.close()
 	info, err := os.Lstat(e.dir)
-	if err != nil || !info.IsDir() || !storageOwned(info) {
+	if err != nil || !info.IsDir() || !storageOwned(e.dir, info) {
 		return false
 	}
 	if e.sessions {
@@ -481,7 +484,7 @@ func storageJSON(v any) error { return json.NewEncoder(os.Stdout).Encode(v) }
 
 func hasStorageLease(dir string) bool {
 	info, err := os.Lstat(cacheLockPath(dir))
-	return err == nil && info.Mode().IsRegular() && storageOwned(info)
+	return err == nil && info.Mode().IsRegular() && storageOwned(cacheLockPath(dir), info)
 }
 
 // Published toolchains are immutable and revision-keyed. Mutable Go caches
