@@ -12,6 +12,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const storageProcessGroups = true
+
 func storageOwned(info os.FileInfo) bool {
 	s, ok := info.Sys().(*syscall.Stat_t)
 	return ok && int(s.Uid) == os.Getuid()
@@ -44,7 +46,7 @@ func storageGroupAlive(pid int) bool {
 func storageForeground(cmd *exec.Cmd) func() {
 	fd := int(os.Stdin.Fd())
 	previous, err := unix.IoctlGetInt(fd, unix.TIOCGPGRP)
-	if err != nil {
+	if err != nil || previous != syscall.Getpgrp() {
 		return func() {}
 	}
 	signal.Ignore(syscall.SIGTTOU)

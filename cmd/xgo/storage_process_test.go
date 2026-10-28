@@ -142,3 +142,27 @@ func TestStorageOrphanCompilerGroupProtectsItsCaches(t *testing.T) {
 		})
 	}
 }
+
+func TestStorageUninstrumentedSessionDoesNotBlockCacheReclamation(t *testing.T) {
+	for _, corrupt := range []bool{false, true} {
+		t.Run(map[bool]string{false: "no-resources", true: "corrupt-resources"}[corrupt], func(t *testing.T) {
+			m := testStorageManager(t)
+			cache, lease := storageFixture(t, m, 0, "go-unused", 2<<20, time.Hour)
+			lease.close()
+			session, _ := storageFixture(t, m, 1, "run-live", 1, time.Hour)
+			os.WriteFile(filepath.Join(session, ".process-group"), []byte(strconv.Itoa(syscall.Getpgrp())), 0600)
+			if corrupt {
+				os.WriteFile(filepath.Join(session, ".resources.json"), []byte("{corrupt"), 0600)
+			}
+			err := m.enforce()
+			if corrupt && err == nil {
+				t.Fatal("malformed ownership was ignored")
+			}
+			if !corrupt && err != nil {
+				t.Fatal(err)
+			}
+			storageExists(t, cache, corrupt)
+			storageExists(t, session, true)
+		})
+	}
+}

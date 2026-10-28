@@ -275,3 +275,18 @@ func TestStorageFlagPassthrough(t *testing.T) {
 		t.Fatalf("test args consumed: %+v", opts)
 	}
 }
+
+func TestStorageSessionLeaseLivenessFallback(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "session")
+	lease, err := lockCache(dir, false, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !sessionLeaseAlive(dir) {
+		t.Fatal("live session lost ownership")
+	}
+	lease.close()
+	if sessionLeaseAlive(dir) {
+		t.Fatal("released session retained forever")
+	}
+}

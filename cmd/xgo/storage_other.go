@@ -7,6 +7,8 @@ import (
 	"os/exec"
 )
 
+const storageProcessGroups = false
+
 func storageOwned(info os.FileInfo) bool                  { return true }
 func inheritStorageLease(cmd *exec.Cmd, lease *cacheLock) {}
 
@@ -18,6 +20,6 @@ func stopStorageCommand(cmd *exec.Cmd) {
 		_ = cmd.Process.Kill()
 	}
 }
-func storageGroupAlive(pid int) bool { return true }
+func storageGroupAlive(pid int) bool { return false }
 
 func storageForeground(cmd *exec.Cmd) func() { return func() {} }

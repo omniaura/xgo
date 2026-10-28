@@ -230,6 +230,9 @@ func (m *storageManager) pressure(entries []storageEntry) error {
 }
 
 func sessionGroupAlive(dir string) bool {
+	if !storageProcessGroups {
+		return sessionLeaseAlive(dir)
+	}
 	data, err := os.ReadFile(filepath.Join(dir, ".process-group"))
 	if os.IsNotExist(err) {
 		return false
@@ -262,15 +265,20 @@ func (m *storageManager) remove(e storageEntry) bool {
 	if err != nil || !info.IsDir() || !storageOwned(info) {
 		return false
 	}
-	if e.sessions && sessionGroupAlive(e.dir) {
-		return false
+	if e.sessions {
+		// On fallback platforms the exclusive lease just acquired proves
+		// the session is unused; Unix also checks surviving process groups.
+		if storageProcessGroups && sessionGroupAlive(e.dir) {
+			return false
+		}
+		return removeStorageDir(e.dir)
 	}
 	for _, root := range m.roots {
 		if root.sessions && resourceInLiveSession(leaseDir, root.dir) {
 			return false
 		}
 	}
-	return os.RemoveAll(e.dir) == nil
+	return removeStorageDir(e.dir)
 }
 
 func (m *storageManager) enforce() error {
@@ -376,6 +384,9 @@ func superviseBuild(cmdName string, args []string) error {
 	}
 	defer lease.close()
 	defer func() {
+		if !storageProcessGroups {
+			lease.close()
+		}
 		if !sessionGroupAlive(dir) {
 			_ = os.RemoveAll(dir)
 		}
@@ -538,6 +549,9 @@ func recordStorageResource(dir string) error {
 		if err = json.Unmarshal(data, &resources); err != nil {
 			return err
 		}
+		if resources == nil {
+			return fmt.Errorf("invalid session resource manifest")
+		}
 	} else if !os.IsNotExist(err) {
 		return err
 	}
@@ -589,12 +603,16 @@ func resourceInLiveSession(dir, root string) bool {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(session, ".resources.json"))
+		// No resource can be used before its lease and manifest are recorded.
+		if os.IsNotExist(err) {
+			continue
+		}
 		// A live job with unreadable ownership is conservatively protected.
 		if err != nil {
 			return true
 		}
 		resources := map[string]bool{}
-		if json.Unmarshal(data, &resources) != nil {
+		if json.Unmarshal(data, &resources) != nil || resources == nil {
 			return true
 		}
 		if resources[absolute] {
@@ -614,4 +632,26 @@ func cacheInLiveSession(dir string) bool {
 		base = filepath.Join(tmp, "xgo")
 	}
 	return resourceInLiveSession(dir, filepath.Join(base, fmt.Sprintf("sessions-%d", os.Getuid())))
+}
+
+func sessionLeaseAlive(dir string) bool {
+	lease, err := lockCacheForGC(dir)
+	if err != nil {
+		return true
+	}
+	lease.close()
+	return false
+}
+
+// Unpublish under the exclusive lease before recursive deletion. An interrupted
+// or permission-denied removal must not leave a "complete" half-toolchain.
+func removeStorageDir(dir string) bool {
+	tomb := dir
+	if !strings.HasPrefix(filepath.Base(dir), gcTombPrefix) {
+		tomb = filepath.Join(filepath.Dir(dir), gcTombPrefix+filepath.Base(dir))
+		if err := os.Rename(dir, tomb); err != nil {
+			return false
+		}
+	}
+	return os.RemoveAll(tomb) == nil
 }
