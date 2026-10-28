@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/omniaura/xgo/instrument/config"
+	cmd_support "github.com/omniaura/xgo/support/cmd"
 	"github.com/omniaura/xgo/support/filecopy"
 )
 
@@ -167,6 +168,7 @@ func ApplyPatches(patchDir, goroot, xgoRepoRoot string, extraEnv map[string]stri
 		}
 		cmdDir := resolveCwd(gen.Cwd, goroot, genEnv)
 		execCmd := exec.Command(args[0], args[1:]...)
+		cmd_support.ConfigureCommand(execCmd)
 		execCmd.Dir = cmdDir
 		newEnv := make([]string, 0, len(os.Environ())+4)
 		for _, e := range os.Environ() {

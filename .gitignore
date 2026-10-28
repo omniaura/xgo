@@ -49,3 +49,6 @@ cover.out
 /*.md
 *.gz
 *.log
+
+# Disposable local validation artifacts
+/.tmp/

@@ -8,6 +8,16 @@ import (
 	"strings"
 )
 
+// ConfigureChild is set by the xgo CLI before launching work. It lets setup
+// subprocesses retain active cache leases without coupling support to the CLI.
+var ConfigureChild func(*exec.Cmd)
+
+func ConfigureCommand(cmd *exec.Cmd) {
+	if ConfigureChild != nil {
+		ConfigureChild(cmd)
+	}
+}
+
 func Output(cmd string, args ...string) (string, error) {
 	return cmdExec(cmd, args, "", false)
 }
@@ -127,6 +137,7 @@ func cmdExecEnv(cmd string, args []string, env []string, dir string, useStdout b
 	}
 
 	execCmd := exec.Command(cmd, args...)
+	ConfigureCommand(execCmd)
 	execCmd.Stderr = stderr
 	if c != nil {
 		execCmd.Stdin = c.stdin

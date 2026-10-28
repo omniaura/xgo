@@ -5,6 +5,21 @@ import (
 	"testing"
 )
 
+func TestCLIToolingDependenciesDoNotLeakIntoRuntime(t *testing.T) {
+	tooling := "module github.com/omniaura/xgo\ngo 1.27.0\nrequire github.com/spf13/cobra v1.10.2\n"
+	if err := checkCLIGoModContent(tooling); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkGoModContent("runtime/go.mod", tooling); err == nil {
+		t.Fatal("runtime accepted CLI dependencies")
+	}
+	for _, directive := range []string{"replace foo => ../foo", "exclude foo v1.0.0", "require github.com/omniaura/xgo/runtime v1.6.0"} {
+		if err := checkCLIGoModContent(tooling + directive + "\n"); err == nil {
+			t.Fatalf("CLI accepted %s", directive)
+		}
+	}
+}
+
 func TestCheckGoModContent_Clean(t *testing.T) {
 	cases := []string{
 		"module github.com/omniaura/xgo\n\ngo 1.18\n",

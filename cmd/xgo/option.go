@@ -9,15 +9,16 @@ import (
 )
 
 type options struct {
-	flagA      bool
-	projectDir string
-	output     string
-	flagV      bool
-	flagX      bool
-	flagC      bool
-	flagRun    string
-	xgoSrc     string
-	withGoroot string
+	storageFlags map[string]string
+	flagA        bool
+	projectDir   string
+	output       string
+	flagV        bool
+	flagX        bool
+	flagC        bool
+	flagRun      string
+	xgoSrc       string
+	withGoroot   string
 
 	logDebug *string
 	// --debug-compile, --debug-compile=x
@@ -184,6 +185,7 @@ func parseOptions(cmd string, args []string) (*options, error) {
 		Set    func(v string)
 	}
 
+	storageFlags := map[string]string{}
 	var flagValues []FlagValue = []FlagValue{
 		{
 			Flags: []string{"--project-dir"},
@@ -337,6 +339,11 @@ func parseOptions(cmd string, args []string) (*options, error) {
 				}
 			},
 		})
+	}
+
+	for _, key := range append([]string{"config"}, storageKeys...) {
+		key := key
+		flagValues = append(flagValues, FlagValue{Flags: []string{"--" + key}, Set: func(v string) { storageFlags[key] = v }})
 	}
 
 	for i := 0; i < nArg; i++ {
@@ -522,15 +529,16 @@ func parseOptions(cmd string, args []string) (*options, error) {
 	}
 
 	return &options{
-		flagA:      flagA,
-		flagV:      flagV,
-		flagX:      flagX,
-		flagC:      flagC,
-		flagRun:    flagRun,
-		projectDir: projectDir,
-		output:     output,
-		xgoSrc:     xgoSrc,
-		withGoroot: withGoroot,
+		storageFlags: storageFlags,
+		flagA:        flagA,
+		flagV:        flagV,
+		flagX:        flagX,
+		flagC:        flagC,
+		flagRun:      flagRun,
+		projectDir:   projectDir,
+		output:       output,
+		xgoSrc:       xgoSrc,
+		withGoroot:   withGoroot,
 
 		logDebug:     logDebug,
 		debugCompile: debugCompile,

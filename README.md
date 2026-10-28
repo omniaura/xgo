@@ -25,6 +25,11 @@ As for the monkey patching part, `xgo` works as a preprocessor for `go run`,`go 
 
 See [Quick Start](#quick-start) and [Documentation](./doc) for more details.
 
+The Cobra CLI includes project configuration, a default 20 GiB managed-storage
+budget, a 10 GiB free-space reserve, and leased temporary build cleanup on
+macOS/Linux. See [disk budgets and configuration](./doc/storage.md) for flags,
+environment variables, `.xgo.yaml`, and `xgo cache status` / `xgo cache gc`.
+
 [![Xgo Test Explorer](https://github.com/omniaura/xgo/assets/14964938/53de1de1-85a6-41b0-9300-c4979ba0096c)](https://youtu.be/L8oPhgqtdGg)
 
 ![Xgo Test Explorer](https://github.com/omniaura/xgo/assets/14964938/2666f0c9-3a9f-45e0-a1e2-20e1bf401fa1)

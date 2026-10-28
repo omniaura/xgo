@@ -57,6 +57,9 @@ func checkGoMod(filePath string) error {
 		}
 		return err
 	}
+	if filepath.Base(filepath.Dir(filePath)) != "runtime" {
+		return checkCLIGoModContent(string(data))
+	}
 	return checkGoModContent(filepath.Base(filePath), string(data))
 }
 
@@ -78,4 +81,23 @@ func checkGoModContent(fileName string, content string) error {
 		return err
 	}
 	return nil
+}
+
+// CLI dependencies are deliberate; runtime consumers must not inherit them.
+func checkCLIGoModContent(content string) error {
+	scanner := bufio.NewScanner(strings.NewReader(content))
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) == 0 {
+			continue
+		}
+		switch fields[0] {
+		case "replace", "exclude", "retract":
+			return fmt.Errorf("CLI go.mod forbids %q", fields[0])
+		}
+		if strings.Contains(strings.SplitN(scanner.Text(), "//", 2)[0], "github.com/omniaura/xgo/runtime") {
+			return fmt.Errorf("CLI must embed the runtime, not depend on its published module")
+		}
+	}
+	return scanner.Err()
 }

@@ -16,7 +16,6 @@ import (
 
 	"github.com/omniaura/xgo/cmd/xgo/exec_tool"
 	"github.com/omniaura/xgo/cmd/xgo/pathsum"
-	test_explorer "github.com/omniaura/xgo/cmd/xgo/test-explorer"
 	"github.com/omniaura/xgo/instrument/build"
 	"github.com/omniaura/xgo/instrument/config"
 	"github.com/omniaura/xgo/instrument/constants"
@@ -48,81 +47,18 @@ func main() {
 	if os.Getenv("GOGC") == "" {
 		runtimedebug.SetGCPercent(400)
 	}
-	args := os.Args[1:]
-
-	var cmd string
-	if len(args) > 0 {
-		cmd = args[0]
-		args = args[1:]
-	}
-
-	if cmd == "" {
-		fmt.Fprintf(os.Stderr, "xgo: requires command\nRun 'xgo help' for usage.\n")
-		os.Exit(1)
-	}
-	if cmd == "help" || cmd == "-h" || cmd == "--help" {
-		fmt.Print(strings.TrimPrefix(help, "\n"))
-		return
-	}
-	if cmd == "version" {
-		fmt.Println(VERSION)
-		return
-	}
-	if cmd == "revision" {
-		if len(args) > 0 && args[0] == "--core" {
-			fmt.Println(getCoreRevision())
-		} else {
-			fmt.Println(getRevision())
-		}
-		return
-	}
-	if cmd == "upgrade" {
-		err := handleUpgrade(args)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-			os.Exit(1)
-		}
-		return
-	}
-	if cmd == "test-explorer" || cmd == "explorer" || cmd == "e" {
-		err := test_explorer.Main(args, &test_explorer.Options{
-			DefaultGoCommand: "xgo",
-		})
-		consumeErrAndExit(err)
-		return
-	}
-	if cmd == "tool" {
-		err := handleTool(args)
-		consumeErrAndExit(err)
-		return
-	}
-	if cmd == "shadow" {
-		consumeErrAndExit(fmt.Errorf("shadow is deprecated, use `xgo setup` instead"))
-		return
-	}
-	if cmd != "build" && cmd != "run" && cmd != "test" && cmd != "exec" && cmd != "setup" {
-		fmt.Fprintf(os.Stderr, "xgo %s: unknown command\nRun 'xgo help' for usage.\n", cmd)
-		os.Exit(1)
-	}
 	defer func() {
 		if closeDebug != nil {
-			// always close the debug log regardless of panic
-			defer closeDebug()
+			closeDebug()
 		}
 	}()
-
-	err := handleBuild(cmd, args)
-	if err != nil {
+	if err := newRootCommand().Execute(); err != nil {
 		code, stderr := parseErr(err)
-		logDebug("finished with error: %s", stderr)
 		if len(stderr) > 0 {
-			os.Stderr.Write(stderr)
-			os.Stderr.WriteString("\n")
+			fmt.Fprintln(os.Stderr, string(stderr))
 		}
 		os.Exit(code)
-		return
 	}
-	logDebug("finished successfully")
 }
 
 func parseXgoFlags(s string) []string {
@@ -149,6 +85,7 @@ func isFlagSpace(s byte) bool {
 }
 
 func handleBuild(cmd string, args []string) error {
+	cmd_support.ConfigureChild = inheritActiveCacheLeases
 	cmdRun := cmd == "run"
 	cmdBuild := cmd == "build"
 	cmdTest := cmd == "test"
@@ -262,7 +199,10 @@ func handleBuild(cmd string, args []string) error {
 	// it will hold:
 	//  - instrumentation
 	//  - build cache
-	globalXgoTmpDir := filepath.Join(tmpRoot, "xgo")
+	globalXgoTmpDir := os.Getenv("XGO_STORAGE_ROOT")
+	if globalXgoTmpDir == "" {
+		globalXgoTmpDir = filepath.Join(tmpRoot, "xgo")
+	}
 	logDebug("xgoTmpDir: %s", globalXgoTmpDir)
 	err = os.MkdirAll(globalXgoTmpDir, 0755)
 	if err != nil {
@@ -287,22 +227,11 @@ func handleBuild(cmd string, args []string) error {
 		return err
 	}
 
-	localTmp := filepath.Join(localXgoGenDir, "tmp")
-	err = os.MkdirAll(localTmp, 0755)
-	if err != nil {
-		return err
-	}
-
-	// sessionTmpDir is specifically for this run session
-	sessionTmpDir, err := os.MkdirTemp(localTmp, cmd)
-	logDebug("sessionTmpDir: %s", sessionTmpDir)
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(sessionTmpDir)
-	sessionTmpDir, err = filepath.Abs(sessionTmpDir)
-	if err != nil {
-		return err
+	// The supervisor owns this leased session, including all Go temporary
+	// work. It survives a killed wrapper until the entire job is gone.
+	sessionTmpDir := os.Getenv("XGO_STORAGE_SESSION")
+	if sessionTmpDir == "" {
+		return fmt.Errorf("build requires a supervised storage session")
 	}
 
 	// build the exec tool
@@ -989,6 +918,7 @@ func handleBuild(cmd string, args []string) error {
 	// that nothing references anymore; hand it back to the OS instead of
 	// holding it next to the compilers and tests for the whole command
 	runtimedebug.FreeOSMemory()
+	inheritActiveCacheLeases(execCmd)
 	err = execCmd.Run()
 	if err != nil {
 		return err

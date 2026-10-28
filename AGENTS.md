@@ -6,11 +6,11 @@ xgo is a Go tool that instruments Go code for testing, mocking, tracing, and int
 
 ## Clean `go.mod`
 
-Both `go.mod` and `runtime/go.mod` are very thin, has no any dependencies.
-
-That is delibrate, because `xgo` serve as a foundamental driver for go testing, so it should not introduce any dependency burden to end user.
-
-Please always keep them clean.
+The runtime module remains dependency-free. The root tooling module uses Cobra
+for its CLI, Viper for project/environment configuration, and x/sys for Unix
+terminal handling. Keep new dependencies confined to tooling: never add them
+to `runtime/go.mod` or the embedded runtime. The module policy hook enforces
+that separation.
 
 ## Testing
 
