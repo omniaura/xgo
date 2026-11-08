@@ -4,7 +4,10 @@ go 1.26.0
 
 require github.com/rwynn/gtm/v2 v2.1.2
 
-require github.com/omniaura/xgo/runtime v0.0.0
+require (
+	github.com/omniaura/xgo/runtime v0.0.0
+	go.mongodb.org/mongo-driver v1.9.1
+)
 
 require (
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -16,7 +19,6 @@ require (
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
-	go.mongodb.org/mongo-driver v1.9.1 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
